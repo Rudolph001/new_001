@@ -633,6 +633,73 @@ def api_attachment_risk_analytics(session_id):
     analytics = advanced_ml_engine.analyze_attachment_risks(session_id)
     return jsonify(analytics)
 
+@app.route('/api/sender_risk_analytics/<session_id>')
+def api_sender_risk_analytics(session_id):
+    """Get sender risk vs communication volume data for scatter plot"""
+    try:
+        # Get all email records for this session that aren't whitelisted
+        records = EmailRecord.query.filter_by(session_id=session_id).filter(
+            EmailRecord.whitelisted != True
+        ).all()
+        
+        if not records:
+            return jsonify({
+                'data': [],
+                'total_senders': 0,
+                'message': 'No sender data available for this session'
+            })
+        
+        # Aggregate data by sender
+        sender_stats = {}
+        for record in records:
+            sender = record.sender
+            if sender not in sender_stats:
+                sender_stats[sender] = {
+                    'sender': sender,
+                    'email_count': 0,
+                    'risk_scores': [],
+                    'has_attachments': False,
+                    'high_risk_count': 0
+                }
+            
+            sender_stats[sender]['email_count'] += 1
+            if record.ml_risk_score:
+                sender_stats[sender]['risk_scores'].append(record.ml_risk_score)
+            if record.attachments:
+                sender_stats[sender]['has_attachments'] = True
+            if record.risk_level in ['High', 'Critical']:
+                sender_stats[sender]['high_risk_count'] += 1
+        
+        # Format data for scatter plot
+        scatter_data = []
+        for sender, stats in sender_stats.items():
+            avg_risk_score = sum(stats['risk_scores']) / len(stats['risk_scores']) if stats['risk_scores'] else 0
+            
+            scatter_data.append({
+                'x': stats['email_count'],  # Communication volume
+                'y': round(avg_risk_score, 2),  # Average risk score
+                'sender': sender,
+                'email_count': stats['email_count'],
+                'avg_risk_score': round(avg_risk_score, 2),
+                'has_attachments': stats['has_attachments'],
+                'high_risk_count': stats['high_risk_count'],
+                'domain': sender.split('@')[-1] if '@' in sender else sender
+            })
+        
+        # Sort by risk score descending for better visualization
+        scatter_data.sort(key=lambda x: x['y'], reverse=True)
+        
+        return jsonify({
+            'data': scatter_data,
+            'total_senders': len(scatter_data),
+            'max_volume': max([d['x'] for d in scatter_data]) if scatter_data else 0,
+            'max_risk': max([d['y'] for d in scatter_data]) if scatter_data else 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting sender risk analytics for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/case/<session_id>/<record_id>')
 def api_case_details(session_id, record_id):
     """Get individual case details"""
