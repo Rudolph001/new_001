@@ -1,220 +1,164 @@
-
 <svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#5CB85C;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#449D44;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F0AD4E;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#EC971F;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#9B59B6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8E44AD;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#D9534F;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#C9302C;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#17A2B8;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#138496;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="darkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6C757D;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#5A6268;stop-opacity:1" />
-    </linearGradient>
-    
-    <filter id="shadow">
-      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.3"/>
-    </filter>
-    
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-     refX="9" refY="3.5" orient="auto">
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; text-anchor: middle; }
+      .box { font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }
+      .box-title { font-weight: bold; }
+      .box-desc { font-size: 10px; fill: #666; }
+      .arrow { stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
+      .flow-line { stroke: #666; stroke-width: 1; stroke-dasharray: 2,2; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
     </marker>
   </defs>
-  
-  <!-- Background -->
-  <rect width="1200" height="800" fill="#f8f9fa"/>
-  
+
   <!-- Title -->
-  <text x="600" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#2c3e50">Email Guardian - Process Flow</text>
-  
-  <!-- Top Row - Main Flow -->
+  <text x="600" y="30" class="title">Email Guardian - Actual Process Flow</text>
+
+  <!-- Row 1: Main Processing Flow -->
   <g>
     <!-- CSV Upload -->
-    <rect x="50" y="80" width="120" height="80" rx="8" fill="url(#blueGrad)" filter="url(#shadow)"/>
-    <text x="110" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">CSV Upload</text>
-    <text x="110" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Tessian Export</text>
-    <text x="110" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Large Files</text>
-    <text x="110" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">≤ 500MB</text>
-    
+    <rect x="50" y="80" width="120" height="80" rx="8" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
+    <text x="110" y="105" class="box box-title" fill="white">CSV Upload</text>
+    <text x="110" y="120" class="box box-desc" fill="white">File Upload</text>
+    <text x="110" y="135" class="box box-desc" fill="white">Session Creation</text>
+    <text x="110" y="150" class="box box-desc" fill="white">Background Thread</text>
+
     <!-- Data Validation -->
-    <rect x="220" y="80" width="120" height="80" rx="8" fill="url(#greenGrad)" filter="url(#shadow)"/>
-    <text x="280" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Data Validation</text>
-    <text x="280" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Column Mapping</text>
-    <text x="280" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Format Check</text>
-    <text x="280" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Case Insensitive</text>
-    
+    <rect x="220" y="80" width="120" height="80" rx="8" fill="#27ae60" stroke="#229954" stroke-width="2"/>
+    <text x="280" y="105" class="box box-title" fill="white">Data Validation</text>
+    <text x="280" y="120" class="box box-desc" fill="white">Column Mapping</text>
+    <text x="280" y="135" class="box box-desc" fill="white">CSV Structure</text>
+    <text x="280" y="150" class="box box-desc" fill="white">Count Records</text>
+
     <!-- Chunked Processing -->
-    <rect x="390" y="80" width="120" height="80" rx="8" fill="url(#orangeGrad)" filter="url(#shadow)"/>
-    <text x="450" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Chunked Proc.</text>
-    <text x="450" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">1000 Records</text>
-    <text x="450" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Memory Efficient</text>
-    <text x="450" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Progress Track</text>
-    
+    <rect x="390" y="80" width="120" height="80" rx="8" fill="#f39c12" stroke="#e67e22" stroke-width="2"/>
+    <text x="450" y="105" class="box box-title" fill="white">Chunked Processing</text>
+    <text x="450" y="120" class="box box-desc" fill="white">1000 Records/Batch</text>
+    <text x="450" y="135" class="box box-desc" fill="white">Memory Efficient</text>
+    <text x="450" y="150" class="box box-desc" fill="white">Progress Tracking</text>
+
     <!-- Dashboard -->
-    <rect x="1030" y="80" width="120" height="80" rx="8" fill="url(#purpleGrad)" filter="url(#shadow)"/>
-    <text x="1090" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Dashboard</text>
-    <text x="1090" y="120" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Analytics</text>
-    <text x="1090" y="135" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Visualizations</text>
-    <text x="1090" y="150" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Real-time</text>
+    <rect x="560" y="80" width="120" height="80" rx="8" fill="#9b59b6" stroke="#8e44ad" stroke-width="2"/>
+    <text x="620" y="105" class="box box-title" fill="white">Dashboard</text>
+    <text x="620" y="120" class="box box-desc" fill="white">Real-time Stats</text>
+    <text x="620" y="135" class="box box-desc" fill="white">Charts & Analytics</text>
+    <text x="620" y="150" class="box box-desc" fill="white">Session Overview</text>
   </g>
-  
-  <!-- Arrows Top Row -->
-  <line x1="170" y1="120" x2="210" y2="120" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  <line x1="340" y1="120" x2="380" y2="120" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <!-- Curved arrow from Chunked Processing to Dashboard -->
-  <path d="M 510 120 Q 700 60 1020 120" stroke="#333" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
-  
-  <!-- Main Processing Flow -->
+
+  <!-- Row 2: Workflow Stages -->
   <g>
     <!-- Rule Engine -->
-    <rect x="50" y="220" width="120" height="80" rx="8" fill="url(#redGrad)" filter="url(#shadow)"/>
-    <text x="110" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Rule Engine</text>
-    <text x="110" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Exclusion Rules</text>
-    <text x="110" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">AND/OR Logic</text>
-    <text x="110" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Pattern Match</text>
-    
+    <rect x="50" y="220" width="120" height="80" rx="8" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+    <text x="110" y="245" class="box box-title" fill="white">Rule Engine</text>
+    <text x="110" y="260" class="box box-desc" fill="white">Exclusion Rules</text>
+    <text x="110" y="275" class="box box-desc" fill="white">AND/OR Logic</text>
+    <text x="110" y="290" class="box box-desc" fill="white">Record Filtering</text>
+
     <!-- Whitelist Filter -->
-    <rect x="220" y="220" width="120" height="80" rx="8" fill="url(#purpleGrad)" filter="url(#shadow)"/>
-    <text x="280" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Whitelist Filter</text>
-    <text x="280" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Domain Trust</text>
-    <text x="280" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Auto Clear</text>
-    <text x="280" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Trust Scoring</text>
-    
+    <rect x="220" y="220" width="120" height="80" rx="8" fill="#16a085" stroke="#138d75" stroke-width="2"/>
+    <text x="280" y="245" class="box box-title" fill="white">Whitelist Filter</text>
+    <text x="280" y="260" class="box box-desc" fill="white">Domain Trust</text>
+    <text x="280" y="275" class="box box-desc" fill="white">Auto Clear</text>
+    <text x="280" y="290" class="box box-desc" fill="white">Database Managed</text>
+
     <!-- ML Analysis -->
-    <rect x="390" y="220" width="120" height="80" rx="8" fill="url(#tealGrad)" filter="url(#shadow)"/>
-    <text x="450" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">ML Analysis</text>
-    <text x="450" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Isolation Forest</text>
-    <text x="450" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Risk Scoring</text>
-    <text x="450" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Anomaly Detect</text>
-    
+    <rect x="390" y="220" width="120" height="80" rx="8" fill="#34495e" stroke="#2c3e50" stroke-width="2"/>
+    <text x="450" y="245" class="box box-title" fill="white">ML Analysis</text>
+    <text x="450" y="260" class="box box-desc" fill="white">Isolation Forest</text>
+    <text x="450" y="275" class="box box-desc" fill="white">Risk Scoring</text>
+    <text x="450" y="290" class="box box-desc" fill="white">Anomaly Detection</text>
+
     <!-- Case Generation -->
-    <rect x="560" y="220" width="120" height="80" rx="8" fill="url(#darkGrad)" filter="url(#shadow)"/>
-    <text x="620" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Case Generation</text>
-    <text x="620" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Risk Assessment</text>
-    <text x="620" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Priority Scoring</text>
-    <text x="620" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Case Creation</text>
-    
+    <rect x="560" y="220" width="120" height="80" rx="8" fill="#8e44ad" stroke="#7d3c98" stroke-width="2"/>
+    <text x="620" y="245" class="box box-title" fill="white">Case Generation</text>
+    <text x="620" y="260" class="box box-desc" fill="white">Risk Assessment</text>
+    <text x="620" y="275" class="box box-desc" fill="white">Priority Scoring</text>
+    <text x="620" y="290" class="box box-desc" fill="white">Status Tracking</text>
+  </g>
+
+  <!-- Row 3: Management & Analysis -->
+  <g>
     <!-- Case Management -->
-    <rect x="730" y="220" width="120" height="80" rx="8" fill="url(#orangeGrad)" filter="url(#shadow)"/>
-    <text x="790" y="245" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">Case Management</text>
-    <text x="790" y="260" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Review Queue</text>
-    <text x="790" y="275" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Investigation</text>
-    <text x="790" y="290" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="white">Action Workflow</text>
-  </g>
-  
-  <!-- Arrows Main Flow -->
-  <line x1="170" y1="260" x2="210" y2="260" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  <line x1="340" y1="260" x2="380" y2="260" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  <line x1="510" y1="260" x2="550" y2="260" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  <line x1="680" y1="260" x2="720" y2="260" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <!-- Vertical connector from chunked processing to rule engine -->
-  <line x1="450" y1="160" x2="450" y2="180" stroke="#333" stroke-width="2"/>
-  <line x1="450" y1="180" x2="110" y2="180" stroke="#333" stroke-width="2"/>
-  <line x1="110" y1="180" x2="110" y2="210" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <!-- Curved arrow from Case Management to Dashboard -->
-  <path d="M 850 260 Q 950 180 1030 160" stroke="#333" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
-  
-  <!-- Action Options Row -->
-  <g>
-    <!-- Clear Case -->
-    <rect x="50" y="360" width="100" height="70" rx="8" fill="url(#greenGrad)" filter="url(#shadow)"/>
-    <text x="100" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">Clear Case</text>
-    <text x="100" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Mark Safe</text>
-    <text x="100" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Close Investigation</text>
-    
-    <!-- Escalate -->
-    <rect x="200" y="360" width="100" height="70" rx="8" fill="url(#orangeGrad)" filter="url(#shadow)"/>
-    <text x="250" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">Escalate</text>
-    <text x="250" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Generate Email</text>
-    <text x="250" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Notify Team</text>
-    
-    <!-- Investigate -->
-    <rect x="350" y="360" width="100" height="70" rx="8" fill="url(#blueGrad)" filter="url(#shadow)"/>
-    <text x="400" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">Investigate</text>
-    <text x="400" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Deep Analysis</text>
-    <text x="400" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Gather Evidence</text>
-    
+    <rect x="50" y="360" width="120" height="80" rx="8" fill="#d35400" stroke="#ba4a00" stroke-width="2"/>
+    <text x="110" y="385" class="box box-title" fill="white">Case Management</text>
+    <text x="110" y="400" class="box box-desc" fill="white">Review Queue</text>
+    <text x="110" y="415" class="box box-desc" fill="white">Status Updates</text>
+    <text x="110" y="430" class="box box-desc" fill="white">Escalation</text>
+
+    <!-- Sender Analysis -->
+    <rect x="220" y="360" width="120" height="80" rx="8" fill="#2e86ab" stroke="#1f5f8b" stroke-width="2"/>
+    <text x="280" y="385" class="box box-title" fill="white">Sender Analysis</text>
+    <text x="280" y="400" class="box box-desc" fill="white">Behavior Patterns</text>
+    <text x="280" y="415" class="box box-desc" fill="white">Risk Profiles</text>
+    <text x="280" y="430" class="box box-desc" fill="white">Communication Stats</text>
+
+    <!-- Admin Panel -->
+    <rect x="390" y="360" width="120" height="80" rx="8" fill="#7f8c8d" stroke="#5d6d7e" stroke-width="2"/>
+    <text x="450" y="385" class="box box-title" fill="white">Admin Panel</text>
+    <text x="450" y="400" class="box box-desc" fill="white">System Config</text>
+    <text x="450" y="415" class="box box-desc" fill="white">Rule Management</text>
+    <text x="450" y="430" class="box box-desc" fill="white">Session Cleanup</text>
+
     <!-- Data Storage -->
-    <rect x="500" y="360" width="100" height="70" rx="8" fill="url(#tealGrad)" filter="url(#shadow)"/>
-    <text x="550" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">Data Storage</text>
-    <text x="550" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Session Data</text>
-    <text x="550" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Audit Trail</text>
-    
-    <!-- Reporting -->
-    <rect x="650" y="360" width="100" height="70" rx="8" fill="url(#darkGrad)" filter="url(#shadow)"/>
-    <text x="700" y="385" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">Reporting</text>
-    <text x="700" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Statistics</text>
-    <text x="700" y="415" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="white">Compliance</text>
+    <rect x="560" y="360" width="120" height="80" rx="8" fill="#566573" stroke="#34495e" stroke-width="2"/>
+    <text x="620" y="385" class="box box-title" fill="white">Data Storage</text>
+    <text x="620" y="400" class="box box-desc" fill="white">SQLite Database</text>
+    <text x="620" y="415" class="box box-desc" fill="white">Session Data</text>
+    <text x="620" y="430" class="box box-desc" fill="white">File Management</text>
   </g>
-  
-  <!-- Arrows from Case Management to Actions -->
-  <line x1="790" y1="300" x2="790" y2="340" stroke="#333" stroke-width="2"/>
-  <line x1="790" y1="340" x2="100" y2="340" stroke="#333" stroke-width="2"/>
-  <line x1="100" y1="340" x2="100" y2="350" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <line x1="790" y1="340" x2="250" y2="340" stroke="#333" stroke-width="2"/>
-  <line x1="250" y1="340" x2="250" y2="350" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <line x1="790" y1="340" x2="400" y2="340" stroke="#333" stroke-width="2"/>
-  <line x1="400" y1="340" x2="400" y2="350" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <line x1="790" y1="340" x2="550" y2="340" stroke="#333" stroke-width="2"/>
-  <line x1="550" y1="340" x2="550" y2="350" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <line x1="790" y1="340" x2="700" y2="340" stroke="#333" stroke-width="2"/>
-  <line x1="700" y1="340" x2="700" y2="350" stroke="#333" stroke-width="2" marker-end="url(#arrowhead)"/>
-  
-  <!-- Key Features Section -->
+
+  <!-- Arrows for main flow -->
+  <line x1="170" y1="120" x2="210" y2="120" class="arrow"/>
+  <line x1="340" y1="120" x2="380" y2="120" class="arrow"/>
+  <line x1="510" y1="120" x2="550" y2="120" class="arrow"/>
+
+  <!-- Workflow arrows -->
+  <line x1="170" y1="260" x2="210" y2="260" class="arrow"/>
+  <line x1="340" y1="260" x2="380" y2="260" class="arrow"/>
+  <line x1="510" y1="260" x2="550" y2="260" class="arrow"/>
+
+  <!-- Vertical flow from processing to workflow -->
+  <line x1="450" y1="160" x2="450" y2="180" class="arrow"/>
+  <line x1="450" y1="180" x2="110" y2="180" class="flow-line"/>
+  <line x1="110" y1="180" x2="110" y2="210" class="arrow"/>
+
+  <!-- From case generation to management -->
+  <line x1="620" y1="300" x2="620" y2="320" class="arrow"/>
+  <line x1="620" y1="320" x2="110" y2="320" class="flow-line"/>
+  <line x1="110" y1="320" x2="110" y2="350" class="arrow"/>
+
+  <!-- Key Features Box -->
   <g>
-    <rect x="50" y="480" width="500" height="140" rx="8" fill="#ffffff" stroke="#e9ecef" stroke-width="2" filter="url(#shadow)"/>
-    <text x="70" y="505" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#2c3e50">Key Features:</text>
-    <text x="70" y="525" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Handles large CSV files (chunked processing)</text>
-    <text x="70" y="545" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Machine Learning anomaly detection</text>
-    <text x="70" y="565" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Rule-based filtering with whitelist support</text>
-    <text x="70" y="585" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Real-time analytics and case management</text>
-    <text x="70" y="605" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Multi-action workflow (Clear/Escalate/Investigate)</text>
+    <rect x="750" y="80" width="400" height="200" rx="8" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="2"/>
+    <text x="950" y="105" class="box box-title">Implemented Features:</text>
+
+    <text x="760" y="130" class="box" text-anchor="start">• CSV file upload with chunked processing (1000 records/batch)</text>
+    <text x="760" y="150" class="box" text-anchor="start">• Machine learning anomaly detection with Isolation Forest</text>
+    <text x="760" y="170" class="box" text-anchor="start">• Rule-based filtering with complex AND/OR logic</text>
+    <text x="760" y="190" class="box" text-anchor="start">• Domain whitelist management and filtering</text>
+    <text x="760" y="210" class="box" text-anchor="start">• Real-time dashboard with animated statistics</text>
+    <text x="760" y="230" class="box" text-anchor="start">• Case management with status tracking</text>
+    <text x="760" y="250" class="box" text-anchor="start">• Sender behavior analysis and profiling</text>
+    <text x="760" y="270" class="box" text-anchor="start">• Administrative interface for system management</text>
   </g>
-  
-  <!-- Performance Section -->
+
+  <!-- Performance Box -->
   <g>
-    <rect x="600" y="480" width="500" height="140" rx="8" fill="#ffffff" stroke="#e9ecef" stroke-width="2" filter="url(#shadow)"/>
-    <text x="620" y="505" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#2c3e50">Performance:</text>
-    <text x="620" y="525" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Fast Mode: 60-80% speed improvement</text>
-    <text x="620" y="545" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Memory Efficient: 1000 records per batch</text>
-    <text x="620" y="565" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Scalable: SQLite → PostgreSQL ready</text>
-    <text x="620" y="585" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Session Persistence: Resume analysis</text>
-    <text x="620" y="605" font-family="Arial, sans-serif" font-size="12" fill="#495057">• Background Processing: Non-blocking UI</text>
+    <rect x="750" y="320" width="400" height="120" rx="8" fill="#e8f8f5" stroke="#58d68d" stroke-width="2"/>
+    <text x="950" y="345" class="box box-title">Performance:</text>
+
+    <text x="760" y="370" class="box" text-anchor="start">• Fast Mode: 60-80% speed improvement enabled</text>
+    <text x="760" y="390" class="box" text-anchor="start">• Memory Efficient: 1000 records per processing batch</text>
+    <text x="760" y="410" class="box" text-anchor="start">• Scalable: SQLite database with PostgreSQL compatibility</text>
+    <text x="760" y="430" class="box" text-anchor="start">• Real-time: Background processing with live updates</text>
   </g>
-  
+
   <!-- Data Flow Summary -->
   <g>
-    <rect x="50" y="650" width="1100" height="60" rx="8" fill="#f8f9fa" stroke="#dee2e6" stroke-width="2" filter="url(#shadow)"/>
-    <text x="600" y="675" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#2c3e50">Data Flow Summary:</text>
-    <text x="600" y="695" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#495057">CSV Upload → Validation → Chunked Processing → Rule Engine → Whitelist Filter → ML Analysis → Case Generation → Review → Action</text>
+    <rect x="50" y="480" width="1100" height="60" rx="8" fill="#fdeaa7" stroke="#fdcb6e" stroke-width="2"/>
+    <text x="600" y="505" class="box box-title">Data Flow Summary:</text>
+    <text x="600" y="525" class="box">CSV Upload → Data Validation → Chunked Processing → Rule Engine → Whitelist Filter → ML Analysis → Case Generation → Management Interface</text>
   </g>
-  
-  <!-- Footer -->
-  <text x="600" y="770" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#6c757d">Email Guardian - Professional Email Security Analysis Platform</text>
 </svg>

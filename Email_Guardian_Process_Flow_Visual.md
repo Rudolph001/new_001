@@ -1,103 +1,73 @@
-
-# Email Guardian - Visual Process Flow
-
-## System Architecture Flow Diagram
+# Email Guardian - Process Flow (Current Implementation)
 
 ```
-                            Email Guardian - Process Flow
-    
+                            Email Guardian - Actual Process Flow
+
     ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
     │ CSV Upload  │───▶│ Data Valid. │───▶│ Chunked Proc│───▶│ Dashboard   │
-    │ Tessian     │    │ Column Map  │    │ 1000 Records│    │ Analytics   │
-    │ Large Files │    │ Format Check│    │ Memory Eff. │    │ Visualize   │
+    │ File Upload │    │ Column Map  │    │ 1000 Records│    │ Real-time   │
+    │ Session ID  │    │ Structure   │    │ Memory Eff. │    │ Analytics   │
     └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
            │                                       │                   ▲
            ▼                                       ▼                   │
-    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-    │ Rule Engine │───▶│ Whitelist   │───▶│ ML Analysis │───▶│ Case Gen.   │───▶│ Case Mgmt   │
-    │ Exclusion   │    │ Filter      │    │ Isolation   │    │ Risk Assess │    │ Review      │
-    │ AND/OR Logic│    │ Domain Trust│    │ Forest      │    │ Priority    │    │ Queue       │
-    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-           │                   │                   │                   │                   │
-           ▼                   ▼                   ▼                   ▼                   ▼
-    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-    │ Clear Case  │    │ Escalate    │    │ Investigate │    │ Data Store  │    │ Reporting   │
-    │ Mark Safe   │    │ Generate    │    │ Deep        │    │ Session     │    │ Statistics  │
-    │ Close Invest│    │ Email Alert │    │ Analysis    │    │ Audit Trail │    │ Compliance  │
-    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-
-Key Features:                                      Performance:
-• Handles large CSV files (chunked processing)    • Fast Mode: 60-80% speed improvement
-• Machine Learning anomaly detection               • Memory Efficient: 1000 records per batch
-• Rule-based filtering with whitelist support     • Scalable: SQLite → PostgreSQL ready
-• Real-time analytics and case management         • Session Persistence: Resume analysis
-• Multi-action workflow (Clear/Escalate/Investigate) • Background Processing: Non-blocking UI
-
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                Data Flow Summary:                                      │
-│ CSV Upload → Validation → Chunked Processing → Rule Engine → Whitelist Filter →       │
-│ ML Analysis → Case Generation → Review → Action                                       │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+    │ Rule Engine │───▶│ Whitelist   │───▶│ ML Analysis │───▶│ Case Gen.   │
+    │ Exclusion   │    │ Filter      │    │ Isolation   │    │ Risk Assess │
+    │ AND/OR Logic│    │ Domain Trust│    │ Forest Algo │    │ Status Track│
+    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+           │                                                         │
+           ▼                                                         ▼
+    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+    │ Case Mgmt   │    │ Sender      │    │ Admin Panel │    │ Data Store  │
+    │ Review      │    │ Analysis    │    │ System Cfg  │    │ SQLite DB   │
+    │ Escalation  │    │ Behavior    │    │ Rule Mgmt   │    │ Session     │
+    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
-## Process Flow Details
+## Currently Implemented Features:
 
-### Phase 1: Data Ingestion
-- **CSV Upload**: Tessian email export files up to 500MB
-- **Data Validation**: Column mapping with case-insensitive field matching
-- **Chunked Processing**: 1000 records per batch for memory efficiency
+✅ **CSV Upload & Processing**
+- File upload with validation
+- Background processing threads
+- Chunked processing (1000 records/batch)
+- Progress tracking
 
-### Phase 2: Analysis Pipeline
-- **Rule Engine**: Exclusion and security rules with AND/OR logic
-- **Whitelist Filter**: Domain trust scoring and auto-clearance
-- **ML Analysis**: Isolation Forest anomaly detection with risk scoring
+✅ **Data Validation**
+- Case-insensitive column mapping
+- CSV structure validation
+- Record counting
 
-### Phase 3: Case Management
-- **Case Generation**: Risk-based prioritization (Critical/High/Medium/Low)
-- **Case Management**: Review queue with investigative tools
-- **Action Workflow**: Clear/Escalate/Investigate paths
+✅ **4-Stage Workflow**
+1. **Rule Engine**: Exclusion rules with AND/OR logic
+2. **Whitelist Filter**: Domain-based filtering
+3. **ML Analysis**: Isolation Forest anomaly detection
+4. **Case Generation**: Risk scoring and classification
 
-### Phase 4: Outputs
-- **Dashboard**: Real-time analytics and visualizations
-- **Data Storage**: Session persistence with audit trails
-- **Reporting**: Statistics and compliance reporting
+✅ **Dashboard & Analytics**
+- Real-time statistics
+- Animated counters
+- Risk distribution charts
+- Processing status
 
-## Current Implementation Status
+✅ **Case Management**
+- Status tracking (Active/Cleared/Escalated)
+- Bulk operations
+- Case details modal
+- Filtering and search
 
-✅ **Completed Components:**
-- CSV file upload and validation
-- Chunked data processing (1000 records/batch)
-- Rule engine with complex conditions
-- Domain whitelist management
-- ML risk scoring with Isolation Forest
-- Case management system
-- Real-time dashboard with Chart.js
-- Session persistence and cleanup
+✅ **Sender Analysis**
+- Behavior pattern analysis
+- Risk profiling
+- Communication statistics
 
-✅ **Advanced Features:**
-- Sender behavior analysis
-- Temporal pattern detection
-- Attachment risk assessment
-- Advanced ML insights
-- Administrative interfaces
-- API endpoints for real-time updates
+✅ **Administrative Interface**
+- Rule management
+- Whitelist domain management
+- Session cleanup
+- System statistics
 
-## Technical Specifications
-
-**Processing Engine:**
-- Chunk Size: 1000 records (configurable)
-- ML Estimators: 50 (fast mode)
-- Progress Updates: Every 500 records
-- Memory Optimization: Batch commits
-
-**Database Architecture:**
-- SQLite for development
-- PostgreSQL-ready design
-- Session-based data isolation
-- Automatic compression for large datasets
-
-**Web Interface:**
-- Flask with Bootstrap 5
-- AJAX real-time updates
-- Responsive design
-- Chart.js visualizations
+## Performance Configuration:
+- Fast Mode: Enabled (60-80% speed improvement)
+- Chunk Size: 1000 records
+- ML Records: 5000 max for analysis
+- Database: SQLite with optimized queries
