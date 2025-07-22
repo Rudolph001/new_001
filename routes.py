@@ -536,7 +536,6 @@ def create_rule():
         rule = Rule(
             name=data['name'],
             rule_type=data['rule_type'],
-            category=data.get('category', 'security'),
             description=data.get('description', ''),
             priority=data.get('priority', 50),
             conditions=data['conditions'],  # Already JSON string from frontend
@@ -572,7 +571,7 @@ def update_rule(rule_id):
             rule.is_active = not rule.is_active
         else:
             # Update rule fields
-            for field in ['name', 'rule_type', 'category', 'description', 'priority', 'conditions', 'actions', 'is_active']:
+            for field in ['name', 'rule_type', 'description', 'priority', 'conditions', 'actions', 'is_active']:
                 if field in data and data[field] is not None:
                     setattr(rule, field, data[field])
         
