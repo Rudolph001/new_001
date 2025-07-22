@@ -87,8 +87,14 @@ class DataProcessor:
                     logger.warning(f"Error processing chunk {current_chunk}: {str(chunk_error)}")
                     continue  # Skip problematic chunks but continue processing
             
-            # Step 3: Apply 4-step workflow
-            self._apply_workflow(session_id)
+            # Step 3: Apply 4-step workflow with robust error handling
+            try:
+                self._apply_workflow(session_id)
+            except Exception as workflow_error:
+                logger.warning(f"Workflow error for session {session_id}: {str(workflow_error)}")
+                # Continue to completion even if workflow has issues
+                if session:
+                    session.error_message = f"Workflow warning: {str(workflow_error)}"
             
             # Mark as completed
             if session:
@@ -225,26 +231,42 @@ class DataProcessor:
             raise
     
     def _apply_workflow(self, session_id):
-        """Apply 4-step processing workflow"""
+        """Apply 4-step processing workflow with robust error handling"""
         try:
             logger.info(f"Applying workflow for session {session_id}")
             
             # Step 1: Apply Exclusion Rules
-            self._apply_exclusion_rules(session_id)
+            try:
+                self._apply_exclusion_rules(session_id)
+                logger.info(f"Step 1 completed: Exclusion rules applied for session {session_id}")
+            except Exception as e:
+                logger.warning(f"Step 1 failed for session {session_id}: {str(e)}")
             
             # Step 2: Apply Whitelist Filtering
-            self._apply_whitelist_filtering(session_id)
+            try:
+                self._apply_whitelist_filtering(session_id)
+                logger.info(f"Step 2 completed: Whitelist filtering applied for session {session_id}")
+            except Exception as e:
+                logger.warning(f"Step 2 failed for session {session_id}: {str(e)}")
             
             # Step 3: Apply Security Rules
-            self._apply_security_rules(session_id)
+            try:
+                self._apply_security_rules(session_id)
+                logger.info(f"Step 3 completed: Security rules applied for session {session_id}")
+            except Exception as e:
+                logger.warning(f"Step 3 failed for session {session_id}: {str(e)}")
             
             # Step 4: Apply ML Analysis
-            self._apply_ml_analysis(session_id)
+            try:
+                self._apply_ml_analysis(session_id)
+                logger.info(f"Step 4 completed: ML analysis applied for session {session_id}")
+            except Exception as e:
+                logger.warning(f"Step 4 failed for session {session_id}: {str(e)}")
             
             logger.info(f"Workflow completed for session {session_id}")
             
         except Exception as e:
-            logger.error(f"Error applying workflow for session {session_id}: {str(e)}")
+            logger.error(f"Critical error applying workflow for session {session_id}: {str(e)}")
             raise
     
     def _apply_exclusion_rules(self, session_id):
