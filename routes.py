@@ -646,13 +646,15 @@ def api_sender_risk_analytics(session_id):
             return jsonify({
                 'data': [],
                 'total_senders': 0,
+                'max_volume': 0,
+                'max_risk': 0,
                 'message': 'No sender data available for this session'
             })
         
         # Aggregate data by sender
         sender_stats = {}
         for record in records:
-            sender = record.sender
+            sender = record.sender or 'Unknown'
             if sender not in sender_stats:
                 sender_stats[sender] = {
                     'sender': sender,
@@ -663,7 +665,7 @@ def api_sender_risk_analytics(session_id):
                 }
             
             sender_stats[sender]['email_count'] += 1
-            if record.ml_risk_score:
+            if record.ml_risk_score is not None:
                 sender_stats[sender]['risk_scores'].append(record.ml_risk_score)
             if record.attachments:
                 sender_stats[sender]['has_attachments'] = True
@@ -677,10 +679,10 @@ def api_sender_risk_analytics(session_id):
             
             scatter_data.append({
                 'x': stats['email_count'],  # Communication volume
-                'y': round(avg_risk_score, 2),  # Average risk score
+                'y': round(avg_risk_score, 3),  # Average risk score
                 'sender': sender,
                 'email_count': stats['email_count'],
-                'avg_risk_score': round(avg_risk_score, 2),
+                'avg_risk_score': round(avg_risk_score, 3),
                 'has_attachments': stats['has_attachments'],
                 'high_risk_count': stats['high_risk_count'],
                 'domain': sender.split('@')[-1] if '@' in sender else sender
@@ -698,7 +700,13 @@ def api_sender_risk_analytics(session_id):
         
     except Exception as e:
         logger.error(f"Error getting sender risk analytics for session {session_id}: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': f'Failed to load sender analytics: {str(e)}',
+            'data': [],
+            'total_senders': 0,
+            'max_volume': 0,
+            'max_risk': 0
+        }), 200  # Return 200 to prevent JS errors
 
 @app.route('/api/case/<session_id>/<record_id>')
 def api_case_details(session_id, record_id):
@@ -1606,6 +1614,16 @@ def api_ml_keywords():
         # Get attachment keywords from database
         keywords = AttachmentKeyword.query.filter_by(is_active=True).all()
         
+        # If no keywords exist, provide default response
+        if not keywords:
+            return jsonify({
+                'total_keywords': 0,
+                'categories': {'Business': 0, 'Personal': 0, 'Suspicious': 0},
+                'keywords': [],
+                'last_updated': datetime.utcnow().isoformat(),
+                'message': 'No ML keywords found. You can populate default keywords from the admin panel.'
+            })
+        
         # Count by category
         categories = {'Business': 0, 'Personal': 0, 'Suspicious': 0}
         keyword_list = []
@@ -1630,7 +1648,13 @@ def api_ml_keywords():
         
     except Exception as e:
         logger.error(f"Error getting ML keywords: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': 'Failed to load ML keywords',
+            'total_keywords': 0,
+            'categories': {'Business': 0, 'Personal': 0, 'Suspicious': 0},
+            'keywords': [],
+            'last_updated': datetime.utcnow().isoformat()
+        }), 200  # Return 200 instead of 500 to prevent JS errors
 
 @app.route('/api/ml-config', methods=['GET', 'PUT'])
 def api_ml_config():

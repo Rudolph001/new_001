@@ -571,25 +571,25 @@ function showMLKeywords() {
         fetch('/api/ml-keywords')
             .then(response => response.json())
             .then(data => {
-                if (data.error) {
-                    resultDiv.innerHTML = `<div class="alert alert-warning">${data.error}</div>`;
+                if (data.error && data.total_keywords === 0) {
+                    resultDiv.innerHTML = `<div class="alert alert-info">${data.message || 'No ML keywords configured'}</div>`;
                     return;
                 }
                 
                 let html = `
                     <div class="mb-2">
-                        <strong>Total Keywords:</strong> ${data.total_keywords} 
+                        <strong>Total Keywords:</strong> ${data.total_keywords || 0} 
                         <span class="text-muted">(Last updated: ${new Date(data.last_updated).toLocaleDateString()})</span>
                     </div>
                     <div class="row mb-2">
                         <div class="col-4">
-                            <span class="badge bg-success">Business: ${data.categories.Business}</span>
+                            <span class="badge bg-success">Business: ${data.categories?.Business || 0}</span>
                         </div>
                         <div class="col-4">
-                            <span class="badge bg-warning">Personal: ${data.categories.Personal}</span>
+                            <span class="badge bg-warning">Personal: ${data.categories?.Personal || 0}</span>
                         </div>
                         <div class="col-4">
-                            <span class="badge bg-danger">Suspicious: ${data.categories.Suspicious}</span>
+                            <span class="badge bg-danger">Suspicious: ${data.categories?.Suspicious || 0}</span>
                         </div>
                     </div>
                 `;
@@ -614,14 +614,18 @@ function showMLKeywords() {
                         html += `<small class="text-muted">Showing 20 of ${data.keywords.length} keywords</small>`;
                     }
                 } else {
-                    html += '<div class="text-muted">No detailed keywords available</div>';
+                    html += '<div class="text-muted">No ML keywords available. You can populate default keywords from the admin panel.</div>';
+                }
+                
+                if (data.message) {
+                    html += `<div class="alert alert-info mt-2">${data.message}</div>`;
                 }
                 
                 resultDiv.innerHTML = html;
             })
             .catch(error => {
                 console.error('Error loading ML keywords:', error);
-                resultDiv.innerHTML = '<div class="alert alert-danger">Failed to load ML keywords</div>';
+                resultDiv.innerHTML = '<div class="alert alert-warning">Unable to load ML keywords at this time</div>';
             });
     } else {
         // Hide keywords
