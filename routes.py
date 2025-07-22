@@ -1208,24 +1208,7 @@ def admin_delete_session(session_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/ml-keywords')
-def api_ml_keywords():
-    """Get ML keywords summary"""
-    try:
-        # In a real implementation, this would come from the ML engine's keyword database
-        sample_keywords = {
-            'total_keywords': 1247,
-            'categories': {
-                'Business': 823,
-                'Personal': 312,
-                'Suspicious': 112
-            },
-            'last_updated': datetime.utcnow().isoformat()
-        }
-        return jsonify(sample_keywords)
-    except Exception as e:
-        logger.error(f"Error getting ML keywords: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/whitelist-domains/<int:domain_id>/toggle', methods=['POST'])
 def api_toggle_whitelist_domain(domain_id):
