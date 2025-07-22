@@ -9,6 +9,8 @@
       .box-desc { font-size: 9px; }
       .arrow { stroke: #34495e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
       .flow-line { stroke: #7f8c8d; stroke-width: 1; stroke-dasharray: 3,2; fill: none; }
+      .feature-text { font-family: Arial, sans-serif; font-size: 10px; text-anchor: start; fill: #2c3e50; }
+      .summary-text { font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; fill: #2c3e50; }
     </style>
     <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
       <polygon points="0 0, 8 3, 0 6" fill="#34495e" />
@@ -45,7 +47,7 @@
     <rect x="500" y="60" width="100" height="70" rx="6" fill="#9b59b6" stroke="#8e44ad" stroke-width="1"/>
     <text x="550" y="80" class="box-text box-title">Dashboard</text>
     <text x="550" y="95" class="box-text box-desc">Real-time Stats</text>
-    <text x="550" y="107" class="box-text box-desc">Charts &amp; Analytics</text>
+    <text x="550" y="107" class="box-text box-desc">Charts Analytics</text>
     <text x="550" y="119" class="box-text box-desc">Session Overview</text>
   </g>
 
@@ -137,29 +139,29 @@
 
   <!-- Features Box -->
   <rect x="650" y="60" width="500" height="200" rx="6" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="1"/>
-  <text x="900" y="80" class="box-text box-title" fill="#2c3e50" style="font-size: 14px;">Currently Implemented Features:</text>
+  <text x="900" y="80" class="feature-text" style="font-size: 14px; font-weight: bold; text-anchor: middle;">Currently Implemented Features:</text>
   
-  <text x="665" y="105" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• CSV file upload with chunked processing (1000 records/batch)</text>
-  <text x="665" y="120" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Machine learning anomaly detection with Isolation Forest</text>
-  <text x="665" y="135" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Rule-based filtering with complex AND/OR logic</text>
-  <text x="665" y="150" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Domain whitelist management and filtering</text>
-  <text x="665" y="165" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Real-time dashboard with animated statistics</text>
-  <text x="665" y="180" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Case management with status tracking</text>
-  <text x="665" y="195" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Sender behavior analysis and administrative interface</text>
-  <text x="665" y="210" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• SQLite database with session persistence</text>
-  <text x="665" y="240" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 11px; font-weight: bold;">Performance: Fast Mode Enabled | 1000 Records/Batch | Real-time Updates</text>
+  <text x="665" y="105" class="feature-text">• CSV file upload with chunked processing (1000 records/batch)</text>
+  <text x="665" y="120" class="feature-text">• Machine learning anomaly detection with Isolation Forest</text>
+  <text x="665" y="135" class="feature-text">• Rule-based filtering with complex AND/OR logic</text>
+  <text x="665" y="150" class="feature-text">• Domain whitelist management and filtering</text>
+  <text x="665" y="165" class="feature-text">• Real-time dashboard with animated statistics</text>
+  <text x="665" y="180" class="feature-text">• Case management with status tracking</text>
+  <text x="665" y="195" class="feature-text">• Sender behavior analysis and administrative interface</text>
+  <text x="665" y="210" class="feature-text">• SQLite database with session persistence</text>
+  <text x="665" y="240" class="feature-text" style="font-weight: bold;">Performance: Fast Mode Enabled | 1000 Records/Batch | Real-time Updates</text>
 
   <!-- Data Flow Summary -->
   <rect x="50" y="420" width="1100" height="40" rx="6" fill="#fdeaa7" stroke="#fdcb6e" stroke-width="1"/>
-  <text x="600" y="435" class="box-text" fill="#2c3e50" style="font-size: 12px; font-weight: bold;">Current Data Flow:</text>
-  <text x="600" y="450" class="box-text" fill="#2c3e50" style="font-size: 10px;">Upload → Validate → Process → Rules → Whitelist → ML Analysis → Cases → Management</text>
+  <text x="600" y="435" class="summary-text" style="font-weight: bold;">Current Data Flow:</text>
+  <text x="600" y="450" class="summary-text" style="font-size: 10px;">Upload → Validate → Process → Rules → Whitelist → ML Analysis → Cases → Management</text>
 
   <!-- Performance Stats -->
   <rect x="50" y="480" width="550" height="80" rx="6" fill="#e8f8f5" stroke="#58d68d" stroke-width="1"/>
-  <text x="325" y="500" class="box-text" fill="#2c3e50" style="font-size: 12px; font-weight: bold;">System Performance:</text>
-  <text x="65" y="520" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Fast Mode: 60-80% speed improvement</text>
-  <text x="65" y="535" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Memory Efficient: 1000 records per batch</text>
-  <text x="325" y="520" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Database: SQLite with PostgreSQL compatibility</text>
-  <text x="325" y="535" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Real-time: Background processing with live updates</text>
-  <text x="325" y="550" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Scalable: Gunicorn deployment on Replit</text>
+  <text x="325" y="500" class="feature-text" style="font-weight: bold; text-anchor: middle;">System Performance:</text>
+  <text x="65" y="520" class="feature-text">• Fast Mode: 60-80% speed improvement</text>
+  <text x="65" y="535" class="feature-text">• Memory Efficient: 1000 records per batch</text>
+  <text x="325" y="520" class="feature-text">• Database: SQLite with PostgreSQL compatibility</text>
+  <text x="325" y="535" class="feature-text">• Real-time: Background processing with live updates</text>
+  <text x="325" y="550" class="feature-text">• Scalable: Gunicorn deployment on Replit</text>
 </svg>
