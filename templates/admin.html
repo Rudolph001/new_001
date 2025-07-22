@@ -1021,10 +1021,13 @@ function showAlert(message, type) {
 }
 
 function loadMLKeywords() {
+    console.log('loadMLKeywords called');
     const container = document.getElementById('mlKeywordsContainer');
     const keywordsDiv = document.getElementById('mlKeywords');
     
-    if (container.style.display === 'none') {
+    console.log('Container:', container, 'KeywordsDiv:', keywordsDiv);
+    
+    if (container && container.style.display === 'none') {
         container.style.display = 'block';
         keywordsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading ML keywords...</p></div>';
         
@@ -1096,7 +1099,7 @@ function loadMLKeywords() {
                 console.error('Error loading ML keywords:', error);
                 keywordsDiv.innerHTML = '<div class="alert alert-danger">Failed to load ML keywords. Please try again.</div>';
             });
-    } else {
+    } else if (container) {
         container.style.display = 'none';
     }
 }
@@ -1841,25 +1844,52 @@ function getTimeAgo(date) {
 
 // Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize charts
-    initializeCharts();
+    // Initialize charts if elements exist
+    if (typeof initializeCharts === 'function') {
+        initializeCharts();
+    }
     
-    // Load initial data
-    loadWhitelistDomains();
-    updatePerformanceMetrics();
-    updateSecurityMetrics();
-    updateDataAnalytics();
-    updateSystemLogs();
+    // Load initial data if functions exist
+    if (typeof loadWhitelistDomains === 'function') {
+        loadWhitelistDomains();
+    }
+    if (typeof updatePerformanceMetrics === 'function') {
+        updatePerformanceMetrics();
+    }
+    if (typeof updateSecurityMetrics === 'function') {
+        updateSecurityMetrics();
+    }
+    if (typeof updateDataAnalytics === 'function') {
+        updateDataAnalytics();
+    }
+    if (typeof updateSystemLogs === 'function') {
+        updateSystemLogs();
+    }
     
-    // Set up periodic updates
-    setInterval(updatePerformanceMetrics, 5000);  // Every 5 seconds
-    setInterval(updateSecurityMetrics, 10000);    // Every 10 seconds
-    setInterval(updateDataAnalytics, 30000);      // Every 30 seconds
-    setInterval(updateSystemLogs, 15000);         // Every 15 seconds
+    // Set up periodic updates only if functions exist
+    if (typeof updatePerformanceMetrics === 'function') {
+        setInterval(updatePerformanceMetrics, 5000);  // Every 5 seconds
+    }
+    if (typeof updateSecurityMetrics === 'function') {
+        setInterval(updateSecurityMetrics, 10000);    // Every 10 seconds
+    }
+    if (typeof updateDataAnalytics === 'function') {
+        setInterval(updateDataAnalytics, 30000);      // Every 30 seconds
+    }
+    if (typeof updateSystemLogs === 'function') {
+        setInterval(updateSystemLogs, 15000);         // Every 15 seconds
+    }
     
-    // Set up log filter listeners
-    document.getElementById('log-level-filter').addEventListener('change', updateSystemLogs);
-    document.getElementById('log-component-filter').addEventListener('change', updateSystemLogs);
+    // Set up log filter listeners only if elements exist
+    const logLevelFilter = document.getElementById('log-level-filter');
+    const logComponentFilter = document.getElementById('log-component-filter');
+    
+    if (logLevelFilter && typeof updateSystemLogs === 'function') {
+        logLevelFilter.addEventListener('change', updateSystemLogs);
+    }
+    if (logComponentFilter && typeof updateSystemLogs === 'function') {
+        logComponentFilter.addEventListener('change', updateSystemLogs);
+    }
 });
 </script>
 
