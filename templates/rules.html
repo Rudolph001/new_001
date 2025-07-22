@@ -701,16 +701,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize first condition
     updateRulePreview();
     updateRemoveButtons();
-    loadWhitelistDomains();
+    
+    // Only try to load whitelist domains if the whitelist table exists on this page
+    if (document.querySelector('#whitelistTable')) {
+        loadWhitelistDomains();
+    }
 });
 
 // Whitelist Management Functions
 function loadWhitelistDomains() {
+    const tbody = document.querySelector('#whitelistTable tbody');
+    if (!tbody) {
+        console.log('Whitelist table not found on this page, skipping whitelist loading');
+        return;
+    }
+    
     fetch('/api/whitelist-domains')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            const tbody = document.querySelector('#whitelistTable tbody');
             tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No whitelist domains configured</td></tr>';
+                return;
+            }
 
             data.forEach(domain => {
                 const row = document.createElement('tr');
@@ -745,7 +764,11 @@ function loadWhitelistDomains() {
         })
         .catch(error => {
             console.error('Error loading whitelist domains:', error);
-            showError('Failed to load whitelist domains');
+            // Only show error if we're on a page that should have whitelist domains
+            const tbody = document.querySelector('#whitelistTable tbody');
+            if (tbody) {
+                showError('Failed to load whitelist domains: ' + error.message);
+            }
         });
 }
 
