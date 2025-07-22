@@ -1382,6 +1382,40 @@ def api_processing_errors(session_id):
         'resolved': error.resolved
     } for error in errors])
 
+@app.route('/api/sender-analysis/<session_id>')
+def api_sender_analysis(session_id):
+    """Get sender analysis for dashboard"""
+    try:
+        analysis = advanced_ml_engine.analyze_sender_behavior(session_id)
+        
+        if not analysis:
+            return jsonify({
+                'total_senders': 0,
+                'sender_profiles': {},
+                'summary_statistics': {
+                    'high_risk_senders': 0,
+                    'external_focused_senders': 0,
+                    'attachment_senders': 0,
+                    'avg_emails_per_sender': 0
+                }
+            })
+        
+        return jsonify(analysis)
+        
+    except Exception as e:
+        logger.error(f"Error getting sender analysis for session {session_id}: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'total_senders': 0,
+            'sender_profiles': {},
+            'summary_statistics': {
+                'high_risk_senders': 0,
+                'external_focused_senders': 0,
+                'attachment_senders': 0,
+                'avg_emails_per_sender': 0
+            }
+        }), 200
+
 @app.route('/api/sender_details/<session_id>/<sender_email>')
 def api_sender_details(session_id, sender_email):
     """Get detailed sender information"""
