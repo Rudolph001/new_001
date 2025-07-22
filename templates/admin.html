@@ -1370,60 +1370,94 @@ function initializeCharts() {
 
 function updatePerformanceMetrics() {
     fetch('/admin/api/performance-metrics')
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
-        // Update performance indicators
-        document.getElementById('cpu-usage').textContent = data.cpu_usage + '%';
-        document.getElementById('cpu-progress').style.width = data.cpu_usage + '%';
+        // Update performance indicators with null checks
+        const cpuElement = document.getElementById('cpu-usage');
+        const memoryElement = document.getElementById('memory-usage');
+        const threadsElement = document.getElementById('active-threads');
+        const processingElement = document.getElementById('processing-threads');
+        const responseElement = document.getElementById('avg-response-time');
+        const slowElement = document.getElementById('slow-requests');
         
-        document.getElementById('memory-usage').textContent = data.memory_usage + '%';
-        document.getElementById('memory-progress').style.width = data.memory_usage + '%';
-        
-        document.getElementById('active-threads').textContent = data.active_threads;
-        document.getElementById('processing-threads').textContent = data.processing_threads + ' Processing';
-        
-        document.getElementById('avg-response-time').textContent = data.avg_response_time + 'ms';
-        document.getElementById('slow-requests').textContent = data.slow_requests + ' Slow';
-
-        // Update performance chart
-        const now = new Date().toLocaleTimeString();
-        performanceChart.data.labels.push(now);
-        performanceChart.data.datasets[0].data.push(data.cpu_usage);
-        performanceChart.data.datasets[1].data.push(data.memory_usage);
-        
-        // Keep only last 20 data points
-        if (performanceChart.data.labels.length > 20) {
-            performanceChart.data.labels.shift();
-            performanceChart.data.datasets[0].data.shift();
-            performanceChart.data.datasets[1].data.shift();
+        if (cpuElement) {
+            cpuElement.textContent = data.cpu_usage + '%';
+            const cpuProgress = document.getElementById('cpu-progress');
+            if (cpuProgress) cpuProgress.style.width = data.cpu_usage + '%';
         }
         
-        performanceChart.update();
+        if (memoryElement) {
+            memoryElement.textContent = data.memory_usage + '%';
+            const memoryProgress = document.getElementById('memory-progress');
+            if (memoryProgress) memoryProgress.style.width = data.memory_usage + '%';
+        }
+        
+        if (threadsElement) threadsElement.textContent = data.active_threads;
+        if (processingElement) processingElement.textContent = data.processing_threads + ' Processing';
+        if (responseElement) responseElement.textContent = data.avg_response_time + 'ms';
+        if (slowElement) slowElement.textContent = data.slow_requests + ' Slow';
+
+        // Update performance chart only if it exists
+        if (typeof performanceChart !== 'undefined' && performanceChart) {
+            const now = new Date().toLocaleTimeString();
+            performanceChart.data.labels.push(now);
+            performanceChart.data.datasets[0].data.push(data.cpu_usage);
+            performanceChart.data.datasets[1].data.push(data.memory_usage);
+            
+            // Keep only last 20 data points
+            if (performanceChart.data.labels.length > 20) {
+                performanceChart.data.labels.shift();
+                performanceChart.data.datasets[0].data.shift();
+                performanceChart.data.datasets[1].data.shift();
+            }
+            
+            performanceChart.update();
+        }
     })
-    .catch(error => console.error('Error updating performance metrics:', error));
+    .catch(error => {
+        // Silently handle errors for background updates to avoid console spam
+    });
 }
 
 function updateSecurityMetrics() {
     fetch('/admin/api/security-metrics')
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
-        document.getElementById('critical-threats').textContent = data.critical_threats;
-        document.getElementById('suspicious-activities').textContent = data.suspicious_activities;
-        document.getElementById('blocked-domains').textContent = data.blocked_domains;
+        const criticalElement = document.getElementById('critical-threats');
+        const suspiciousElement = document.getElementById('suspicious-activities');
+        const blockedElement = document.getElementById('blocked-domains');
+        
+        if (criticalElement) criticalElement.textContent = data.critical_threats;
+        if (suspiciousElement) suspiciousElement.textContent = data.suspicious_activities;
+        if (blockedElement) blockedElement.textContent = data.blocked_domains;
 
-        // Update threat distribution chart
-        threatDistributionChart.data.datasets[0].data = [
-            data.threat_distribution.critical,
-            data.threat_distribution.high,
-            data.threat_distribution.medium,
-            data.threat_distribution.low
-        ];
-        threatDistributionChart.update();
+        // Update threat distribution chart only if it exists
+        if (typeof threatDistributionChart !== 'undefined' && threatDistributionChart) {
+            threatDistributionChart.data.datasets[0].data = [
+                data.threat_distribution.critical,
+                data.threat_distribution.high,
+                data.threat_distribution.medium,
+                data.threat_distribution.low
+            ];
+            threatDistributionChart.update();
+        }
 
         // Update security events
         updateSecurityEvents(data.recent_events);
     })
-    .catch(error => console.error('Error updating security metrics:', error));
+    .catch(error => {
+        // Silently handle errors for background updates
+    });
 }
 
 function updateSecurityEvents(events) {
@@ -1456,29 +1490,46 @@ function updateSecurityEvents(events) {
 
 function updateDataAnalytics() {
     fetch('/admin/api/data-analytics')
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('total-emails-processed').textContent = data.total_emails.toLocaleString();
-        document.getElementById('clean-emails').textContent = data.clean_emails.toLocaleString();
-        document.getElementById('flagged-emails').textContent = data.flagged_emails.toLocaleString();
-        document.getElementById('high-risk-emails').textContent = data.high_risk_emails.toLocaleString();
-        document.getElementById('unique-domains').textContent = data.unique_domains.toLocaleString();
-        document.getElementById('avg-processing-time').textContent = data.avg_processing_time + 's';
-
-        // Update email volume chart
-        emailVolumeChart.data.labels = data.volume_trends.labels;
-        emailVolumeChart.data.datasets[0].data = data.volume_trends.data;
-        emailVolumeChart.update();
-
-        // Update risk level chart
-        riskLevelChart.data.datasets[0].data = [
-            data.clean_emails,
-            data.flagged_emails,
-            data.high_risk_emails
-        ];
-        riskLevelChart.update();
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
     })
-    .catch(error => console.error('Error updating data analytics:', error));
+    .then(data => {
+        const totalElement = document.getElementById('total-emails-processed');
+        const cleanElement = document.getElementById('clean-emails');
+        const flaggedElement = document.getElementById('flagged-emails');
+        const highRiskElement = document.getElementById('high-risk-emails');
+        const domainsElement = document.getElementById('unique-domains');
+        const timeElement = document.getElementById('avg-processing-time');
+        
+        if (totalElement) totalElement.textContent = data.total_emails.toLocaleString();
+        if (cleanElement) cleanElement.textContent = data.clean_emails.toLocaleString();
+        if (flaggedElement) flaggedElement.textContent = data.flagged_emails.toLocaleString();
+        if (highRiskElement) highRiskElement.textContent = data.high_risk_emails.toLocaleString();
+        if (domainsElement) domainsElement.textContent = data.unique_domains.toLocaleString();
+        if (timeElement) timeElement.textContent = data.avg_processing_time + 's';
+
+        // Update charts only if they exist
+        if (typeof emailVolumeChart !== 'undefined' && emailVolumeChart) {
+            emailVolumeChart.data.labels = data.volume_trends.labels;
+            emailVolumeChart.data.datasets[0].data = data.volume_trends.data;
+            emailVolumeChart.update();
+        }
+
+        if (typeof riskLevelChart !== 'undefined' && riskLevelChart) {
+            riskLevelChart.data.datasets[0].data = [
+                data.clean_emails,
+                data.flagged_emails,
+                data.high_risk_emails
+            ];
+            riskLevelChart.update();
+        }
+    })
+    .catch(error => {
+        // Silently handle errors for background updates
+    });
 }
 
 function updateSystemLogs() {
