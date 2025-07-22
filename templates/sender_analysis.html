@@ -281,9 +281,12 @@
                 
                 <div class="mt-3">
                     <h6>ML Keywords Used:</h6>
-                    <button class="btn btn-outline-info btn-sm w-100" onclick="loadMLKeywords()">
+                    <button class="btn btn-outline-info btn-sm w-100" onclick="showMLKeywords()">
                         <i class="fas fa-tags"></i> View Active Keywords
                     </button>
+                    <div id="mlKeywordsResult" style="display: none;" class="mt-2 p-2 bg-light border rounded">
+                        <!-- Keywords will be loaded here -->
+                    </div>
                     <div id="mlKeywords" class="mt-2" style="display: none;"></div>
                 </div>
             </div>
@@ -545,6 +548,87 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function showMLKeywords() {
+    const resultDiv = document.getElementById('mlKeywordsResult');
+    const button = document.querySelector('button[onclick="showMLKeywords()"]');
+    
+    if (resultDiv.style.display === 'none') {
+        // Show and load keywords
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span class="ms-2">Loading ML keywords...</span>
+            </div>
+        `;
+        
+        button.innerHTML = '<i class="fas fa-tags"></i> Hide Keywords';
+        
+        // Fetch ML keywords from API
+        fetch('/api/ml-keywords')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    resultDiv.innerHTML = `<div class="alert alert-warning">${data.error}</div>`;
+                    return;
+                }
+                
+                let html = `
+                    <div class="mb-2">
+                        <strong>Total Keywords:</strong> ${data.total_keywords} 
+                        <span class="text-muted">(Last updated: ${new Date(data.last_updated).toLocaleDateString()})</span>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-4">
+                            <span class="badge bg-success">Business: ${data.categories.Business}</span>
+                        </div>
+                        <div class="col-4">
+                            <span class="badge bg-warning">Personal: ${data.categories.Personal}</span>
+                        </div>
+                        <div class="col-4">
+                            <span class="badge bg-danger">Suspicious: ${data.categories.Suspicious}</span>
+                        </div>
+                    </div>
+                `;
+                
+                if (data.keywords && data.keywords.length > 0) {
+                    html += '<div class="row">';
+                    data.keywords.slice(0, 20).forEach(keyword => {
+                        const badgeClass = keyword.category === 'Business' ? 'success' : 
+                                         keyword.category === 'Personal' ? 'warning' : 'danger';
+                        html += `
+                            <div class="col-6 mb-1">
+                                <small class="d-flex justify-content-between">
+                                    <span>${keyword.keyword}</span>
+                                    <span class="badge bg-${badgeClass}">${keyword.risk_score}</span>
+                                </small>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    
+                    if (data.keywords.length > 20) {
+                        html += `<small class="text-muted">Showing 20 of ${data.keywords.length} keywords</small>`;
+                    }
+                } else {
+                    html += '<div class="text-muted">No detailed keywords available</div>';
+                }
+                
+                resultDiv.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading ML keywords:', error);
+                resultDiv.innerHTML = '<div class="alert alert-danger">Failed to load ML keywords</div>';
+            });
+    } else {
+        // Hide keywords
+        resultDiv.style.display = 'none';
+        button.innerHTML = '<i class="fas fa-tags"></i> View Active Keywords';
+    }
+}
 
 function viewSenderDetails(senderEmail) {
     const modalBody = document.getElementById('senderDetailsBody');
