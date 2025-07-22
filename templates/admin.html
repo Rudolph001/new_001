@@ -253,9 +253,16 @@
                         <div class="algorithm-component mb-3 p-3 bg-light rounded">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="mb-0 text-success">Rule-Based Factors</h6>
-                                <span class="badge bg-success">{{ risk_scoring_info.algorithm_components.rule_based_factors.weight }}% Weight</span>
+                                <div>
+                                    <span class="badge bg-success me-2">{{ risk_scoring_info.algorithm_components.rule_based_factors.weight }}% Weight</span>
+                                    <button class="btn btn-sm btn-outline-success" onclick="toggleMLEditor()">
+                                        <i class="fas fa-edit me-1"></i>Edit
+                                    </button>
+                                </div>
                             </div>
-                            <div class="rule-factors">
+                            
+                            <!-- Read-only view -->
+                            <div id="ml-factors-view" class="rule-factors">
                                 {% for factor in risk_scoring_info.algorithm_components.rule_based_factors.factors %}
                                 <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
                                     <div>
@@ -268,16 +275,76 @@
                                 </div>
                                 {% endfor %}
                             </div>
+                            
+                            <!-- Editable view -->
+                            <div id="ml-factors-editor" style="display: none;">
+                                <div class="mb-3">
+                                    <h6 class="text-primary">Edit ML Risk Factors</h6>
+                                    <small class="text-muted">Adjust maximum risk scores for each factor (0.0 - 1.0)</small>
+                                </div>
+                                
+                                <div id="ml-factor-inputs">
+                                    {% for factor in risk_scoring_info.algorithm_components.rule_based_factors.factors %}
+                                    <div class="row mb-2 align-items-center">
+                                        <div class="col-md-6">
+                                            <label class="form-label small fw-bold">{{ factor.name }}</label>
+                                            <small class="d-block text-muted">{{ factor.description }}</small>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input type="number" 
+                                                   class="form-control form-control-sm ml-factor-input" 
+                                                   data-factor="{{ factor.name.lower().replace(' ', '_') }}"
+                                                   value="{{ "%.1f"|format(factor.max_score) }}" 
+                                                   min="0.0" 
+                                                   max="1.0" 
+                                                   step="0.1">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button class="btn btn-sm btn-outline-danger" onclick="removeMLFactor(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="addMLFactor()">
+                                            <i class="fas fa-plus me-1"></i>Add New Factor
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-success" onclick="saveMLConfiguration()">
+                                        <i class="fas fa-save me-1"></i>Save Changes
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="cancelMLEdit()">
+                                        <i class="fas fa-times me-1"></i>Cancel
+                                    </button>
+                                    <button class="btn btn-sm btn-warning" onclick="resetMLDefaults()">
+                                        <i class="fas fa-undo me-1"></i>Reset to Defaults
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Risk Thresholds & Attachment Scoring -->
                     <div class="col-lg-6 mb-4">
                         <!-- Risk Level Thresholds -->
-                        <h6 class="fw-bold mb-3">
-                            <i class="fas fa-chart-line text-warning me-2"></i>Risk Level Thresholds
-                        </h6>
-                        <div class="risk-thresholds mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold mb-0">
+                                <i class="fas fa-chart-line text-warning me-2"></i>Risk Level Thresholds
+                            </h6>
+                            <button class="btn btn-sm btn-outline-warning" onclick="toggleThresholdEditor()">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </button>
+                        </div>
+                        
+                        <!-- Read-only threshold view -->
+                        <div id="thresholds-view" class="risk-thresholds mb-4">
                             {% for level, threshold in risk_scoring_info.thresholds.items() %}
                             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                                 <div class="d-flex align-items-center">
@@ -296,6 +363,54 @@
                                 </div>
                             </div>
                             {% endfor %}
+                        </div>
+                        
+                        <!-- Editable threshold view -->
+                        <div id="thresholds-editor" style="display: none;" class="mb-4">
+                            <div class="mb-3">
+                                <h6 class="text-warning">Edit Risk Thresholds</h6>
+                                <small class="text-muted">Set minimum scores for each risk level (0.0 - 1.0)</small>
+                            </div>
+                            
+                            <div id="threshold-inputs">
+                                {% for level, threshold in risk_scoring_info.thresholds.items() %}
+                                <div class="row mb-2 align-items-center">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center">
+                                            {% if level == 'critical' %}
+                                                <div class="badge bg-danger me-2">Critical</div>
+                                            {% elif level == 'high' %}
+                                                <div class="badge bg-warning me-2">High</div>
+                                            {% elif level == 'medium' %}
+                                                <div class="badge bg-info me-2">Medium</div>
+                                            {% else %}
+                                                <div class="badge bg-secondary me-2">Low</div>
+                                            {% endif %}
+                                            <span class="small">{{ level.title() }} Risk</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="number" 
+                                               class="form-control form-control-sm threshold-input" 
+                                               data-level="{{ level }}"
+                                               value="{{ threshold }}" 
+                                               min="0.0" 
+                                               max="1.0" 
+                                               step="0.1"
+                                               placeholder="≥ threshold">
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-warning" onclick="saveThresholds()">
+                                    <i class="fas fa-save me-1"></i>Save Thresholds
+                                </button>
+                                <button class="btn btn-sm btn-secondary" onclick="cancelThresholdEdit()">
+                                    <i class="fas fa-times me-1"></i>Cancel
+                                </button>
+                            </div>
                         </div>
                         
                         <!-- Attachment Risk Scoring -->
@@ -739,6 +854,262 @@ function deleteDomain(domainId) {
             showError('Failed to delete domain');
         });
     }
+}
+
+// ML Configuration Editor Functions
+let currentMLConfig = {};
+
+function toggleMLEditor() {
+    const viewDiv = document.getElementById('ml-factors-view');
+    const editorDiv = document.getElementById('ml-factors-editor');
+    
+    if (editorDiv.style.display === 'none') {
+        // Load current configuration
+        loadMLConfiguration();
+        viewDiv.style.display = 'none';
+        editorDiv.style.display = 'block';
+    } else {
+        cancelMLEdit();
+    }
+}
+
+function loadMLConfiguration() {
+    fetch('/api/ml-config')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentMLConfig = data.config;
+                populateMLEditor(data.config);
+            } else {
+                showError('Failed to load ML configuration');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading ML config:', error);
+            showError('Failed to load ML configuration');
+        });
+}
+
+function populateMLEditor(config) {
+    const container = document.getElementById('ml-factor-inputs');
+    container.innerHTML = '';
+    
+    // Add inputs for each rule-based factor
+    if (config.rule_based_factors) {
+        Object.entries(config.rule_based_factors).forEach(([key, value]) => {
+            addMLFactorInput(key, value, getFactorDescription(key));
+        });
+    }
+}
+
+function addMLFactorInput(factorKey, value, description) {
+    const container = document.getElementById('ml-factor-inputs');
+    const row = document.createElement('div');
+    row.className = 'row mb-2 align-items-center';
+    
+    const factorName = factorKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    
+    row.innerHTML = `
+        <div class="col-md-6">
+            <label class="form-label small fw-bold">${factorName}</label>
+            <small class="d-block text-muted">${description}</small>
+        </div>
+        <div class="col-md-3">
+            <input type="number" 
+                   class="form-control form-control-sm ml-factor-input" 
+                   data-factor="${factorKey}"
+                   value="${value}" 
+                   min="0.0" 
+                   max="1.0" 
+                   step="0.1">
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-sm btn-outline-danger" onclick="removeMLFactor(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(row);
+}
+
+function getFactorDescription(key) {
+    const descriptions = {
+        'leaver_status': 'Employee leaving organization',
+        'external_domain': 'Public email domains (Gmail, Yahoo, etc.)',
+        'attachment_risk': 'File type and suspicious patterns',
+        'wordlist_matches': 'Suspicious keywords in subject/attachment',
+        'time_based_risk': 'Weekend/after-hours activity',
+        'justification_analysis': 'Suspicious terms in explanations'
+    };
+    return descriptions[key] || 'Custom ML risk factor';
+}
+
+function addMLFactor() {
+    const factorName = prompt('Enter factor name (use underscores for spaces):');
+    if (factorName && factorName.trim()) {
+        const value = parseFloat(prompt('Enter max value (0.0 - 1.0):') || '0.1');
+        if (value >= 0 && value <= 1) {
+            addMLFactorInput(factorName.trim(), value, 'Custom factor');
+        } else {
+            showError('Value must be between 0.0 and 1.0');
+        }
+    }
+}
+
+function removeMLFactor(button) {
+    if (confirm('Remove this factor?')) {
+        button.closest('.row').remove();
+    }
+}
+
+function saveMLConfiguration() {
+    const inputs = document.querySelectorAll('.ml-factor-input');
+    const updatedFactors = {};
+    
+    inputs.forEach(input => {
+        const factor = input.dataset.factor;
+        const value = parseFloat(input.value);
+        if (factor && !isNaN(value) && value >= 0 && value <= 1) {
+            updatedFactors[factor] = value;
+        }
+    });
+    
+    const updateData = {
+        rule_based_factors: updatedFactors
+    };
+    
+    fetch('/api/ml-config', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess('ML configuration updated successfully');
+            setTimeout(() => {
+                location.reload(); // Reload to show updated values
+            }, 1000);
+        } else {
+            showError(data.message || 'Failed to update ML configuration');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating ML config:', error);
+        showError('Failed to update ML configuration');
+    });
+}
+
+function cancelMLEdit() {
+    const viewDiv = document.getElementById('ml-factors-view');
+    const editorDiv = document.getElementById('ml-factors-editor');
+    
+    viewDiv.style.display = 'block';
+    editorDiv.style.display = 'none';
+}
+
+function resetMLDefaults() {
+    if (confirm('Reset all ML factors to default values? This cannot be undone.')) {
+        const defaultFactors = {
+            'leaver_status': 0.3,
+            'external_domain': 0.2,
+            'attachment_risk': 0.3,
+            'wordlist_matches': 0.2,
+            'time_based_risk': 0.1,
+            'justification_analysis': 0.1
+        };
+        
+        const updateData = {
+            rule_based_factors: defaultFactors
+        };
+        
+        fetch('/api/ml-config', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess('ML configuration reset to defaults');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showError(data.message || 'Failed to reset ML configuration');
+            }
+        })
+        .catch(error => {
+            console.error('Error resetting ML config:', error);
+            showError('Failed to reset ML configuration');
+        });
+    }
+}
+
+// Threshold Editor Functions
+function toggleThresholdEditor() {
+    const viewDiv = document.getElementById('thresholds-view');
+    const editorDiv = document.getElementById('thresholds-editor');
+    
+    if (editorDiv.style.display === 'none') {
+        viewDiv.style.display = 'none';
+        editorDiv.style.display = 'block';
+    } else {
+        cancelThresholdEdit();
+    }
+}
+
+function saveThresholds() {
+    const inputs = document.querySelectorAll('.threshold-input');
+    const updatedThresholds = {};
+    
+    inputs.forEach(input => {
+        const level = input.dataset.level;
+        const value = parseFloat(input.value);
+        if (level && !isNaN(value) && value >= 0 && value <= 1) {
+            updatedThresholds[level] = value;
+        }
+    });
+    
+    const updateData = {
+        risk_thresholds: updatedThresholds
+    };
+    
+    fetch('/api/ml-config', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess('Risk thresholds updated successfully');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showError(data.message || 'Failed to update risk thresholds');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating thresholds:', error);
+        showError('Failed to update risk thresholds');
+    });
+}
+
+function cancelThresholdEdit() {
+    const viewDiv = document.getElementById('thresholds-view');
+    const editorDiv = document.getElementById('thresholds-editor');
+    
+    viewDiv.style.display = 'block';
+    editorDiv.style.display = 'none';
 }
 
 // Initialize whitelist domains on page load
