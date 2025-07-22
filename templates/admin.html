@@ -197,7 +197,7 @@
                         <i class="fas fa-filter me-2"></i>
                         Exclusion Rules
                     </a>
-                    <button class="btn btn-outline-info" onclick="loadMLKeywords()" id="mlKeywordsBtn">
+                    <button class="btn btn-outline-info" onclick="window.showMLKeywords()" id="mlKeywordsBtn">
                         <i class="fas fa-brain me-2"></i>
                         ML Keywords
                     </button>
@@ -1760,7 +1760,78 @@ function getTimeAgo(date) {
     return 'Just now';
 }
 
-// Make loadMLKeywords function globally accessible
+// Simple ML Keywords function
+window.showMLKeywords = function() {
+    console.log('showMLKeywords called from button click');
+    const container = document.getElementById('mlKeywordsContainer');
+    const keywordsDiv = document.getElementById('mlKeywords');
+    
+    if (!container || !keywordsDiv) {
+        console.error('Could not find container elements');
+        alert('Error: Could not find ML Keywords container elements');
+        return;
+    }
+    
+    // Toggle visibility
+    if (container.style.display === 'none' || container.style.display === '') {
+        container.style.display = 'block';
+        keywordsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div><p class="mt-2">Loading ML keywords...</p></div>';
+        
+        // Fetch data
+        fetch('/api/ml-keywords')
+            .then(response => {
+                console.log('API response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('ML Keywords data:', data);
+                keywordsDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-brain me-2"></i>ML Keywords Summary</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Total Keywords:</strong> ${data.total_keywords || 0}
+                            </div>
+                            <div class="col-6">
+                                <strong>Last Updated:</strong> ${new Date(data.last_updated).toLocaleDateString()}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-4">
+                                <span class="badge bg-success me-2">${data.categories?.Business || 0}</span>
+                                Business Keywords
+                            </div>
+                            <div class="col-4">
+                                <span class="badge bg-warning me-2">${data.categories?.Personal || 0}</span>
+                                Personal Keywords
+                            </div>
+                            <div class="col-4">
+                                <span class="badge bg-danger me-2">${data.categories?.Suspicious || 0}</span>
+                                Suspicious Keywords
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-outline-primary" onclick="window.populateDefaultKeywords()">
+                                <i class="fas fa-plus me-1"></i>Populate Default
+                            </button>
+                            <button class="btn btn-sm btn-outline-success ms-2" onclick="window.showMLKeywords()">
+                                <i class="fas fa-sync me-1"></i>Refresh
+                            </button>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Error loading ML keywords:', error);
+                keywordsDiv.innerHTML = '<div class="alert alert-danger">Error loading ML keywords: ' + error.message + '</div>';
+            });
+    } else {
+        container.style.display = 'none';
+    }
+};
+
+// Make loadMLKeywords function globally accessible (legacy support)
 window.loadMLKeywords = function() {
     console.log('loadMLKeywords called');
     const container = document.getElementById('mlKeywordsContainer');
@@ -1852,7 +1923,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set up ML Keywords button with event listener as backup
     const mlKeywordsBtn = document.getElementById('mlKeywordsBtn');
     if (mlKeywordsBtn) {
-        mlKeywordsBtn.addEventListener('click', window.loadMLKeywords);
+        mlKeywordsBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Button clicked via event listener');
+            window.showMLKeywords();
+        });
         console.log('ML Keywords button event listener added');
     }
     
