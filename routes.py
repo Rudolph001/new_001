@@ -150,6 +150,9 @@ def processing_status(session_id):
         'total_records': session.total_records or 0,
         'processed_records': session.processed_records or 0,
         'progress_percent': int((session.processed_records or 0) / max(session.total_records or 1, 1) * 100),
+        'current_chunk': session.current_chunk or 0,
+        'total_chunks': session.total_chunks or 0,
+        'chunk_progress_percent': int((session.current_chunk or 0) / max(session.total_chunks or 1, 1) * 100),
         'error_message': session.error_message,
         'workflow_stats': workflow_stats
     })

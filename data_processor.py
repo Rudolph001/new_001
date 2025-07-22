@@ -59,18 +59,32 @@ class DataProcessor:
             # Use optimized chunk size for performance
             chunk_size = self.chunk_size if self.enable_fast_mode else min(500, self.chunk_size)
             
+            # Calculate total chunks
+            total_chunks = (total_records + chunk_size - 1) // chunk_size  # Round up division
+            current_chunk = 0
+            
             # Process file in chunks
             for chunk_df in pd.read_csv(file_path, chunksize=chunk_size):
                 try:
-                    processed_count += self._process_chunk(session_id, chunk_df, column_mapping, processed_count)
+                    current_chunk += 1
+                    chunk_processed = self._process_chunk(session_id, chunk_df, column_mapping, processed_count)
+                    processed_count += chunk_processed
+                    
+                    # Update progress with chunk information
+                    if session:
+                        session.processed_records = processed_count
+                        session.current_chunk = current_chunk
+                        session.total_chunks = total_chunks
+                        db.session.commit()
+                    
+                    logger.info(f"Completed chunk {current_chunk}/{total_chunks} - {chunk_processed} records processed")
                     
                     # Update progress based on configuration
                     if processed_count % config.progress_update_interval == 0:
-                        if session:
-                            session.processed_records = processed_count
-                            db.session.commit()
+                        logger.info(f"Progress update: {processed_count}/{total_records} records processed")
+                        
                 except Exception as chunk_error:
-                    logger.warning(f"Error processing chunk: {str(chunk_error)}")
+                    logger.warning(f"Error processing chunk {current_chunk}: {str(chunk_error)}")
                     continue  # Skip problematic chunks but continue processing
             
             # Step 3: Apply 4-step workflow

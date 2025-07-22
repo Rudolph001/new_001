@@ -23,6 +23,10 @@ class ProcessingSession(db.Model):
     rules_applied = db.Column(db.Boolean, default=False)
     ml_applied = db.Column(db.Boolean, default=False)
     
+    # Chunk tracking
+    current_chunk = db.Column(db.Integer, default=0)
+    total_chunks = db.Column(db.Integer, default=0)
+    
     def __repr__(self):
         return f'<ProcessingSession {self.id}>'
 

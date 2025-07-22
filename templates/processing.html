@@ -40,13 +40,39 @@
                     </div>
                     
                     <div class="row text-center mb-4">
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <h5 class="text-primary" id="processedCount">{{ session.processed_records or 0 }}</h5>
                             <p class="text-muted mb-0">Records Processed</p>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <h5 class="text-info" id="totalCount">{{ session.total_records or 'Calculating...' }}</h5>
                             <p class="text-muted mb-0">Total Records</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 class="text-success" id="currentChunk">{{ session.current_chunk or 0 }}</h5>
+                            <p class="text-muted mb-0">Current Chunk</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 class="text-warning" id="totalChunks">{{ session.total_chunks or 'Calculating...' }}</h5>
+                            <p class="text-muted mb-0">Total Chunks</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Chunk Progress Bar -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Chunk Progress</span>
+                            <span class="text-muted" id="chunkProgressText">0%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" 
+                                 role="progressbar" 
+                                 id="chunkProgressBar"
+                                 style="width: 0%"
+                                 aria-valuenow="0" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
                         </div>
                     </div>
                     
@@ -359,6 +385,18 @@ function checkProcessingStatus() {
             if (data.total_records > 0) {
                 document.getElementById('totalCount').textContent = data.total_records;
             }
+            
+            // Update chunk information
+            document.getElementById('currentChunk').textContent = data.current_chunk || 0;
+            if (data.total_chunks > 0) {
+                document.getElementById('totalChunks').textContent = data.total_chunks;
+            }
+            
+            // Update chunk progress bar
+            const chunkProgressPercent = data.chunk_progress_percent || 0;
+            document.getElementById('chunkProgressBar').style.width = chunkProgressPercent + '%';
+            document.getElementById('chunkProgressBar').setAttribute('aria-valuenow', chunkProgressPercent);
+            document.getElementById('chunkProgressText').textContent = chunkProgressPercent + '%';
             
             // Update status
             document.getElementById('statusText').textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1) + '...';
