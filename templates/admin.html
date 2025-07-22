@@ -197,7 +197,7 @@
                         <i class="fas fa-filter me-2"></i>
                         Exclusion Rules
                     </a>
-                    <button class="btn btn-outline-info" onclick="loadMLKeywords()">
+                    <button class="btn btn-outline-info" onclick="loadMLKeywords()" id="mlKeywordsBtn">
                         <i class="fas fa-brain me-2"></i>
                         ML Keywords
                     </button>
@@ -1020,89 +1020,7 @@ function showAlert(message, type) {
     }, 3000);
 }
 
-function loadMLKeywords() {
-    console.log('loadMLKeywords called');
-    const container = document.getElementById('mlKeywordsContainer');
-    const keywordsDiv = document.getElementById('mlKeywords');
-    
-    console.log('Container:', container, 'KeywordsDiv:', keywordsDiv);
-    
-    if (container && container.style.display === 'none') {
-        container.style.display = 'block';
-        keywordsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading ML keywords...</p></div>';
-        
-        fetch('/api/ml-keywords')
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    keywordsDiv.innerHTML = `<div class="alert alert-warning">${data.error}</div>`;
-                    return;
-                }
-                
-                let keywordsList = '';
-                if (data.keywords && data.keywords.length > 0) {
-                    keywordsList = '<div class="mt-2"><h6>Sample Keywords:</h6><div class="row">';
-                    data.keywords.slice(0, 20).forEach(keyword => {
-                        const badgeClass = keyword.category === 'Business' ? 'success' : 
-                                         keyword.category === 'Personal' ? 'warning' : 'danger';
-                        keywordsList += `
-                            <div class="col-6 mb-1">
-                                <small class="d-flex justify-content-between">
-                                    <span>${keyword.keyword}</span>
-                                    <span class="badge bg-${badgeClass}">${keyword.risk_score}</span>
-                                </small>
-                            </div>
-                        `;
-                    });
-                    keywordsList += '</div></div>';
-                }
-                
-                keywordsDiv.innerHTML = `
-                    <h6>ML Keywords Summary</h6>
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Total Keywords</span>
-                            <span class="badge bg-primary">${data.total_keywords || 0}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Business Keywords</span>
-                            <span class="badge bg-success">${data.categories?.Business || 0}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Personal Keywords</span>
-                            <span class="badge bg-warning">${data.categories?.Personal || 0}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>Suspicious Keywords</span>
-                            <span class="badge bg-danger">${data.categories?.Suspicious || 0}</span>
-                        </li>
-                    </ul>
-                    ${keywordsList}
-                    <div class="mt-2">
-                        ${data.total_keywords > 0 ? 
-                            `<div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-success" onclick="refreshMLKeywords()">
-                                    <i class="fas fa-sync"></i> Refresh
-                                </button>
-                                <button class="btn btn-sm btn-outline-warning" onclick="clearMLKeywords()">
-                                    <i class="fas fa-trash"></i> Clear All
-                                </button>
-                            </div>` : 
-                            `<button class="btn btn-sm btn-outline-primary" onclick="populateDefaultKeywords()">
-                                <i class="fas fa-plus"></i> Populate Default Keywords
-                            </button>`
-                        }
-                    </div>
-                `;
-            })
-            .catch(error => {
-                console.error('Error loading ML keywords:', error);
-                keywordsDiv.innerHTML = '<div class="alert alert-danger">Failed to load ML keywords. Please try again.</div>';
-            });
-    } else if (container) {
-        container.style.display = 'none';
-    }
-}
+
 
 function loadWhitelistDomains() {
     const container = document.getElementById('whitelistDomains');
@@ -1842,8 +1760,102 @@ function getTimeAgo(date) {
     return 'Just now';
 }
 
+// Make loadMLKeywords function globally accessible
+window.loadMLKeywords = function() {
+    console.log('loadMLKeywords called');
+    const container = document.getElementById('mlKeywordsContainer');
+    const keywordsDiv = document.getElementById('mlKeywords');
+    
+    console.log('Container:', container, 'KeywordsDiv:', keywordsDiv);
+    
+    if (container && container.style.display === 'none') {
+        container.style.display = 'block';
+        keywordsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading ML keywords...</p></div>';
+        
+        fetch('/api/ml-keywords')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    keywordsDiv.innerHTML = `<div class="alert alert-warning">${data.error}</div>`;
+                    return;
+                }
+                
+                let keywordsList = '';
+                if (data.keywords && data.keywords.length > 0) {
+                    keywordsList = '<div class="mt-2"><h6>Sample Keywords:</h6><div class="row">';
+                    data.keywords.slice(0, 20).forEach(keyword => {
+                        const badgeClass = keyword.category === 'Business' ? 'success' : 
+                                         keyword.category === 'Personal' ? 'warning' : 'danger';
+                        keywordsList += `
+                            <div class="col-6 mb-1">
+                                <small class="d-flex justify-content-between">
+                                    <span>${keyword.keyword}</span>
+                                    <span class="badge bg-${badgeClass}">${keyword.risk_score}</span>
+                                </small>
+                            </div>
+                        `;
+                    });
+                    keywordsList += '</div></div>';
+                }
+                
+                keywordsDiv.innerHTML = `
+                    <h6>ML Keywords Summary</h6>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Total Keywords</span>
+                            <span class="badge bg-primary">${data.total_keywords || 0}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Business Keywords</span>
+                            <span class="badge bg-success">${data.categories?.Business || 0}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Personal Keywords</span>
+                            <span class="badge bg-warning">${data.categories?.Personal || 0}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Suspicious Keywords</span>
+                            <span class="badge bg-danger">${data.categories?.Suspicious || 0}</span>
+                        </li>
+                    </ul>
+                    ${keywordsList}
+                    <div class="mt-2">
+                        ${data.total_keywords > 0 ? 
+                            `<div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-success" onclick="refreshMLKeywords()">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="clearMLKeywords()">
+                                    <i class="fas fa-trash"></i> Clear All
+                                </button>
+                            </div>` : 
+                            `<button class="btn btn-sm btn-outline-primary" onclick="populateDefaultKeywords()">
+                                <i class="fas fa-plus"></i> Populate Default Keywords
+                            </button>`
+                        }
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Error loading ML keywords:', error);
+                keywordsDiv.innerHTML = '<div class="alert alert-danger">Failed to load ML keywords. Please try again.</div>';
+            });
+    } else if (container) {
+        container.style.display = 'none';
+    }
+};
+
 // Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, setting up ML Keywords button');
+    
+    // Set up ML Keywords button with event listener as backup
+    const mlKeywordsBtn = document.getElementById('mlKeywordsBtn');
+    if (mlKeywordsBtn) {
+        mlKeywordsBtn.addEventListener('click', window.loadMLKeywords);
+        console.log('ML Keywords button event listener added');
+    }
+    
     // Initialize charts if elements exist
     if (typeof initializeCharts === 'function') {
         initializeCharts();
