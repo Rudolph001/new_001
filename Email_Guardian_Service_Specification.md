@@ -9,10 +9,10 @@ Email Guardian is a comprehensive email security analysis platform designed to p
 
 ### 1. Data Processing Engine
 **Service:** CSV File Processing and Ingestion
-- **Functionality:** Chunked processing of large Tessian email export files (2,500 records per chunk)
+- **Functionality:** Chunked processing of large Tessian email export files (1,000 records per chunk in fast mode)
 - **Input:** CSV files with email communication data
 - **Output:** Structured database records with normalized field mapping
-- **Performance:** Optimized for files up to 500MB with automatic compression
+- **Performance:** Optimized for files up to 500MB with automatic session management
 - **Technology:** Python pandas with SQLite persistence
 
 ### 2. Machine Learning Analytics Service
@@ -20,10 +20,10 @@ Email Guardian is a comprehensive email security analysis platform designed to p
 - **Core ML Engine:** Isolation Forest algorithm for pattern recognition
 - **Risk Scoring:** Multi-dimensional assessment (0-1 scale) with configurable thresholds
 - **Features:** 
-  - Anomaly detection with 10% contamination rate
+  - Anomaly detection with configurable contamination rate
   - Text analysis using TF-IDF vectorization
   - Behavioral pattern clustering
-  - Temporal pattern analysis
+  - Fast mode optimization (25 estimators, 200 TF-IDF features)
 - **Outputs:** Risk levels (Critical/High/Medium/Low) with explanations
 
 ### 3. Rule Engine System
@@ -37,34 +37,33 @@ Email Guardian is a comprehensive email security analysis platform designed to p
 **Service:** Automated Domain Analysis and Trust Scoring
 - **Domain Categories:** Corporate, Personal, Public, Suspicious
 - **Trust Scoring:** 0-100 scale based on communication patterns and risk factors
-- **Whitelist Management:** Automated recommendations with confidence levels
+- **Whitelist Management:** Manual domain addition with bulk operations
 - **Pattern Recognition:** BAU (Business As Usual) communication identification
 
 ### 5. Case Management System
 **Service:** Security Incident Tracking and Investigation
 - **Case Lifecycle:** Active → Escalated → Cleared
-- **Escalation Workflow:** Automated email generation for critical cases
 - **Investigation Tools:** Detailed record analysis with risk explanations
 - **Filtering:** Advanced search by risk level, status, and content
+- **Manual Actions:** Mark cases as cleared or escalated
 
 ### 6. Analytics Dashboard Suite
 **Service:** Real-time Visualization and Reporting
 - **Main Dashboard:** Processing statistics and ML insights
 - **Sender Analysis:** Individual behavior pattern assessment
 - **Time Analysis:** Temporal pattern detection (business hours vs. after-hours)
-- **Attachment Intelligence:** File type risk assessment and malware indicators
 - **Advanced ML Dashboard:** Network analysis and correlation detection
+- **Whitelist Analysis:** Domain trust assessment and recommendations
 
 ## Technical Architecture
 
 ### Database Layer
-- **Primary Database:** SQLite (development/local deployment)
+- **Primary Database:** SQLite with SQLAlchemy ORM
 - **Models:** 
   - ProcessingSession: File upload and processing state management
   - EmailRecord: Individual email communication data
   - Rule: Security and exclusion rule definitions
   - WhitelistDomain: Trusted domain registry
-  - AttachmentKeyword: ML keyword scoring database
 
 ### Web Application Layer
 - **Framework:** Flask with SQLAlchemy ORM
@@ -85,20 +84,20 @@ Email Guardian is a comprehensive email security analysis platform designed to p
 
 ### Performance Specifications
 - **File Size Limit:** 500MB maximum upload
-- **Processing Speed:** Optimized chunking with configurable batch sizes
+- **Processing Speed:** Fast mode with configurable chunking (1000-2000 records per chunk)
 - **Concurrent Sessions:** Multiple file processing support
 - **Real-time Updates:** AJAX-based progress monitoring
 
 ### Security Features
 - **Data Privacy:** Local processing with no external data transmission
 - **Risk Assessment:** Comprehensive scoring with explainable AI
-- **Threat Detection:** Pattern-based malware and phishing indicators
-- **Data Exfiltration Detection:** Bulk transfer and suspicious timing analysis
+- **Threat Detection:** Pattern-based anomaly and risk indicators
+- **Data Analysis:** Communication pattern and timing analysis
 
 ### Administrative Capabilities
 - **Rule Management:** Create, modify, and test security rules
-- **Domain Management:** Whitelist administration with bulk operations
-- **Session Management:** Processing history and cleanup utilities
+- **Domain Management:** Whitelist administration with manual operations
+- **Session Management:** Processing history and data cleanup
 - **System Monitoring:** Performance metrics and error tracking
 
 ## Deployment Specifications
@@ -108,12 +107,12 @@ Email Guardian is a comprehensive email security analysis platform designed to p
 - **Python Version:** 3.8 or higher
 - **Memory:** 4GB minimum, 8GB recommended
 - **Storage:** 1GB for application, additional space for data files
-- **Network:** Local deployment (127.0.0.1:5000)
+- **Network:** Web-based interface (0.0.0.0:5000)
 
 ### Configuration Options
 - **Fast Mode:** Reduced processing for speed optimization
 - **ML Parameters:** Configurable estimators and feature limits
-- **Chunk Size:** Adjustable processing batch sizes
+- **Chunk Size:** Adjustable processing batch sizes (1000-2000 records)
 - **Progress Reporting:** Configurable update intervals
 
 ## API Specifications
@@ -125,11 +124,12 @@ Email Guardian is a comprehensive email security analysis platform designed to p
 - `GET /api/ml_insights/{session_id}` - Machine learning analysis results
 - `POST /api/rules` - Security rule creation and management
 - `GET/POST /api/whitelist-domains` - Domain whitelist management
+- `GET /cases/{session_id}` - Case management interface
 
 ### Data Formats
 - **Input:** CSV files with flexible column mapping
 - **Output:** JSON responses with structured data
-- **Storage:** Compressed JSON for large datasets
+- **Storage:** JSON-based session persistence with gzip compression
 
 ## Service Level Characteristics
 
@@ -139,9 +139,9 @@ Email Guardian is a comprehensive email security analysis platform designed to p
 - **Recovery:** Session state persistence with resume capability
 
 ### Scalability
-- **Processing Optimization:** Configurable performance parameters
+- **Processing Optimization:** Fast mode with configurable performance parameters
 - **Memory Management:** Chunked processing for large files
-- **Database Scaling:** SQLite to PostgreSQL migration path
+- **Database Operations:** Optimized batch processing
 
 ### Maintainability
 - **Modular Design:** Separate engines for ML, rules, and domain management
@@ -151,18 +151,31 @@ Email Guardian is a comprehensive email security analysis platform designed to p
 ## Current Build Status
 
 ✅ **Implemented Services:**
-- Complete data processing pipeline
-- Machine learning risk assessment
-- Rule engine with complex logic support
-- Domain classification and whitelisting
-- Case management system
-- Multi-dashboard analytics suite
-- Administrative interface
-- RESTful API endpoints
+- Complete data processing pipeline with chunked CSV processing
+- Machine learning risk assessment with Isolation Forest
+- Rule engine with complex AND/OR logic support
+- Domain classification and manual whitelisting
+- Case management system with investigation tools
+- Multi-dashboard analytics suite (Main, Sender, Time, Advanced ML, Whitelist)
+- Administrative interface for rules and domain management
+- RESTful API endpoints for all major functions
+- Performance optimization with fast mode
+- Session-based file processing with progress tracking
 
 🔧 **Operational Status:**
-- Fully functional local deployment
-- Production-ready codebase
-- Comprehensive error handling
-- Real-time processing monitoring
-- Professional UI/UX implementation
+- Fully functional web application on Flask
+- Production-ready codebase with error handling
+- Real-time processing monitoring with AJAX updates
+- Professional Bootstrap 5 UI/UX implementation
+- SQLite database with full ORM support
+- Gunicorn-based production deployment ready
+
+📋 **Available Features:**
+- CSV file upload and validation
+- Automated email record processing
+- AI-powered anomaly detection
+- Business rule filtering
+- Domain trust analysis
+- Security case generation
+- Interactive dashboards with Chart.js visualizations
+- Administrative tools for system management
