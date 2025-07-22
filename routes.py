@@ -1616,6 +1616,39 @@ def populate_default_keywords():
         logger.error(f"Error populating keywords: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/ml-keywords')
+def api_ml_keywords():
+    """Get ML keywords summary"""
+    try:
+        # Get attachment keywords from database
+        keywords = AttachmentKeyword.query.filter_by(is_active=True).all()
+        
+        # Count by category
+        categories = {'Business': 0, 'Personal': 0, 'Suspicious': 0}
+        keyword_list = []
+        
+        for keyword in keywords:
+            category = keyword.category or 'Business'
+            if category in categories:
+                categories[category] += 1
+            
+            keyword_list.append({
+                'keyword': keyword.keyword,
+                'category': category,
+                'risk_score': keyword.risk_score
+            })
+        
+        return jsonify({
+            'total_keywords': len(keywords),
+            'categories': categories,
+            'keywords': keyword_list[:50],  # Limit to 50 for display
+            'last_updated': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting ML keywords: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/ml-config', methods=['GET', 'PUT'])
 def api_ml_config():
     """Get or update ML risk scoring configuration"""
