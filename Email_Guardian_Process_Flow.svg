@@ -1,164 +1,165 @@
-<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600">
   <defs>
     <style>
-      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; text-anchor: middle; }
-      .box { font-family: Arial, sans-serif; font-size: 12px; text-anchor: middle; }
-      .box-title { font-weight: bold; }
-      .box-desc { font-size: 10px; fill: #666; }
-      .arrow { stroke: #333; stroke-width: 2; marker-end: url(#arrowhead); }
-      .flow-line { stroke: #666; stroke-width: 1; stroke-dasharray: 2,2; }
+      .title { font-family: Arial, sans-serif; font-size: 20px; font-weight: bold; text-anchor: middle; fill: #2c3e50; }
+      .box-text { font-family: Arial, sans-serif; font-size: 11px; text-anchor: middle; fill: white; }
+      .box-title { font-weight: bold; font-size: 12px; }
+      .box-desc { font-size: 9px; }
+      .arrow { stroke: #34495e; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .flow-line { stroke: #7f8c8d; stroke-width: 1; stroke-dasharray: 3,2; fill: none; }
     </style>
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#34495e" />
     </marker>
   </defs>
 
   <!-- Title -->
-  <text x="600" y="30" class="title">Email Guardian - Actual Process Flow</text>
+  <text x="600" y="25" class="title">Email Guardian - Current Build Process Flow</text>
 
-  <!-- Row 1: Main Processing Flow -->
+  <!-- Row 1: Main Processing -->
   <g>
     <!-- CSV Upload -->
-    <rect x="50" y="80" width="120" height="80" rx="8" fill="#3498db" stroke="#2980b9" stroke-width="2"/>
-    <text x="110" y="105" class="box box-title" fill="white">CSV Upload</text>
-    <text x="110" y="120" class="box box-desc" fill="white">File Upload</text>
-    <text x="110" y="135" class="box box-desc" fill="white">Session Creation</text>
-    <text x="110" y="150" class="box box-desc" fill="white">Background Thread</text>
+    <rect x="50" y="60" width="100" height="70" rx="6" fill="#3498db" stroke="#2980b9" stroke-width="1"/>
+    <text x="100" y="80" class="box-text box-title">CSV Upload</text>
+    <text x="100" y="95" class="box-text box-desc">File Upload</text>
+    <text x="100" y="107" class="box-text box-desc">Session Creation</text>
+    <text x="100" y="119" class="box-text box-desc">Background Thread</text>
 
     <!-- Data Validation -->
-    <rect x="220" y="80" width="120" height="80" rx="8" fill="#27ae60" stroke="#229954" stroke-width="2"/>
-    <text x="280" y="105" class="box box-title" fill="white">Data Validation</text>
-    <text x="280" y="120" class="box box-desc" fill="white">Column Mapping</text>
-    <text x="280" y="135" class="box box-desc" fill="white">CSV Structure</text>
-    <text x="280" y="150" class="box box-desc" fill="white">Count Records</text>
+    <rect x="200" y="60" width="100" height="70" rx="6" fill="#27ae60" stroke="#229954" stroke-width="1"/>
+    <text x="250" y="80" class="box-text box-title">Data Validation</text>
+    <text x="250" y="95" class="box-text box-desc">Column Mapping</text>
+    <text x="250" y="107" class="box-text box-desc">CSV Structure</text>
+    <text x="250" y="119" class="box-text box-desc">Record Count</text>
 
     <!-- Chunked Processing -->
-    <rect x="390" y="80" width="120" height="80" rx="8" fill="#f39c12" stroke="#e67e22" stroke-width="2"/>
-    <text x="450" y="105" class="box box-title" fill="white">Chunked Processing</text>
-    <text x="450" y="120" class="box box-desc" fill="white">1000 Records/Batch</text>
-    <text x="450" y="135" class="box box-desc" fill="white">Memory Efficient</text>
-    <text x="450" y="150" class="box box-desc" fill="white">Progress Tracking</text>
+    <rect x="350" y="60" width="100" height="70" rx="6" fill="#f39c12" stroke="#e67e22" stroke-width="1"/>
+    <text x="400" y="80" class="box-text box-title">Chunked Process</text>
+    <text x="400" y="95" class="box-text box-desc">1000 Records/Batch</text>
+    <text x="400" y="107" class="box-text box-desc">Memory Efficient</text>
+    <text x="400" y="119" class="box-text box-desc">Progress Track</text>
 
     <!-- Dashboard -->
-    <rect x="560" y="80" width="120" height="80" rx="8" fill="#9b59b6" stroke="#8e44ad" stroke-width="2"/>
-    <text x="620" y="105" class="box box-title" fill="white">Dashboard</text>
-    <text x="620" y="120" class="box box-desc" fill="white">Real-time Stats</text>
-    <text x="620" y="135" class="box box-desc" fill="white">Charts & Analytics</text>
-    <text x="620" y="150" class="box box-desc" fill="white">Session Overview</text>
+    <rect x="500" y="60" width="100" height="70" rx="6" fill="#9b59b6" stroke="#8e44ad" stroke-width="1"/>
+    <text x="550" y="80" class="box-text box-title">Dashboard</text>
+    <text x="550" y="95" class="box-text box-desc">Real-time Stats</text>
+    <text x="550" y="107" class="box-text box-desc">Charts &amp; Analytics</text>
+    <text x="550" y="119" class="box-text box-desc">Session Overview</text>
   </g>
 
-  <!-- Row 2: Workflow Stages -->
+  <!-- Row 2: Analysis Pipeline -->
   <g>
     <!-- Rule Engine -->
-    <rect x="50" y="220" width="120" height="80" rx="8" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
-    <text x="110" y="245" class="box box-title" fill="white">Rule Engine</text>
-    <text x="110" y="260" class="box box-desc" fill="white">Exclusion Rules</text>
-    <text x="110" y="275" class="box box-desc" fill="white">AND/OR Logic</text>
-    <text x="110" y="290" class="box box-desc" fill="white">Record Filtering</text>
+    <rect x="50" y="180" width="100" height="70" rx="6" fill="#e74c3c" stroke="#c0392b" stroke-width="1"/>
+    <text x="100" y="200" class="box-text box-title">Rule Engine</text>
+    <text x="100" y="215" class="box-text box-desc">Exclusion Rules</text>
+    <text x="100" y="227" class="box-text box-desc">AND/OR Logic</text>
+    <text x="100" y="239" class="box-text box-desc">Record Filtering</text>
 
     <!-- Whitelist Filter -->
-    <rect x="220" y="220" width="120" height="80" rx="8" fill="#16a085" stroke="#138d75" stroke-width="2"/>
-    <text x="280" y="245" class="box box-title" fill="white">Whitelist Filter</text>
-    <text x="280" y="260" class="box box-desc" fill="white">Domain Trust</text>
-    <text x="280" y="275" class="box box-desc" fill="white">Auto Clear</text>
-    <text x="280" y="290" class="box box-desc" fill="white">Database Managed</text>
+    <rect x="200" y="180" width="100" height="70" rx="6" fill="#16a085" stroke="#138d75" stroke-width="1"/>
+    <text x="250" y="200" class="box-text box-title">Whitelist Filter</text>
+    <text x="250" y="215" class="box-text box-desc">Domain Trust</text>
+    <text x="250" y="227" class="box-text box-desc">Auto Clear</text>
+    <text x="250" y="239" class="box-text box-desc">DB Managed</text>
 
     <!-- ML Analysis -->
-    <rect x="390" y="220" width="120" height="80" rx="8" fill="#34495e" stroke="#2c3e50" stroke-width="2"/>
-    <text x="450" y="245" class="box box-title" fill="white">ML Analysis</text>
-    <text x="450" y="260" class="box box-desc" fill="white">Isolation Forest</text>
-    <text x="450" y="275" class="box box-desc" fill="white">Risk Scoring</text>
-    <text x="450" y="290" class="box box-desc" fill="white">Anomaly Detection</text>
+    <rect x="350" y="180" width="100" height="70" rx="6" fill="#34495e" stroke="#2c3e50" stroke-width="1"/>
+    <text x="400" y="200" class="box-text box-title">ML Analysis</text>
+    <text x="400" y="215" class="box-text box-desc">Isolation Forest</text>
+    <text x="400" y="227" class="box-text box-desc">Risk Scoring</text>
+    <text x="400" y="239" class="box-text box-desc">Anomaly Detection</text>
 
     <!-- Case Generation -->
-    <rect x="560" y="220" width="120" height="80" rx="8" fill="#8e44ad" stroke="#7d3c98" stroke-width="2"/>
-    <text x="620" y="245" class="box box-title" fill="white">Case Generation</text>
-    <text x="620" y="260" class="box box-desc" fill="white">Risk Assessment</text>
-    <text x="620" y="275" class="box box-desc" fill="white">Priority Scoring</text>
-    <text x="620" y="290" class="box box-desc" fill="white">Status Tracking</text>
+    <rect x="500" y="180" width="100" height="70" rx="6" fill="#8e44ad" stroke="#7d3c98" stroke-width="1"/>
+    <text x="550" y="200" class="box-text box-title">Case Generation</text>
+    <text x="550" y="215" class="box-text box-desc">Risk Assessment</text>
+    <text x="550" y="227" class="box-text box-desc">Priority Scoring</text>
+    <text x="550" y="239" class="box-text box-desc">Status Tracking</text>
   </g>
 
-  <!-- Row 3: Management & Analysis -->
+  <!-- Row 3: Management -->
   <g>
     <!-- Case Management -->
-    <rect x="50" y="360" width="120" height="80" rx="8" fill="#d35400" stroke="#ba4a00" stroke-width="2"/>
-    <text x="110" y="385" class="box box-title" fill="white">Case Management</text>
-    <text x="110" y="400" class="box box-desc" fill="white">Review Queue</text>
-    <text x="110" y="415" class="box box-desc" fill="white">Status Updates</text>
-    <text x="110" y="430" class="box box-desc" fill="white">Escalation</text>
+    <rect x="50" y="300" width="100" height="70" rx="6" fill="#d35400" stroke="#ba4a00" stroke-width="1"/>
+    <text x="100" y="320" class="box-text box-title">Case Management</text>
+    <text x="100" y="335" class="box-text box-desc">Review Queue</text>
+    <text x="100" y="347" class="box-text box-desc">Status Updates</text>
+    <text x="100" y="359" class="box-text box-desc">Escalation</text>
 
     <!-- Sender Analysis -->
-    <rect x="220" y="360" width="120" height="80" rx="8" fill="#2e86ab" stroke="#1f5f8b" stroke-width="2"/>
-    <text x="280" y="385" class="box box-title" fill="white">Sender Analysis</text>
-    <text x="280" y="400" class="box box-desc" fill="white">Behavior Patterns</text>
-    <text x="280" y="415" class="box box-desc" fill="white">Risk Profiles</text>
-    <text x="280" y="430" class="box box-desc" fill="white">Communication Stats</text>
+    <rect x="200" y="300" width="100" height="70" rx="6" fill="#2e86ab" stroke="#1f5f8b" stroke-width="1"/>
+    <text x="250" y="320" class="box-text box-title">Sender Analysis</text>
+    <text x="250" y="335" class="box-text box-desc">Behavior Patterns</text>
+    <text x="250" y="347" class="box-text box-desc">Risk Profiles</text>
+    <text x="250" y="359" class="box-text box-desc">Stats Dashboard</text>
 
     <!-- Admin Panel -->
-    <rect x="390" y="360" width="120" height="80" rx="8" fill="#7f8c8d" stroke="#5d6d7e" stroke-width="2"/>
-    <text x="450" y="385" class="box box-title" fill="white">Admin Panel</text>
-    <text x="450" y="400" class="box box-desc" fill="white">System Config</text>
-    <text x="450" y="415" class="box box-desc" fill="white">Rule Management</text>
-    <text x="450" y="430" class="box box-desc" fill="white">Session Cleanup</text>
+    <rect x="350" y="300" width="100" height="70" rx="6" fill="#7f8c8d" stroke="#5d6d7e" stroke-width="1"/>
+    <text x="400" y="320" class="box-text box-title">Admin Panel</text>
+    <text x="400" y="335" class="box-text box-desc">System Config</text>
+    <text x="400" y="347" class="box-text box-desc">Rule Management</text>
+    <text x="400" y="359" class="box-text box-desc">Session Cleanup</text>
 
     <!-- Data Storage -->
-    <rect x="560" y="360" width="120" height="80" rx="8" fill="#566573" stroke="#34495e" stroke-width="2"/>
-    <text x="620" y="385" class="box box-title" fill="white">Data Storage</text>
-    <text x="620" y="400" class="box box-desc" fill="white">SQLite Database</text>
-    <text x="620" y="415" class="box box-desc" fill="white">Session Data</text>
-    <text x="620" y="430" class="box box-desc" fill="white">File Management</text>
+    <rect x="500" y="300" width="100" height="70" rx="6" fill="#566573" stroke="#34495e" stroke-width="1"/>
+    <text x="550" y="320" class="box-text box-title">Data Storage</text>
+    <text x="550" y="335" class="box-text box-desc">SQLite Database</text>
+    <text x="550" y="347" class="box-text box-desc">Session Data</text>
+    <text x="550" y="359" class="box-text box-desc">File Management</text>
   </g>
 
-  <!-- Arrows for main flow -->
-  <line x1="170" y1="120" x2="210" y2="120" class="arrow"/>
-  <line x1="340" y1="120" x2="380" y2="120" class="arrow"/>
-  <line x1="510" y1="120" x2="550" y2="120" class="arrow"/>
+  <!-- Main Flow Arrows -->
+  <line x1="150" y1="95" x2="190" y2="95" class="arrow"/>
+  <line x1="300" y1="95" x2="340" y2="95" class="arrow"/>
+  <line x1="450" y1="95" x2="490" y2="95" class="arrow"/>
 
-  <!-- Workflow arrows -->
-  <line x1="170" y1="260" x2="210" y2="260" class="arrow"/>
-  <line x1="340" y1="260" x2="380" y2="260" class="arrow"/>
-  <line x1="510" y1="260" x2="550" y2="260" class="arrow"/>
+  <!-- Analysis Pipeline Arrows -->
+  <line x1="150" y1="215" x2="190" y2="215" class="arrow"/>
+  <line x1="300" y1="215" x2="340" y2="215" class="arrow"/>
+  <line x1="450" y1="215" x2="490" y2="215" class="arrow"/>
 
-  <!-- Vertical flow from processing to workflow -->
-  <line x1="450" y1="160" x2="450" y2="180" class="arrow"/>
-  <line x1="450" y1="180" x2="110" y2="180" class="flow-line"/>
-  <line x1="110" y1="180" x2="110" y2="210" class="arrow"/>
+  <!-- Management Flow Arrows -->
+  <line x1="150" y1="335" x2="190" y2="335" class="arrow"/>
+  <line x1="300" y1="335" x2="340" y2="335" class="arrow"/>
+  <line x1="450" y1="335" x2="490" y2="335" class="arrow"/>
 
-  <!-- From case generation to management -->
-  <line x1="620" y1="300" x2="620" y2="320" class="arrow"/>
-  <line x1="620" y1="320" x2="110" y2="320" class="flow-line"/>
-  <line x1="110" y1="320" x2="110" y2="350" class="arrow"/>
+  <!-- Vertical Flow Connections -->
+  <line x1="400" y1="130" x2="400" y2="140" class="arrow"/>
+  <line x1="400" y1="140" x2="100" y2="140" class="flow-line"/>
+  <line x1="100" y1="140" x2="100" y2="170" class="arrow"/>
 
-  <!-- Key Features Box -->
-  <g>
-    <rect x="750" y="80" width="400" height="200" rx="8" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="2"/>
-    <text x="950" y="105" class="box box-title">Implemented Features:</text>
+  <line x1="550" y1="250" x2="550" y2="260" class="arrow"/>
+  <line x1="550" y1="260" x2="100" y2="260" class="flow-line"/>
+  <line x1="100" y1="260" x2="100" y2="290" class="arrow"/>
 
-    <text x="760" y="130" class="box" text-anchor="start">• CSV file upload with chunked processing (1000 records/batch)</text>
-    <text x="760" y="150" class="box" text-anchor="start">• Machine learning anomaly detection with Isolation Forest</text>
-    <text x="760" y="170" class="box" text-anchor="start">• Rule-based filtering with complex AND/OR logic</text>
-    <text x="760" y="190" class="box" text-anchor="start">• Domain whitelist management and filtering</text>
-    <text x="760" y="210" class="box" text-anchor="start">• Real-time dashboard with animated statistics</text>
-    <text x="760" y="230" class="box" text-anchor="start">• Case management with status tracking</text>
-    <text x="760" y="250" class="box" text-anchor="start">• Sender behavior analysis and profiling</text>
-    <text x="760" y="270" class="box" text-anchor="start">• Administrative interface for system management</text>
-  </g>
-
-  <!-- Performance Box -->
-  <g>
-    <rect x="750" y="320" width="400" height="120" rx="8" fill="#e8f8f5" stroke="#58d68d" stroke-width="2"/>
-    <text x="950" y="345" class="box box-title">Performance:</text>
-
-    <text x="760" y="370" class="box" text-anchor="start">• Fast Mode: 60-80% speed improvement enabled</text>
-    <text x="760" y="390" class="box" text-anchor="start">• Memory Efficient: 1000 records per processing batch</text>
-    <text x="760" y="410" class="box" text-anchor="start">• Scalable: SQLite database with PostgreSQL compatibility</text>
-    <text x="760" y="430" class="box" text-anchor="start">• Real-time: Background processing with live updates</text>
-  </g>
+  <!-- Features Box -->
+  <rect x="650" y="60" width="500" height="200" rx="6" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="1"/>
+  <text x="900" y="80" class="box-text box-title" fill="#2c3e50" style="font-size: 14px;">Currently Implemented Features:</text>
+  
+  <text x="665" y="105" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• CSV file upload with chunked processing (1000 records/batch)</text>
+  <text x="665" y="120" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Machine learning anomaly detection with Isolation Forest</text>
+  <text x="665" y="135" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Rule-based filtering with complex AND/OR logic</text>
+  <text x="665" y="150" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Domain whitelist management and filtering</text>
+  <text x="665" y="165" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Real-time dashboard with animated statistics</text>
+  <text x="665" y="180" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Case management with status tracking</text>
+  <text x="665" y="195" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Sender behavior analysis and administrative interface</text>
+  <text x="665" y="210" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• SQLite database with session persistence</text>
+  <text x="665" y="240" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 11px; font-weight: bold;">Performance: Fast Mode Enabled | 1000 Records/Batch | Real-time Updates</text>
 
   <!-- Data Flow Summary -->
-  <g>
-    <rect x="50" y="480" width="1100" height="60" rx="8" fill="#fdeaa7" stroke="#fdcb6e" stroke-width="2"/>
-    <text x="600" y="505" class="box box-title">Data Flow Summary:</text>
-    <text x="600" y="525" class="box">CSV Upload → Data Validation → Chunked Processing → Rule Engine → Whitelist Filter → ML Analysis → Case Generation → Management Interface</text>
-  </g>
+  <rect x="50" y="420" width="1100" height="40" rx="6" fill="#fdeaa7" stroke="#fdcb6e" stroke-width="1"/>
+  <text x="600" y="435" class="box-text" fill="#2c3e50" style="font-size: 12px; font-weight: bold;">Current Data Flow:</text>
+  <text x="600" y="450" class="box-text" fill="#2c3e50" style="font-size: 10px;">Upload → Validate → Process → Rules → Whitelist → ML Analysis → Cases → Management</text>
+
+  <!-- Performance Stats -->
+  <rect x="50" y="480" width="550" height="80" rx="6" fill="#e8f8f5" stroke="#58d68d" stroke-width="1"/>
+  <text x="325" y="500" class="box-text" fill="#2c3e50" style="font-size: 12px; font-weight: bold;">System Performance:</text>
+  <text x="65" y="520" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Fast Mode: 60-80% speed improvement</text>
+  <text x="65" y="535" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Memory Efficient: 1000 records per batch</text>
+  <text x="325" y="520" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Database: SQLite with PostgreSQL compatibility</text>
+  <text x="325" y="535" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Real-time: Background processing with live updates</text>
+  <text x="325" y="550" class="box-text" fill="#2c3e50" text-anchor="start" style="font-size: 10px;">• Scalable: Gunicorn deployment on Replit</text>
 </svg>
