@@ -267,16 +267,41 @@
                                         <div class="row mb-2">
                                             <div class="col-md-3">
                                                 <select class="form-select condition-field">
-                                                    <option value="sender">Sender Email</option>
-                                                    <option value="subject">Subject</option>
-                                                    <option value="recipients">Recipients</option>
-                                                    <option value="attachments">Attachments</option>
-                                                    <option value="recipients_email_domain">Recipient Domain</option>
-                                                    <option value="wordlist_attachment">Attachment Keywords</option>
-                                                    <option value="wordlist_subject">Subject Keywords</option>
-                                                    <option value="bunit">Business Unit</option>
-                                                    <option value="department">Department</option>
-                                                    <option value="status">Status</option>
+                                                    <optgroup label="Email Details">
+                                                        <option value="sender">Sender Email</option>
+                                                        <option value="subject">Subject</option>
+                                                        <option value="recipients">Recipients</option>
+                                                        <option value="recipients_email_domain">Recipient Domain</option>
+                                                        <option value="attachments">Attachments</option>
+                                                        <option value="time">Time/Date</option>
+                                                    </optgroup>
+                                                    <optgroup label="Employee Information">
+                                                        <option value="leaver">Leaver Status</option>
+                                                        <option value="termination_date">Termination Date</option>
+                                                        <option value="bunit">Business Unit</option>
+                                                        <option value="department">Department</option>
+                                                    </optgroup>
+                                                    <optgroup label="Content Analysis">
+                                                        <option value="wordlist_attachment">Attachment Keywords</option>
+                                                        <option value="wordlist_subject">Subject Keywords</option>
+                                                    </optgroup>
+                                                    <optgroup label="Review Process">
+                                                        <option value="status">Status</option>
+                                                        <option value="user_response">User Response</option>
+                                                        <option value="final_outcome">Final Outcome</option>
+                                                        <option value="justification">Justification</option>
+                                                    </optgroup>
+                                                    <optgroup label="ML & Risk Scores">
+                                                        <option value="ml_risk_score">ML Risk Score</option>
+                                                        <option value="ml_anomaly_score">ML Anomaly Score</option>
+                                                        <option value="risk_level">Risk Level</option>
+                                                        <option value="ml_explanation">ML Explanation</option>
+                                                    </optgroup>
+                                                    <optgroup label="Case Management">
+                                                        <option value="case_status">Case Status</option>
+                                                        <option value="assigned_to">Assigned To</option>
+                                                        <option value="notes">Notes</option>
+                                                    </optgroup>
                                                 </select>
                                             </div>
                                             <div class="col-md-2">
@@ -451,16 +476,41 @@ function addCondition() {
             <div class="row mb-2">
                 <div class="col-md-3">
                     <select class="form-select condition-field">
-                        <option value="sender">Sender Email</option>
-                        <option value="subject">Subject</option>
-                        <option value="recipients">Recipients</option>
-                        <option value="attachments">Attachments</option>
-                        <option value="recipients_email_domain">Recipient Domain</option>
-                        <option value="wordlist_attachment">Attachment Keywords</option>
-                        <option value="wordlist_subject">Subject Keywords</option>
-                        <option value="bunit">Business Unit</option>
-                        <option value="department">Department</option>
-                        <option value="status">Status</option>
+                        <optgroup label="Email Details">
+                            <option value="sender">Sender Email</option>
+                            <option value="subject">Subject</option>
+                            <option value="recipients">Recipients</option>
+                            <option value="recipients_email_domain">Recipient Domain</option>
+                            <option value="attachments">Attachments</option>
+                            <option value="time">Time/Date</option>
+                        </optgroup>
+                        <optgroup label="Employee Information">
+                            <option value="leaver">Leaver Status</option>
+                            <option value="termination_date">Termination Date</option>
+                            <option value="bunit">Business Unit</option>
+                            <option value="department">Department</option>
+                        </optgroup>
+                        <optgroup label="Content Analysis">
+                            <option value="wordlist_attachment">Attachment Keywords</option>
+                            <option value="wordlist_subject">Subject Keywords</option>
+                        </optgroup>
+                        <optgroup label="Review Process">
+                            <option value="status">Status</option>
+                            <option value="user_response">User Response</option>
+                            <option value="final_outcome">Final Outcome</option>
+                            <option value="justification">Justification</option>
+                        </optgroup>
+                        <optgroup label="ML & Risk Scores">
+                            <option value="ml_risk_score">ML Risk Score</option>
+                            <option value="ml_anomaly_score">ML Anomaly Score</option>
+                            <option value="risk_level">Risk Level</option>
+                            <option value="ml_explanation">ML Explanation</option>
+                        </optgroup>
+                        <optgroup label="Case Management">
+                            <option value="case_status">Case Status</option>
+                            <option value="assigned_to">Assigned To</option>
+                            <option value="notes">Notes</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div class="col-md-2">
