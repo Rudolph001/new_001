@@ -1076,9 +1076,19 @@ function loadMLKeywords() {
                     </ul>
                     ${keywordsList}
                     <div class="mt-2">
-                        <button class="btn btn-sm btn-outline-primary" onclick="populateDefaultKeywords()">
-                            <i class="fas fa-plus"></i> Populate Default Keywords
-                        </button>
+                        ${data.total_keywords > 0 ? 
+                            `<div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-success" onclick="refreshMLKeywords()">
+                                    <i class="fas fa-sync"></i> Refresh
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="clearMLKeywords()">
+                                    <i class="fas fa-trash"></i> Clear All
+                                </button>
+                            </div>` : 
+                            `<button class="btn btn-sm btn-outline-primary" onclick="populateDefaultKeywords()">
+                                <i class="fas fa-plus"></i> Populate Default Keywords
+                            </button>`
+                        }
                     </div>
                 `;
             })
@@ -1746,8 +1756,10 @@ function populateDefaultKeywords() {
         .then(data => {
             if (data.status === 'success') {
                 showSuccess(data.message);
-                // Refresh the keywords display
-                loadMLKeywords();
+                loadMLKeywords(); // Refresh the keywords display
+            } else if (data.status === 'info') {
+                showSuccess(data.message);
+                loadMLKeywords(); // Refresh the keywords display
             } else {
                 showError('Failed to populate keywords: ' + (data.error || data.message));
             }
@@ -1755,6 +1767,30 @@ function populateDefaultKeywords() {
         .catch(error => {
             console.error('Error populating keywords:', error);
             showError('Failed to populate keywords');
+        });
+    }
+}
+
+function refreshMLKeywords() {
+    loadMLKeywords();
+    showSuccess('ML keywords refreshed');
+}
+
+function clearMLKeywords() {
+    if (confirm('This will delete ALL ML keywords from the database. This action cannot be undone. Continue?')) {
+        fetch('/api/ml-keywords', { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess('All ML keywords cleared');
+                loadMLKeywords(); // Refresh the keywords display
+            } else {
+                showError('Failed to clear keywords: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing keywords:', error);
+            showError('Failed to clear keywords');
         });
     }
 }

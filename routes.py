@@ -1548,8 +1548,9 @@ def populate_default_keywords():
     """Populate database with default ML keywords"""
     try:
         # Check if keywords already exist
-        if AttachmentKeyword.query.count() > 0:
-            return jsonify({'message': 'Keywords already exist', 'count': AttachmentKeyword.query.count()})
+        existing_count = AttachmentKeyword.query.count()
+        if existing_count > 0:
+            return jsonify({'status': 'info', 'message': f'Keywords already exist ({existing_count} total)', 'count': existing_count})
         
         default_keywords = [
             # Suspicious keywords
@@ -1689,6 +1690,25 @@ def api_ml_keywords():
             'keywords': [],
             'last_updated': datetime.utcnow().isoformat()
         }), 200  # Return 200 instead of 500 to prevent JS errors
+
+@app.route('/api/ml-keywords', methods=['DELETE'])
+def delete_all_ml_keywords():
+    """Delete all ML keywords"""
+    try:
+        count = AttachmentKeyword.query.count()
+        AttachmentKeyword.query.delete()
+        db.session.commit()
+        
+        logger.info(f"Deleted {count} ML keywords from database")
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted {count} ML keywords',
+            'deleted_count': count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting ML keywords: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/ml-config', methods=['GET', 'PUT'])
 def api_ml_config():
