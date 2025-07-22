@@ -6,6 +6,7 @@ from data_processor import DataProcessor
 from ml_engine import MLEngine
 from advanced_ml_engine import AdvancedMLEngine
 from performance_config import config
+from ml_config import MLRiskConfig
 from rule_engine import RuleEngine
 from domain_manager import DomainManager
 import uuid
@@ -23,6 +24,7 @@ ml_engine = MLEngine()
 advanced_ml_engine = AdvancedMLEngine()
 rule_engine = RuleEngine()
 domain_manager = DomainManager()
+ml_config = MLRiskConfig()
 
 @app.route('/')
 def index():
@@ -1232,6 +1234,50 @@ def populate_default_keywords():
     except Exception as e:
         logger.error(f"Error populating keywords: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml-config', methods=['GET', 'PUT'])
+def api_ml_config():
+    """Get or update ML risk scoring configuration"""
+    if request.method == 'GET':
+        # Return current ML configuration
+        return jsonify({
+            'success': True,
+            'config': ml_config.get_config_dict()
+        })
+    
+    elif request.method == 'PUT':
+        try:
+            data = request.get_json()
+            
+            # Update specific configuration values
+            if 'risk_thresholds' in data:
+                ml_config.RISK_THRESHOLDS.update(data['risk_thresholds'])
+            
+            if 'rule_based_factors' in data:
+                ml_config.RULE_BASED_FACTORS.update(data['rule_based_factors'])
+            
+            if 'high_risk_extensions' in data:
+                ml_config.HIGH_RISK_EXTENSIONS = data['high_risk_extensions']
+            
+            if 'medium_risk_extensions' in data:
+                ml_config.MEDIUM_RISK_EXTENSIONS = data['medium_risk_extensions']
+            
+            if 'public_domains' in data:
+                ml_config.PUBLIC_DOMAINS = data['public_domains']
+            
+            if 'suspicious_justification_terms' in data:
+                ml_config.SUSPICIOUS_JUSTIFICATION_TERMS = data['suspicious_justification_terms']
+            
+            logger.info("ML configuration updated successfully")
+            return jsonify({
+                'success': True,
+                'message': 'ML configuration updated successfully',
+                'config': ml_config.get_config_dict()
+            })
+            
+        except Exception as e:
+            logger.error(f"Error updating ML configuration: {str(e)}")
+            return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.errorhandler(404)
 def not_found_error(error):
