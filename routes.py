@@ -183,6 +183,9 @@ def dashboard_stats(session_id):
             'avg_risk_score': ml_insights.get('average_risk_score', 0),
             'whitelisted_records': whitelisted_records,
             'processing_complete': stats.get('session_info', {}).get('status') == 'completed',
+            'current_chunk': session.current_chunk or 0,
+            'total_chunks': session.total_chunks or 0,
+            'chunk_progress': int((session.current_chunk or 0) / max(session.total_chunks or 1, 1) * 100),
             'timestamp': datetime.utcnow().isoformat()
         })
         

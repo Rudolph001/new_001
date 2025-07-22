@@ -48,6 +48,115 @@
 </div>
 {% endif %}
 
+<!-- Chunk Processing Information -->
+{% if session.total_chunks and session.total_chunks > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-layer-group text-primary"></i>
+                    Chunk Processing Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="text-center">
+                            <h4 class="text-primary mb-1">{{ session.current_chunk or 0 }}</h4>
+                            <small class="text-muted">Current Chunk</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="text-center">
+                            <h4 class="text-info mb-1">{{ session.total_chunks }}</h4>
+                            <small class="text-muted">Total Chunks</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="text-center">
+                            <h4 class="text-success mb-1">{{ session.processed_records or 0 }}</h4>
+                            <small class="text-muted">Records Processed</small>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="text-center">
+                            <h4 class="text-warning mb-1">{{ "%.1f"|format(((session.current_chunk or 0) / session.total_chunks * 100) if session.total_chunks > 0 else 0) }}%</h4>
+                            <small class="text-muted">Chunk Progress</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chunk Progress Bar -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-sm">Chunk {{ session.current_chunk or 0 }} of {{ session.total_chunks }}</span>
+                        <span class="text-sm">{{ "%.1f"|format(((session.current_chunk or 0) / session.total_chunks * 100) if session.total_chunks > 0 else 0) }}%</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-info" role="progressbar" 
+                             style="width: {{ ((session.current_chunk or 0) / session.total_chunks * 100) if session.total_chunks > 0 else 0 }}%"
+                             aria-valuenow="{{ session.current_chunk or 0 }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="{{ session.total_chunks }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Processing Stage Indicators -->
+                {% if workflow_stats %}
+                <div class="mt-4">
+                    <h6 class="text-muted mb-3">Processing Workflow Status</h6>
+                    <div class="row">
+                        <div class="col-md-3 col-6">
+                            <div class="d-flex align-items-center mb-2">
+                                {% if session.exclusion_applied %}
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                {% endif %}
+                                <small>Exclusion Rules</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="d-flex align-items-center mb-2">
+                                {% if session.whitelist_applied %}
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                {% endif %}
+                                <small>Whitelist Filtering</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="d-flex align-items-center mb-2">
+                                {% if session.rules_applied %}
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                {% endif %}
+                                <small>Security Rules</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="d-flex align-items-center mb-2">
+                                {% if session.ml_applied %}
+                                    <i class="fas fa-check-circle text-success me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-clock text-warning me-2"></i>
+                                {% endif %}
+                                <small>ML Analysis</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Statistics Cards -->
 <div class="row mb-4">
     <div class="col-lg-3 col-md-6">
