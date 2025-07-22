@@ -504,6 +504,367 @@
     </div>
 </div>
 
+<!-- System Performance Monitoring -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-tachometer-alt text-success me-2"></i>
+                    System Performance Monitor
+                </h5>
+                <p class="text-muted small mb-0">Real-time system resource utilization and processing metrics</p>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-success" id="cpu-progress" style="width: 0%"></div>
+                                </div>
+                                <h6 class="mb-1" id="cpu-usage">0%</h6>
+                                <small class="text-muted">CPU Usage</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-info" id="memory-progress" style="width: 0%"></div>
+                                </div>
+                                <h6 class="mb-1" id="memory-usage">0%</h6>
+                                <small class="text-muted">Memory Usage</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="mb-1" id="active-threads">0</h6>
+                                <small class="text-muted">Active Threads</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-primary" id="processing-threads">0 Processing</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <h6 class="mb-1" id="avg-response-time">0ms</h6>
+                                <small class="text-muted">Avg Response Time</small>
+                                <div class="mt-1">
+                                    <span class="badge bg-warning" id="slow-requests">0 Slow</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <canvas id="performance-chart" width="400" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Security Alerts & Insights -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shield-alt text-danger me-2"></i>
+                    Security Alert Dashboard
+                </h5>
+                <p class="text-muted small mb-0">Real-time threat detection and security insights</p>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center p-2 bg-danger bg-opacity-10 rounded">
+                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                            <div>
+                                <div class="fw-bold text-danger" id="critical-threats">0</div>
+                                <small class="text-muted">Critical Threats</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center p-2 bg-warning bg-opacity-10 rounded">
+                            <i class="fas fa-eye text-warning me-2"></i>
+                            <div>
+                                <div class="fw-bold text-warning" id="suspicious-activities">0</div>
+                                <small class="text-muted">Suspicious Activities</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center p-2 bg-info bg-opacity-10 rounded">
+                            <i class="fas fa-ban text-info me-2"></i>
+                            <div>
+                                <div class="fw-bold text-info" id="blocked-domains">0</div>
+                                <small class="text-muted">Blocked Domains</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Security Events -->
+                <div class="security-events" style="max-height: 300px; overflow-y: auto;">
+                    <h6 class="fw-bold mb-2">
+                        <i class="fas fa-clock me-1"></i>Recent Security Events
+                    </h6>
+                    <div id="security-events-list">
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading security events...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie text-primary me-2"></i>
+                    Threat Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="threat-distribution-chart" width="300" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Analytics & Insights -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line text-info me-2"></i>
+                    Data Analytics & Processing Insights
+                </h5>
+                <p class="text-muted small mb-0">Comprehensive analysis of processed email data and patterns</p>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-2 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-1 text-primary" id="total-emails-processed">0</div>
+                            <small class="text-muted">Total Emails Processed</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-1 text-success" id="clean-emails">0</div>
+                            <small class="text-muted">Clean Emails</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-1 text-warning" id="flagged-emails">0</div>
+                            <small class="text-muted">Flagged Emails</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-1 text-danger" id="high-risk-emails">0</div>
+                            <small class="text-muted">High Risk</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-1 text-info" id="unique-domains">0</div>
+                            <small class="text-muted">Unique Domains</small>
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="text-center p-3 border rounded">
+                            <div class="h4 mb-1 text-secondary" id="avg-processing-time">0s</div>
+                            <small class="text-muted">Avg Processing Time</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Email Volume Trends</h6>
+                        <canvas id="email-volume-chart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Risk Level Distribution</h6>
+                        <canvas id="risk-level-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced System Management -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cogs text-secondary me-2"></i>
+                    Advanced System Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <h6 class="fw-bold">Database Operations</h6>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-info" onclick="optimizeDatabase()">
+                                <i class="fas fa-database me-2"></i>Optimize Database
+                            </button>
+                            <button class="btn btn-outline-warning" onclick="rebuildIndexes()">
+                                <i class="fas fa-wrench me-2"></i>Rebuild Indexes
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="backupDatabase()">
+                                <i class="fas fa-save me-2"></i>Create Backup
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <h6 class="fw-bold">ML Model Management</h6>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-success" onclick="retrainModels()">
+                                <i class="fas fa-brain me-2"></i>Retrain Models
+                            </button>
+                            <button class="btn btn-outline-info" onclick="updateMLKeywords()">
+                                <i class="fas fa-tags me-2"></i>Update Keywords
+                            </button>
+                            <button class="btn btn-outline-warning" onclick="validateModels()">
+                                <i class="fas fa-check-circle me-2"></i>Validate Models
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-download text-primary me-2"></i>
+                    Export & Reporting
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="fw-bold">System Reports</h6>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="exportSystemReport()">
+                            <i class="fas fa-file-alt me-2"></i>System Health Report
+                        </button>
+                        <button class="btn btn-outline-info" onclick="exportSecurityReport()">
+                            <i class="fas fa-shield-alt me-2"></i>Security Analysis Report
+                        </button>
+                        <button class="btn btn-outline-success" onclick="exportPerformanceReport()">
+                            <i class="fas fa-tachometer-alt me-2"></i>Performance Report
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <h6 class="fw-bold">Data Export</h6>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-warning" onclick="exportAllSessions()">
+                            <i class="fas fa-database me-2"></i>Export All Sessions
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="exportConfiguration()">
+                            <i class="fas fa-cog me-2"></i>Export Configuration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Logs & Debugging -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-file-alt text-warning me-2"></i>
+                            System Logs & Debugging
+                        </h5>
+                        <p class="text-muted small mb-0">Real-time system logs and debugging information</p>
+                    </div>
+                    <div>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshLogs()">
+                                <i class="fas fa-sync me-1"></i>Refresh
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="clearLogs()">
+                                <i class="fas fa-trash me-1"></i>Clear
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="downloadLogs()">
+                                <i class="fas fa-download me-1"></i>Download
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" id="log-level-filter">
+                            <option value="all">All Levels</option>
+                            <option value="error">Errors Only</option>
+                            <option value="warning">Warnings</option>
+                            <option value="info">Info</option>
+                            <option value="debug">Debug</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select form-select-sm" id="log-component-filter">
+                            <option value="all">All Components</option>
+                            <option value="ml_engine">ML Engine</option>
+                            <option value="data_processor">Data Processor</option>
+                            <option value="rule_engine">Rule Engine</option>
+                            <option value="session_manager">Session Manager</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="auto-refresh-logs" checked>
+                            <label class="form-check-label" for="auto-refresh-logs">Auto Refresh</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="follow-logs" checked>
+                            <label class="form-check-label" for="follow-logs">Follow Logs</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="log-container" style="height: 400px; overflow-y: auto; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 10px; font-family: monospace; font-size: 12px;">
+                    <div id="system-logs">
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading system logs...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Recent Sessions -->
 <div class="row">
     <div class="col-12">
@@ -864,257 +1225,502 @@ function toggleMLEditor() {
     const editorDiv = document.getElementById('ml-factors-editor');
     
     if (editorDiv.style.display === 'none') {
-        // Load current configuration
-        loadMLConfiguration();
         viewDiv.style.display = 'none';
         editorDiv.style.display = 'block';
     } else {
-        cancelMLEdit();
-    }
-}
-
-function loadMLConfiguration() {
-    fetch('/api/ml-config')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                currentMLConfig = data.config;
-                populateMLEditor(data.config);
-            } else {
-                showError('Failed to load ML configuration');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading ML config:', error);
-            showError('Failed to load ML configuration');
-        });
-}
-
-function populateMLEditor(config) {
-    const container = document.getElementById('ml-factor-inputs');
-    container.innerHTML = '';
-    
-    // Add inputs for each rule-based factor
-    if (config.rule_based_factors) {
-        Object.entries(config.rule_based_factors).forEach(([key, value]) => {
-            addMLFactorInput(key, value, getFactorDescription(key));
-        });
-    }
-}
-
-function addMLFactorInput(factorKey, value, description) {
-    const container = document.getElementById('ml-factor-inputs');
-    const row = document.createElement('div');
-    row.className = 'row mb-2 align-items-center';
-    
-    const factorName = factorKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    
-    row.innerHTML = `
-        <div class="col-md-6">
-            <label class="form-label small fw-bold">${factorName}</label>
-            <small class="d-block text-muted">${description}</small>
-        </div>
-        <div class="col-md-3">
-            <input type="number" 
-                   class="form-control form-control-sm ml-factor-input" 
-                   data-factor="${factorKey}"
-                   value="${value}" 
-                   min="0.0" 
-                   max="1.0" 
-                   step="0.1">
-        </div>
-        <div class="col-md-3">
-            <button class="btn btn-sm btn-outline-danger" onclick="removeMLFactor(this)">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    `;
-    
-    container.appendChild(row);
-}
-
-function getFactorDescription(key) {
-    const descriptions = {
-        'leaver_status': 'Employee leaving organization',
-        'external_domain': 'Public email domains (Gmail, Yahoo, etc.)',
-        'attachment_risk': 'File type and suspicious patterns',
-        'wordlist_matches': 'Suspicious keywords in subject/attachment',
-        'time_based_risk': 'Weekend/after-hours activity',
-        'justification_analysis': 'Suspicious terms in explanations'
-    };
-    return descriptions[key] || 'Custom ML risk factor';
-}
-
-function addMLFactor() {
-    const factorName = prompt('Enter factor name (use underscores for spaces):');
-    if (factorName && factorName.trim()) {
-        const value = parseFloat(prompt('Enter max value (0.0 - 1.0):') || '0.1');
-        if (value >= 0 && value <= 1) {
-            addMLFactorInput(factorName.trim(), value, 'Custom factor');
-        } else {
-            showError('Value must be between 0.0 and 1.0');
-        }
-    }
-}
-
-function removeMLFactor(button) {
-    if (confirm('Remove this factor?')) {
-        button.closest('.row').remove();
+        viewDiv.style.display = 'block';
+        editorDiv.style.display = 'none';
     }
 }
 
 function saveMLConfiguration() {
-    const inputs = document.querySelectorAll('.ml-factor-input');
-    const updatedFactors = {};
-    
-    inputs.forEach(input => {
-        const factor = input.dataset.factor;
-        const value = parseFloat(input.value);
-        if (factor && !isNaN(value) && value >= 0 && value <= 1) {
-            updatedFactors[factor] = value;
-        }
+    const factors = [];
+    document.querySelectorAll('.ml-factor-input').forEach(input => {
+        factors.push({
+            name: input.dataset.factor,
+            max_score: parseFloat(input.value)
+        });
     });
     
-    const updateData = {
-        rule_based_factors: updatedFactors
-    };
-    
-    fetch('/api/ml-config', {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updateData)
+    fetch('/admin/ml-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ factors })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showSuccess('ML configuration updated successfully');
-            setTimeout(() => {
-                location.reload(); // Reload to show updated values
-            }, 1000);
+            showSuccess('ML configuration saved successfully');
+            location.reload();
         } else {
-            showError(data.message || 'Failed to update ML configuration');
+            showError('Failed to save ML configuration: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Error updating ML config:', error);
-        showError('Failed to update ML configuration');
+        console.error('Error saving ML config:', error);
+        showError('Failed to save ML configuration');
     });
 }
 
 function cancelMLEdit() {
-    const viewDiv = document.getElementById('ml-factors-view');
-    const editorDiv = document.getElementById('ml-factors-editor');
-    
-    viewDiv.style.display = 'block';
-    editorDiv.style.display = 'none';
+    toggleMLEditor();
 }
 
 function resetMLDefaults() {
-    if (confirm('Reset all ML factors to default values? This cannot be undone.')) {
-        const defaultFactors = {
-            'leaver_status': 0.3,
-            'external_domain': 0.2,
-            'attachment_risk': 0.3,
-            'wordlist_matches': 0.2,
-            'time_based_risk': 0.1,
-            'justification_analysis': 0.1
-        };
-        
-        const updateData = {
-            rule_based_factors: defaultFactors
-        };
-        
-        fetch('/api/ml-config', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(updateData)
-        })
+    if (confirm('Reset all ML factors to default values?')) {
+        fetch('/admin/ml-config/reset', { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 showSuccess('ML configuration reset to defaults');
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
+                location.reload();
             } else {
-                showError(data.message || 'Failed to reset ML configuration');
+                showError('Failed to reset ML configuration');
             }
-        })
-        .catch(error => {
-            console.error('Error resetting ML config:', error);
-            showError('Failed to reset ML configuration');
         });
     }
 }
 
-// Threshold Editor Functions
-function toggleThresholdEditor() {
-    const viewDiv = document.getElementById('thresholds-view');
-    const editorDiv = document.getElementById('thresholds-editor');
+// Performance monitoring functions
+let performanceChart;
+let threatDistributionChart;
+let emailVolumeChart;
+let riskLevelChart;
+
+function initializeCharts() {
+    // Performance Chart
+    const performanceCtx = document.getElementById('performance-chart').getContext('2d');
+    performanceChart = new Chart(performanceCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'CPU %',
+                borderColor: '#28a745',
+                data: [],
+                fill: false
+            }, {
+                label: 'Memory %',
+                borderColor: '#17a2b8',
+                data: [],
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            }
+        }
+    });
+
+    // Threat Distribution Chart
+    const threatCtx = document.getElementById('threat-distribution-chart').getContext('2d');
+    threatDistributionChart = new Chart(threatCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Critical', 'High Risk', 'Medium Risk', 'Low Risk'],
+            datasets: [{
+                data: [0, 0, 0, 0],
+                backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#28a745']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Email Volume Chart
+    const emailVolumeCtx = document.getElementById('email-volume-chart').getContext('2d');
+    emailVolumeChart = new Chart(emailVolumeCtx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Emails Processed',
+                backgroundColor: '#007bff',
+                data: []
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Risk Level Chart
+    const riskLevelCtx = document.getElementById('risk-level-chart').getContext('2d');
+    riskLevelChart = new Chart(riskLevelCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Clean', 'Flagged', 'High Risk'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: ['#28a745', '#ffc107', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
+function updatePerformanceMetrics() {
+    fetch('/admin/api/performance-metrics')
+    .then(response => response.json())
+    .then(data => {
+        // Update performance indicators
+        document.getElementById('cpu-usage').textContent = data.cpu_usage + '%';
+        document.getElementById('cpu-progress').style.width = data.cpu_usage + '%';
+        
+        document.getElementById('memory-usage').textContent = data.memory_usage + '%';
+        document.getElementById('memory-progress').style.width = data.memory_usage + '%';
+        
+        document.getElementById('active-threads').textContent = data.active_threads;
+        document.getElementById('processing-threads').textContent = data.processing_threads + ' Processing';
+        
+        document.getElementById('avg-response-time').textContent = data.avg_response_time + 'ms';
+        document.getElementById('slow-requests').textContent = data.slow_requests + ' Slow';
+
+        // Update performance chart
+        const now = new Date().toLocaleTimeString();
+        performanceChart.data.labels.push(now);
+        performanceChart.data.datasets[0].data.push(data.cpu_usage);
+        performanceChart.data.datasets[1].data.push(data.memory_usage);
+        
+        // Keep only last 20 data points
+        if (performanceChart.data.labels.length > 20) {
+            performanceChart.data.labels.shift();
+            performanceChart.data.datasets[0].data.shift();
+            performanceChart.data.datasets[1].data.shift();
+        }
+        
+        performanceChart.update();
+    })
+    .catch(error => console.error('Error updating performance metrics:', error));
+}
+
+function updateSecurityMetrics() {
+    fetch('/admin/api/security-metrics')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('critical-threats').textContent = data.critical_threats;
+        document.getElementById('suspicious-activities').textContent = data.suspicious_activities;
+        document.getElementById('blocked-domains').textContent = data.blocked_domains;
+
+        // Update threat distribution chart
+        threatDistributionChart.data.datasets[0].data = [
+            data.threat_distribution.critical,
+            data.threat_distribution.high,
+            data.threat_distribution.medium,
+            data.threat_distribution.low
+        ];
+        threatDistributionChart.update();
+
+        // Update security events
+        updateSecurityEvents(data.recent_events);
+    })
+    .catch(error => console.error('Error updating security metrics:', error));
+}
+
+function updateSecurityEvents(events) {
+    const container = document.getElementById('security-events-list');
+    if (!events || events.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted py-3">No recent security events</div>';
+        return;
+    }
+
+    let html = '';
+    events.forEach(event => {
+        const timeAgo = getTimeAgo(new Date(event.timestamp));
+        const iconClass = event.severity === 'critical' ? 'fa-exclamation-triangle text-danger' :
+                         event.severity === 'warning' ? 'fa-eye text-warning' : 'fa-info-circle text-info';
+        
+        html += `
+            <div class="d-flex align-items-start mb-2 p-2 bg-light rounded">
+                <i class="fas ${iconClass} me-2 mt-1"></i>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">${event.title}</div>
+                    <small class="text-muted">${event.description}</small>
+                    <div class="text-muted small">${timeAgo}</div>
+                </div>
+            </div>
+        `;
+    });
     
-    if (editorDiv.style.display === 'none') {
-        viewDiv.style.display = 'none';
-        editorDiv.style.display = 'block';
-    } else {
-        cancelThresholdEdit();
+    container.innerHTML = html;
+}
+
+function updateDataAnalytics() {
+    fetch('/admin/api/data-analytics')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('total-emails-processed').textContent = data.total_emails.toLocaleString();
+        document.getElementById('clean-emails').textContent = data.clean_emails.toLocaleString();
+        document.getElementById('flagged-emails').textContent = data.flagged_emails.toLocaleString();
+        document.getElementById('high-risk-emails').textContent = data.high_risk_emails.toLocaleString();
+        document.getElementById('unique-domains').textContent = data.unique_domains.toLocaleString();
+        document.getElementById('avg-processing-time').textContent = data.avg_processing_time + 's';
+
+        // Update email volume chart
+        emailVolumeChart.data.labels = data.volume_trends.labels;
+        emailVolumeChart.data.datasets[0].data = data.volume_trends.data;
+        emailVolumeChart.update();
+
+        // Update risk level chart
+        riskLevelChart.data.datasets[0].data = [
+            data.clean_emails,
+            data.flagged_emails,
+            data.high_risk_emails
+        ];
+        riskLevelChart.update();
+    })
+    .catch(error => console.error('Error updating data analytics:', error));
+}
+
+function updateSystemLogs() {
+    if (!document.getElementById('auto-refresh-logs').checked) return;
+    
+    const level = document.getElementById('log-level-filter').value;
+    const component = document.getElementById('log-component-filter').value;
+    
+    fetch(`/admin/api/system-logs?level=${level}&component=${component}`)
+    .then(response => response.json())
+    .then(data => {
+        const container = document.getElementById('system-logs');
+        if (!data.logs || data.logs.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted py-3">No logs found</div>';
+            return;
+        }
+
+        let html = '';
+        data.logs.forEach(log => {
+            const levelClass = log.level === 'ERROR' ? 'text-danger' :
+                              log.level === 'WARNING' ? 'text-warning' :
+                              log.level === 'INFO' ? 'text-info' : 'text-muted';
+            
+            html += `
+                <div class="log-entry mb-1">
+                    <span class="text-muted">[${log.timestamp}]</span>
+                    <span class="${levelClass} fw-bold">[${log.level}]</span>
+                    <span class="text-primary">[${log.component}]</span>
+                    <span>${log.message}</span>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+        // Auto-scroll to bottom if follow logs is enabled
+        if (document.getElementById('follow-logs').checked) {
+            container.scrollTop = container.scrollHeight;
+        }
+    })
+    .catch(error => console.error('Error updating system logs:', error));
+}
+
+// Advanced system management functions
+function optimizeDatabase() {
+    if (confirm('This will optimize the database. Continue?')) {
+        fetch('/admin/api/optimize-database', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess('Database optimized successfully');
+            } else {
+                showError('Failed to optimize database: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error optimizing database:', error);
+            showError('Failed to optimize database');
+        });
     }
 }
 
-function saveThresholds() {
-    const inputs = document.querySelectorAll('.threshold-input');
-    const updatedThresholds = {};
-    
-    inputs.forEach(input => {
-        const level = input.dataset.level;
-        const value = parseFloat(input.value);
-        if (level && !isNaN(value) && value >= 0 && value <= 1) {
-            updatedThresholds[level] = value;
-        }
-    });
-    
-    const updateData = {
-        risk_thresholds: updatedThresholds
-    };
-    
-    fetch('/api/ml-config', {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(updateData)
-    })
+function rebuildIndexes() {
+    if (confirm('This will rebuild database indexes. Continue?')) {
+        fetch('/admin/api/rebuild-indexes', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess('Database indexes rebuilt successfully');
+            } else {
+                showError('Failed to rebuild indexes: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error rebuilding indexes:', error);
+            showError('Failed to rebuild indexes');
+        });
+    }
+}
+
+function backupDatabase() {
+    fetch('/admin/api/backup-database', { method: 'POST' })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showSuccess('Risk thresholds updated successfully');
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
+            showSuccess('Database backup created: ' + data.filename);
         } else {
-            showError(data.message || 'Failed to update risk thresholds');
+            showError('Failed to create backup: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Error updating thresholds:', error);
-        showError('Failed to update risk thresholds');
+        console.error('Error creating backup:', error);
+        showError('Failed to create database backup');
     });
 }
 
-function cancelThresholdEdit() {
-    const viewDiv = document.getElementById('thresholds-view');
-    const editorDiv = document.getElementById('thresholds-editor');
-    
-    viewDiv.style.display = 'block';
-    editorDiv.style.display = 'none';
+function retrainModels() {
+    if (confirm('This will retrain ML models using current data. This may take several minutes. Continue?')) {
+        fetch('/admin/api/retrain-models', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess('ML models retrained successfully');
+            } else {
+                showError('Failed to retrain models: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error retraining models:', error);
+            showError('Failed to retrain ML models');
+        });
+    }
 }
 
-// Initialize whitelist domains on page load
+function updateMLKeywords() {
+    fetch('/admin/api/update-ml-keywords', { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess('ML keywords updated successfully');
+        } else {
+            showError('Failed to update keywords: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating ML keywords:', error);
+        showError('Failed to update ML keywords');
+    });
+}
+
+function validateModels() {
+    fetch('/admin/api/validate-models', { method: 'POST' })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess('ML models validation completed. Score: ' + data.validation_score);
+        } else {
+            showError('Failed to validate models: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error validating models:', error);
+        showError('Failed to validate ML models');
+    });
+}
+
+// Export functions
+function exportSystemReport() {
+    window.open('/admin/export/system-report', '_blank');
+}
+
+function exportSecurityReport() {
+    window.open('/admin/export/security-report', '_blank');
+}
+
+function exportPerformanceReport() {
+    window.open('/admin/export/performance-report', '_blank');
+}
+
+function exportAllSessions() {
+    window.open('/admin/export/all-sessions', '_blank');
+}
+
+function exportConfiguration() {
+    window.open('/admin/export/configuration', '_blank');
+}
+
+// Log management functions
+function refreshLogs() {
+    updateSystemLogs();
+    showSuccess('Logs refreshed');
+}
+
+function clearLogs() {
+    if (confirm('This will clear all system logs. Continue?')) {
+        fetch('/admin/api/clear-logs', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess('System logs cleared');
+                updateSystemLogs();
+            } else {
+                showError('Failed to clear logs: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error clearing logs:', error);
+            showError('Failed to clear logs');
+        });
+    }
+}
+
+function downloadLogs() {
+    window.open('/admin/api/download-logs', '_blank');
+}
+
+// Utility functions
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    const intervals = {
+        year: 31536000,
+        month: 2592000,
+        week: 604800,
+        day: 86400,
+        hour: 3600,
+        minute: 60
+    };
+    
+    for (let interval in intervals) {
+        const count = Math.floor(seconds / intervals[interval]);
+        if (count > 0) {
+            return count === 1 ? `1 ${interval} ago` : `${count} ${interval}s ago`;
+        }
+    }
+    return 'Just now';
+}
+
+// Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize charts
+    initializeCharts();
+    
+    // Load initial data
     loadWhitelistDomains();
+    updatePerformanceMetrics();
+    updateSecurityMetrics();
+    updateDataAnalytics();
+    updateSystemLogs();
+    
+    // Set up periodic updates
+    setInterval(updatePerformanceMetrics, 5000);  // Every 5 seconds
+    setInterval(updateSecurityMetrics, 10000);    // Every 10 seconds
+    setInterval(updateDataAnalytics, 30000);      // Every 30 seconds
+    setInterval(updateSystemLogs, 15000);         // Every 15 seconds
+    
+    // Set up log filter listeners
+    document.getElementById('log-level-filter').addEventListener('change', updateSystemLogs);
+    document.getElementById('log-component-filter').addEventListener('change', updateSystemLogs);
 });
 </script>
+
 {% endblock %}
+        const value = parseFloat(prompt('Enter max value (0.0 - 1.0):') || '0.1');
+        if (value >= 0 && value <= 1) {
+            addMLFactorInput(factorName.trim(), value, 'Custom factor');
