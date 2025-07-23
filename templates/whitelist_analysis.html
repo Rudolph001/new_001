@@ -41,7 +41,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-lg-3 col-md-6">
         <div class="card stats-card bg-gradient-success text-white">
             <div class="card-body">
@@ -57,7 +57,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-lg-3 col-md-6">
         <div class="card stats-card bg-gradient-info text-white">
             <div class="card-body">
@@ -73,7 +73,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-lg-3 col-md-6">
         <div class="card stats-card bg-gradient-warning text-white">
             <div class="card-body">
@@ -100,7 +100,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">
                         <i class="fas fa-star text-success"></i>
-                        Top Whitelist Recommendations
+                        Whitelist Recommendations
                     </h5>
                     <div>
                         <button class="btn btn-outline-success btn-sm" onclick="bulkAddRecommendations()">
@@ -131,7 +131,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for rec in analysis.whitelist_recommendations[:15] %}
+                            {% for rec in analysis.whitelist_recommendations %}
                             <tr>
                                 <td>
                                     <input type="checkbox" class="recommendation-checkbox" value="{{ rec.domain }}">
@@ -204,7 +204,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Analysis Summary -->
     <div class="col-lg-4 mb-4">
         <div class="card h-100">
@@ -218,7 +218,7 @@
                 <div class="chart-container chart-small">
                     <canvas id="whitelistRecommendationsChart"></canvas>
                 </div>
-                
+
                 <div class="mt-3">
                     <h6>Summary Statistics:</h6>
                     {% if analysis.summary %}
@@ -274,13 +274,13 @@
                             <p class="text-muted mb-0">High-Risk Whitelisted</p>
                         </div>
                     </div>
-                    
+
                     <div class="progress mb-3" style="height: 20px;">
                         <div class="progress-bar bg-success" style="width: {{ analysis.whitelist_effectiveness.effectiveness_score }}%">
                             {{ "%.1f"|format(analysis.whitelist_effectiveness.effectiveness_score) }}% Effective
                         </div>
                     </div>
-                    
+
                     <div class="alert alert-{% if analysis.whitelist_effectiveness.effectiveness_score >= 80 %}success{% elif analysis.whitelist_effectiveness.effectiveness_score >= 60 %}warning{% else %}danger{% endif %}">
                         <h6>
                             {% if analysis.whitelist_effectiveness.effectiveness_score >= 80 %}
@@ -311,7 +311,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-lg-6 mb-4">
         <div class="card">
             <div class="card-header">
@@ -338,9 +338,9 @@
                         </div>
                     </div>
                     {% endfor %}
-                    
+
                     <hr>
-                    
+
                     <h6>Regular Communication Pairs:</h6>
                     {% for pair in analysis.bau_patterns.regular_communication_pairs[:3] %}
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -465,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function toggleSelectAllRecommendations() {
     const selectAll = document.getElementById('selectAllRecommendations');
     const checkboxes = document.querySelectorAll('.recommendation-checkbox');
-    
+
     checkboxes.forEach(checkbox => {
         checkbox.checked = selectAll.checked;
     });
@@ -474,7 +474,7 @@ function toggleSelectAllRecommendations() {
 async function addDomainToWhitelist(domain) {
     if (confirm(`Add "${domain}" to the whitelist?`)) {
         showLoading('Adding domain to whitelist...');
-        
+
         try {
             const response = await fetch('/api/whitelist-domains', {
                 method: 'POST',
@@ -488,11 +488,11 @@ async function addDomainToWhitelist(domain) {
                     notes: 'Added via whitelist analysis recommendations'
                 })
             });
-            
+
             const result = await response.json();
-            
+
             hideLoading();
-            
+
             if (result.success) {
                 showSuccess(`Domain "${domain}" added to whitelist successfully`);
                 // Refresh page to update UI
@@ -509,7 +509,7 @@ async function addDomainToWhitelist(domain) {
 
 function analyzeDomain(domain) {
     showLoading('Analyzing domain communications...');
-    
+
     setTimeout(() => {
         hideLoading();
         showSuccess(`Analysis completed for ${domain}`);
@@ -527,10 +527,10 @@ function viewDomainDetails(domain) {
             <p class="mt-2">Loading domain analysis...</p>
         </div>
     `;
-    
+
     const modal = new bootstrap.Modal(document.getElementById('domainDetailsModal'));
     modal.show();
-    
+
     // Simulate loading domain details
     setTimeout(() => {
         modalBody.innerHTML = `
@@ -558,19 +558,19 @@ function viewDomainDetails(domain) {
 
 async function bulkAddRecommendations() {
     const selectedDomains = Array.from(document.querySelectorAll('.recommendation-checkbox:checked')).map(cb => cb.value);
-    
+
     if (selectedDomains.length === 0) {
         showError('Please select domains to add to the whitelist');
         return;
     }
-    
+
     if (confirm(`Add ${selectedDomains.length} selected domains to the whitelist?`)) {
         showLoading('Adding domains to whitelist...');
-        
+
         let successCount = 0;
         let errorCount = 0;
         const errors = [];
-        
+
         // Add each domain individually using the existing API
         for (const domain of selectedDomains) {
             try {
@@ -586,9 +586,9 @@ async function bulkAddRecommendations() {
                         notes: 'Added via whitelist analysis recommendations'
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     successCount++;
                 } else {
@@ -600,17 +600,17 @@ async function bulkAddRecommendations() {
                 errors.push(`${domain}: Network error - ${error.message}`);
             }
         }
-        
+
         hideLoading();
-        
+
         if (successCount > 0) {
             showSuccess(`Successfully added ${successCount} domains to the whitelist`);
         }
-        
+
         if (errorCount > 0) {
             showError(`Failed to add ${errorCount} domains. ${errors.slice(0, 3).join('; ')}`);
         }
-        
+
         // Refresh page to update UI
         setTimeout(() => location.reload(), 2000);
     }
@@ -618,7 +618,7 @@ async function bulkAddRecommendations() {
 
 function exportRecommendations() {
     showLoading('Preparing whitelist recommendations export...');
-    
+
     setTimeout(() => {
         hideLoading();
         showSuccess('Whitelist recommendations exported successfully');
@@ -628,15 +628,15 @@ function exportRecommendations() {
 async function addTopRecommendations() {
     if (confirm('Add the top 5 recommended domains to the whitelist?')) {
         showLoading('Adding top recommendations...');
-        
+
         // Get the top 5 domains from the recommendations table
         const topDomains = Array.from(document.querySelectorAll('#recommendationsTable tbody tr'))
             .slice(0, 5)
             .map(row => row.cells[0].textContent.trim());
-        
+
         let successCount = 0;
         let errorCount = 0;
-        
+
         for (const domain of topDomains) {
             try {
                 const response = await fetch('/api/whitelist-domains', {
@@ -651,9 +651,9 @@ async function addTopRecommendations() {
                         notes: 'Added as top recommendation via whitelist analysis'
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     successCount++;
                 } else {
@@ -663,17 +663,17 @@ async function addTopRecommendations() {
                 errorCount++;
             }
         }
-        
+
         hideLoading();
-        
+
         if (successCount > 0) {
             showSuccess(`Successfully added ${successCount} top recommendations to whitelist`);
         }
-        
+
         if (errorCount > 0 && successCount === 0) {
             showError(`Failed to add recommendations. Please try again.`);
         }
-        
+
         setTimeout(() => location.reload(), 1500);
     }
 }
@@ -684,7 +684,7 @@ function reviewCurrentWhitelist() {
 
 function exportWhitelistReport() {
     showLoading('Generating whitelist analysis report...');
-    
+
     setTimeout(() => {
         hideLoading();
         showSuccess('Whitelist analysis report generated successfully');
@@ -694,7 +694,7 @@ function exportWhitelistReport() {
 function optimizeWhitelist() {
     if (confirm('Automatically optimize the whitelist based on analysis recommendations?')) {
         showLoading('Optimizing whitelist...');
-        
+
         setTimeout(() => {
             hideLoading();
             showSuccess('Whitelist optimization completed');
