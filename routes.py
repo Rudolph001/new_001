@@ -1867,6 +1867,91 @@ def delete_ml_keyword(keyword_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/ml-keywords/bulk-add', methods=['POST'])
+def bulk_add_ml_keywords():
+    """Add multiple ML keywords at once"""
+    try:
+        data = request.get_json()
+        keywords_list = data.get('keywords', [])
+        category = data.get('category', 'Business')
+        risk_score = int(data.get('risk_score', 5))
+        
+        if not keywords_list:
+            return jsonify({'error': 'Keywords list is required'}), 400
+        
+        if category not in ['Business', 'Personal', 'Suspicious']:
+            return jsonify({'error': 'Invalid category'}), 400
+        
+        if not (1 <= risk_score <= 10):
+            return jsonify({'error': 'Risk score must be between 1 and 10'}), 400
+        
+        if len(keywords_list) > 100:
+            return jsonify({'error': 'Maximum 100 keywords allowed per bulk import'}), 400
+        
+        added_count = 0
+        skipped_count = 0
+        errors = []
+        
+        for keyword in keywords_list:
+            keyword = keyword.strip()
+            
+            if not keyword:
+                continue
+                
+            if len(keyword) > 100:  # Reasonable length limit
+                errors.append(f'Keyword too long: "{keyword[:20]}..."')
+                continue
+            
+            # Check if keyword already exists
+            existing = AttachmentKeyword.query.filter_by(keyword=keyword).first()
+            if existing:
+                skipped_count += 1
+                continue
+            
+            try:
+                # Add keyword to database
+                new_keyword = AttachmentKeyword(
+                    keyword=keyword,
+                    category=category,
+                    risk_score=risk_score,
+                    is_active=True
+                )
+                
+                db.session.add(new_keyword)
+                added_count += 1
+                
+            except Exception as e:
+                errors.append(f'Error adding "{keyword}": {str(e)}')
+                continue
+        
+        # Commit all successful additions
+        if added_count > 0:
+            try:
+                db.session.commit()
+                logger.info(f"Bulk added {added_count} ML keywords")
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({'error': f'Database error: {str(e)}'}), 500
+        
+        message = f'Bulk import completed: {added_count} keywords added'
+        if skipped_count > 0:
+            message += f', {skipped_count} duplicates skipped'
+        if errors:
+            message += f', {len(errors)} errors occurred'
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'added_count': added_count,
+            'skipped_count': skipped_count,
+            'errors': errors[:10]  # Limit error messages
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in bulk keyword import: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/ml-keywords/all', methods=['GET'])
 def get_all_ml_keywords_detailed():
     """Get all ML keywords with full details for editing"""

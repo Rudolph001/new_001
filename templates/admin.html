@@ -226,27 +226,81 @@
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
-                                <div class="row mb-3">
-                                    <div class="col-md-8">
-                                        <input type="text" id="newKeywordInput" class="form-control" placeholder="Enter new keyword...">
+                                <!-- Single Keyword Tab -->
+                                <ul class="nav nav-tabs" id="keywordTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single-keyword" type="button">
+                                            Single Keyword
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="bulk-tab" data-bs-toggle="tab" data-bs-target="#bulk-keywords" type="button">
+                                            Bulk Import
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <div class="tab-content mt-3" id="keywordTabContent">
+                                    <!-- Single Keyword Tab -->
+                                    <div class="tab-pane fade show active" id="single-keyword" role="tabpanel">
+                                        <div class="mb-3">
+                                            <label for="newKeywordText" class="form-label">Keyword</label>
+                                            <input type="text" class="form-control" id="newKeywordText" placeholder="Enter keyword">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="newKeywordCategory" class="form-label">Category</label>
+                                            <select class="form-select" id="newKeywordCategory">
+                                                <option value="Business">Business</option>
+                                                <option value="Personal">Personal</option>
+                                                <option value="Suspicious">Suspicious</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="newKeywordRisk" class="form-label">Risk Score (1-10)</label>
+                                            <input type="number" class="form-control" id="newKeywordRisk" min="1" max="10" value="5">
+                                        </div>
                                     </div>
-                                    <div class="col-md-2">
-                                        <select id="newKeywordCategory" class="form-select">
-                                            <option value="Business">Business</option>
-                                            <option value="Personal">Personal</option>
-                                            <option value="Suspicious">Suspicious</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <input type="number" id="newKeywordRisk" class="form-control" placeholder="Risk" min="1" max="10" value="5">
+
+                                    <!-- Bulk Keywords Tab -->
+                                    <div class="tab-pane fade" id="bulk-keywords" role="tabpanel">
+                                        <div class="mb-3">
+                                            <label for="bulkKeywordsText" class="form-label">Keywords</label>
+                                            <textarea class="form-control" id="bulkKeywordsText" rows="8" 
+                                                placeholder="Enter multiple keywords, one per line or comma-separated:
+
+confidential document
+urgent payment
+invoice attached
+wire transfer, bank account, credit card
+suspicious activity"></textarea>
+                                            <div class="form-text">
+                                                Enter keywords separated by new lines or commas. Mixed format is supported.
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="bulkKeywordCategory" class="form-label">Category (for all keywords)</label>
+                                            <select class="form-select" id="bulkKeywordCategory">
+                                                <option value="Business">Business</option>
+                                                <option value="Personal">Personal</option>
+                                                <option value="Suspicious">Suspicious</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="bulkKeywordRisk" class="form-label">Risk Score (1-10, for all keywords)</label>
+                                            <input type="number" class="form-control" id="bulkKeywordRisk" min="1" max="10" value="5">
+                                        </div>
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            All keywords will be added with the same category and risk score. You can edit individual keywords after import.
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <button class="btn btn-success" onclick="addNewKeyword()">
-                                        <i class="fas fa-plus me-1"></i>Add Keyword
+                                    <button type="button" class="btn btn-primary" onclick="addKeywords()">
+                                        <i class="fas fa-plus"></i> Add Keywords
                                     </button>
                                 </div>
-                                
+
                                 <div id="keywordsList">
                                     <div class="text-center">
                                         <div class="spinner-border text-primary"></div>
@@ -286,7 +340,7 @@
                         <h6 class="fw-bold mb-3">
                             <i class="fas fa-info-circle text-info me-2"></i>Algorithm Components
                         </h6>
-                        
+
                         <!-- Anomaly Detection -->
                         <div class="algorithm-component mb-3 p-3 bg-light rounded">
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -306,7 +360,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Rule-Based Factors -->
                         <div class="algorithm-component mb-3 p-3 bg-light rounded">
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -318,7 +372,7 @@
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <!-- Read-only view -->
                             <div id="ml-factors-view" class="rule-factors">
                                 {% for factor in risk_scoring_info.algorithm_components.rule_based_factors.factors %}
@@ -333,14 +387,14 @@
                                 </div>
                                 {% endfor %}
                             </div>
-                            
+
                             <!-- Editable view -->
                             <div id="ml-factors-editor" style="display: none;">
                                 <div class="mb-3">
                                     <h6 class="text-primary">Edit ML Risk Factors</h6>
                                     <small class="text-muted">Adjust maximum risk scores for each factor (0.0 - 1.0)</small>
                                 </div>
-                                
+
                                 <div id="ml-factor-inputs">
                                     {% for factor in risk_scoring_info.algorithm_components.rule_based_factors.factors %}
                                     <div class="row mb-2 align-items-center">
@@ -365,7 +419,7 @@
                                     </div>
                                     {% endfor %}
                                 </div>
-                                
+
                                 <div class="row mb-3">
                                     <div class="col-12">
                                         <button class="btn btn-sm btn-outline-primary" onclick="addMLFactor()">
@@ -373,7 +427,7 @@
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-sm btn-success" onclick="saveMLConfiguration()">
                                         <i class="fas fa-save me-1"></i>Save Changes
@@ -388,7 +442,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Risk Thresholds & Attachment Scoring -->
                     <div class="col-lg-6 mb-4">
                         <!-- Risk Level Thresholds -->
@@ -400,7 +454,7 @@
                                 <i class="fas fa-edit me-1"></i>Edit
                             </button>
                         </div>
-                        
+
                         <!-- Read-only threshold view -->
                         <div id="thresholds-view" class="risk-thresholds mb-4">
                             {% for level, threshold in risk_scoring_info.thresholds.items() %}
@@ -422,14 +476,14 @@
                             </div>
                             {% endfor %}
                         </div>
-                        
+
                         <!-- Editable threshold view -->
                         <div id="thresholds-editor" style="display: none;" class="mb-4">
                             <div class="mb-3">
                                 <h6 class="text-warning">Edit Risk Thresholds</h6>
                                 <small class="text-muted">Set minimum scores for each risk level (0.0 - 1.0)</small>
                             </div>
-                            
+
                             <div id="threshold-inputs">
                                 {% for level, threshold in risk_scoring_info.thresholds.items() %}
                                 <div class="row mb-2 align-items-center">
@@ -460,7 +514,7 @@
                                 </div>
                                 {% endfor %}
                             </div>
-                            
+
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-warning" onclick="saveThresholds()">
                                     <i class="fas fa-save me-1"></i>Save Thresholds
@@ -470,7 +524,7 @@
                                 </button>
                             </div>
                         </div>
-                        
+
                         <!-- Attachment Risk Scoring -->
                         <h6 class="fw-bold mb-3">
                             <i class="fas fa-paperclip text-danger me-2"></i>Attachment Risk Scoring
@@ -487,7 +541,7 @@
                                     {% endfor %}
                                 </div>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="fw-bold text-warning">Medium Risk Extensions</small>
@@ -499,7 +553,7 @@
                                     {% endfor %}
                                 </div>
                             </div>
-                            
+
                             <div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                     <small class="fw-bold text-info">Suspicious Patterns</small>
@@ -514,7 +568,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Performance Configuration -->
                 <div class="row mt-4">
                     <div class="col-12">
@@ -671,7 +725,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Recent Security Events -->
                 <div class="security-events" style="max-height: 300px; overflow-y: auto;">
                     <h6 class="fw-bold mb-2">
@@ -752,7 +806,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <h6 class="fw-bold mb-3">Email Volume Trends</h6>
@@ -1076,7 +1130,7 @@ function showAlert(message, type) {
 function loadWhitelistDomains() {
     const container = document.getElementById('whitelistDomains');
     container.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading whitelist domains...</p></div>';
-    
+
     fetch('/api/whitelist-domains')
         .then(response => response.json())
         .then(domains => {
@@ -1241,7 +1295,7 @@ let currentMLConfig = {};
 function toggleMLEditor() {
     const viewDiv = document.getElementById('ml-factors-view');
     const editorDiv = document.getElementById('ml-factors-editor');
-    
+
     if (editorDiv.style.display === 'none') {
         viewDiv.style.display = 'none';
         editorDiv.style.display = 'block';
@@ -1259,7 +1313,7 @@ function saveMLConfiguration() {
             max_score: parseFloat(input.value)
         });
     });
-    
+
     fetch('/admin/ml-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1402,19 +1456,19 @@ function updatePerformanceMetrics() {
         const processingElement = document.getElementById('processing-threads');
         const responseElement = document.getElementById('avg-response-time');
         const slowElement = document.getElementById('slow-requests');
-        
+
         if (cpuElement) {
             cpuElement.textContent = data.cpu_usage + '%';
             const cpuProgress = document.getElementById('cpu-progress');
             if (cpuProgress) cpuProgress.style.width = data.cpu_usage + '%';
         }
-        
+
         if (memoryElement) {
             memoryElement.textContent = data.memory_usage + '%';
             const memoryProgress = document.getElementById('memory-progress');
             if (memoryProgress) memoryProgress.style.width = data.memory_usage + '%';
         }
-        
+
         if (threadsElement) threadsElement.textContent = data.active_threads;
         if (processingElement) processingElement.textContent = data.processing_threads + ' Processing';
         if (responseElement) responseElement.textContent = data.avg_response_time + 'ms';
@@ -1426,14 +1480,14 @@ function updatePerformanceMetrics() {
             performanceChart.data.labels.push(now);
             performanceChart.data.datasets[0].data.push(data.cpu_usage);
             performanceChart.data.datasets[1].data.push(data.memory_usage);
-            
+
             // Keep only last 20 data points
             if (performanceChart.data.labels.length > 20) {
                 performanceChart.data.labels.shift();
                 performanceChart.data.datasets[0].data.shift();
                 performanceChart.data.datasets[1].data.shift();
             }
-            
+
             performanceChart.update();
         }
     })
@@ -1454,7 +1508,7 @@ function updateSecurityMetrics() {
         const criticalElement = document.getElementById('critical-threats');
         const suspiciousElement = document.getElementById('suspicious-activities');
         const blockedElement = document.getElementById('blocked-domains');
-        
+
         if (criticalElement) criticalElement.textContent = data.critical_threats;
         if (suspiciousElement) suspiciousElement.textContent = data.suspicious_activities;
         if (blockedElement) blockedElement.textContent = data.blocked_domains;
@@ -1490,7 +1544,7 @@ function updateSecurityEvents(events) {
         const timeAgo = getTimeAgo(new Date(event.timestamp));
         const iconClass = event.severity === 'critical' ? 'fa-exclamation-triangle text-danger' :
                          event.severity === 'warning' ? 'fa-eye text-warning' : 'fa-info-circle text-info';
-        
+
         html += `
             <div class="d-flex align-items-start mb-2 p-2 bg-light rounded">
                 <i class="fas ${iconClass} me-2 mt-1"></i>
@@ -1502,7 +1556,7 @@ function updateSecurityEvents(events) {
             </div>
         `;
     });
-    
+
     container.innerHTML = html;
 }
 
@@ -1521,7 +1575,7 @@ function updateDataAnalytics() {
         const highRiskElement = document.getElementById('high-risk-emails');
         const domainsElement = document.getElementById('unique-domains');
         const timeElement = document.getElementById('avg-processing-time');
-        
+
         if (totalElement) totalElement.textContent = data.total_emails.toLocaleString();
         if (cleanElement) cleanElement.textContent = data.clean_emails.toLocaleString();
         if (flaggedElement) flaggedElement.textContent = data.flagged_emails.toLocaleString();
@@ -1552,10 +1606,10 @@ function updateDataAnalytics() {
 
 function updateSystemLogs() {
     if (!document.getElementById('auto-refresh-logs').checked) return;
-    
+
     const level = document.getElementById('log-level-filter').value;
     const component = document.getElementById('log-component-filter').value;
-    
+
     fetch(`/admin/api/system-logs?level=${level}&component=${component}`)
     .then(response => response.json())
     .then(data => {
@@ -1570,7 +1624,7 @@ function updateSystemLogs() {
             const levelClass = log.level === 'ERROR' ? 'text-danger' :
                               log.level === 'WARNING' ? 'text-warning' :
                               log.level === 'INFO' ? 'text-info' : 'text-muted';
-            
+
             html += `
                 <div class="log-entry mb-1">
                     <span class="text-muted">[${log.timestamp}]</span>
@@ -1580,9 +1634,9 @@ function updateSystemLogs() {
                 </div>
             `;
         });
-        
+
         container.innerHTML = html;
-        
+
         // Auto-scroll to bottom if follow logs is enabled
         if (document.getElementById('follow-logs').checked) {
             container.scrollTop = container.scrollHeight;
@@ -1616,7 +1670,7 @@ function rebuildIndexes() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showSuccess('Database indexes rebuilt successfully');
+                showSuccess('Database indexesrebuilt successfully');
             } else {
                 showError('Failed to rebuild indexes: ' + data.message);
             }
@@ -1801,7 +1855,7 @@ function getTimeAgo(date) {
         hour: 3600,
         minute: 60
     };
-    
+
     for (let interval in intervals) {
         const count = Math.floor(seconds / intervals[interval]);
         if (count > 0) {
@@ -1816,18 +1870,18 @@ window.showMLKeywords = function() {
     console.log('showMLKeywords called from button click');
     const container = document.getElementById('mlKeywordsContainer');
     const keywordsDiv = document.getElementById('mlKeywords');
-    
+
     if (!container || !keywordsDiv) {
         console.error('Could not find container elements');
         alert('Error: Could not find ML Keywords container elements');
         return;
     }
-    
+
     // Toggle visibility
     if (container.style.display === 'none' || container.style.display === '') {
         container.style.display = 'block';
         keywordsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div><p class="mt-2">Loading ML keywords...</p></div>';
-        
+
         // Fetch data
         fetch('/api/ml-keywords')
             .then(response => {
@@ -1887,13 +1941,13 @@ window.loadMLKeywords = function() {
     console.log('loadMLKeywords called');
     const container = document.getElementById('mlKeywordsContainer');
     const keywordsDiv = document.getElementById('mlKeywords');
-    
+
     console.log('Container:', container, 'KeywordsDiv:', keywordsDiv);
-    
+
     if (container && container.style.display === 'none') {
         container.style.display = 'block';
         keywordsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading ML keywords...</p></div>';
-        
+
         fetch('/api/ml-keywords')
             .then(response => response.json())
             .then(data => {
@@ -1901,7 +1955,7 @@ window.loadMLKeywords = function() {
                     keywordsDiv.innerHTML = `<div class="alert alert-warning">${data.error}</div>`;
                     return;
                 }
-                
+
                 let keywordsList = '';
                 if (data.keywords && data.keywords.length > 0) {
                     keywordsList = '<div class="mt-2"><h6>Sample Keywords:</h6><div class="row">';
@@ -1919,7 +1973,7 @@ window.loadMLKeywords = function() {
                     });
                     keywordsList += '</div></div>';
                 }
-                
+
                 keywordsDiv.innerHTML = `
                     <h6>ML Keywords Summary</h6>
                     <ul class="list-group list-group-flush">
@@ -1970,7 +2024,7 @@ window.loadMLKeywords = function() {
 // Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, setting up NEW ML Keywords button');
-    
+
     // Set up the NEW ML Keywords button
     const newMLKeywordsBtn = document.getElementById('newMLKeywordsBtn');
     if (newMLKeywordsBtn) {
@@ -1983,12 +2037,12 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         console.error('Could not find newMLKeywordsBtn element');
     }
-    
+
     // Initialize charts if elements exist
     if (typeof initializeCharts === 'function') {
         initializeCharts();
     }
-    
+
     // Load initial data if functions exist
     if (typeof loadWhitelistDomains === 'function') {
         loadWhitelistDomains();
@@ -2005,7 +2059,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof updateSystemLogs === 'function') {
         updateSystemLogs();
     }
-    
+
     // Set up periodic updates only if functions exist
     if (typeof updatePerformanceMetrics === 'function') {
         setInterval(updatePerformanceMetrics, 5000);  // Every 5 seconds
@@ -2019,11 +2073,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof updateSystemLogs === 'function') {
         setInterval(updateSystemLogs, 15000);         // Every 15 seconds
     }
-    
+
     // Set up log filter listeners only if elements exist
     const logLevelFilter = document.getElementById('log-level-filter');
     const logComponentFilter = document.getElementById('log-component-filter');
-    
+
     if (logLevelFilter && typeof updateSystemLogs === 'function') {
         logLevelFilter.addEventListener('change', updateSystemLogs);
     }
@@ -2035,22 +2089,22 @@ document.addEventListener('DOMContentLoaded', function() {
 // New ML Keywords function that actually works
 function toggleNewMLKeywords() {
     console.log('toggleNewMLKeywords function called');
-    
+
     const container = document.getElementById('newMLKeywordsContainer');
     const keywordsDiv = document.getElementById('newMLKeywords');
-    
+
     if (!container || !keywordsDiv) {
         console.error('Container elements not found');
         alert('Error: Could not find ML Keywords elements');
         return;
     }
-    
+
     console.log('Found container elements, toggling visibility');
-    
+
     if (container.style.display === 'none' || container.style.display === '') {
         console.log('Showing ML Keywords container');
         container.style.display = 'block';
-        
+
         // Show loading state
         keywordsDiv.innerHTML = `
             <div class="card-body">
@@ -2062,7 +2116,7 @@ function toggleNewMLKeywords() {
                 </div>
             </div>
         `;
-        
+
         // Fetch ML keywords data
         console.log('Fetching ML keywords from API...');
         fetch('/api/ml-keywords')
@@ -2075,13 +2129,13 @@ function toggleNewMLKeywords() {
             })
             .then(data => {
                 console.log('ML Keywords data loaded successfully:', data);
-                
+
                 const totalKeywords = data.total_keywords || 0;
                 const categories = data.categories || {};
                 const businessCount = categories.Business || 0;
                 const personalCount = categories.Personal || 0;
                 const suspiciousCount = categories.Suspicious || 0;
-                
+
                 keywordsDiv.innerHTML = `
                     <div class="card-header bg-primary text-white">
                         <h6 class="card-title mb-0">
@@ -2110,19 +2164,19 @@ function toggleNewMLKeywords() {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-12">
                                 <h6>Sample Keywords by Category:</h6>
                                 <div class="row">
                 `;
-                
+
                 // Add sample keywords from each category
                 if (data.keywords && data.keywords.length > 0) {
                     const businessKeywords = data.keywords.filter(k => k.category === 'Business').slice(0, 5);
                     const personalKeywords = data.keywords.filter(k => k.category === 'Personal').slice(0, 5);
                     const suspiciousKeywords = data.keywords.filter(k => k.category === 'Suspicious').slice(0, 5);
-                    
+
                     keywordsDiv.innerHTML += `
                                     <div class="col-md-4">
                                         <h6 class="text-success">Business Keywords</h6>
@@ -2138,12 +2192,12 @@ function toggleNewMLKeywords() {
                                     </div>
                     `;
                 }
-                
+
                 keywordsDiv.innerHTML += `
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="mt-3">
                             <button class="btn btn-sm btn-success" onclick="populateDefaultKeywords()">
                                 <i class="fas fa-plus me-1"></i>Populate Default Keywords
@@ -2160,7 +2214,7 @@ function toggleNewMLKeywords() {
                         </div>
                     </div>
                 `;
-                
+
                 console.log('ML Keywords display updated successfully');
             })
             .catch(error => {
@@ -2192,7 +2246,7 @@ function showKeywordEditor() {
 function loadKeywordsForEditing() {
     const keywordsList = document.getElementById('keywordsList');
     keywordsList.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div><p class="mt-2">Loading keywords...</p></div>';
-    
+
     fetch('/api/ml-keywords/all')
         .then(response => response.json())
         .then(data => {
@@ -2200,18 +2254,18 @@ function loadKeywordsForEditing() {
                 keywordsList.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
                 return;
             }
-            
+
             if (data.keywords.length === 0) {
                 keywordsList.innerHTML = '<div class="text-center text-muted"><p>No keywords found. Add some keywords above.</p></div>';
                 return;
             }
-            
+
             let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Keyword</th><th>Category</th><th>Risk Score</th><th>Actions</th></tr></thead><tbody>';
-            
+
             data.keywords.forEach(keyword => {
                 const categoryClass = keyword.category === 'Business' ? 'success' : 
                                     keyword.category === 'Personal' ? 'warning' : 'danger';
-                
+
                 html += `
                     <tr id="keyword-${keyword.id}">
                         <td>
@@ -2239,7 +2293,7 @@ function loadKeywordsForEditing() {
                     </tr>
                 `;
             });
-            
+
             html += '</tbody></table></div>';
             keywordsList.innerHTML = html;
         })
@@ -2249,46 +2303,151 @@ function loadKeywordsForEditing() {
         });
 }
 
-function addNewKeyword() {
-    const keyword = document.getElementById('newKeywordInput').value.trim();
+function addKeywords() {
+    const activeTab = document.querySelector('#keywordTabs .nav-link.active').id;
+
+    if (activeTab === 'single-tab') {
+        addSingleKeyword();
+    } else {
+        addBulkKeywords();
+    }
+}
+
+function addSingleKeyword() {
+    const keyword = document.getElementById('newKeywordText').value.trim();
     const category = document.getElementById('newKeywordCategory').value;
-    const riskScore = document.getElementById('newKeywordRisk').value;
-    
+    const riskScore = parseInt(document.getElementById('newKeywordRisk').value);
+
     if (!keyword) {
-        alert('Please enter a keyword');
+        showError('Please enter a keyword');
         return;
     }
-    
+
+    if (riskScore < 1 || riskScore > 10) {
+        showError('Risk score must be between 1 and 10');
+        return;
+    }
+
     fetch('/api/ml-keywords/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
             keyword: keyword,
             category: category,
-            risk_score: parseInt(riskScore)
+            risk_score: riskScore
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            document.getElementById('newKeywordInput').value = '';
+            showSuccess(data.message);
+            // Clear form
+            document.getElementById('newKeywordText').value = '';
             document.getElementById('newKeywordRisk').value = '5';
+            // Refresh the keywords list
             loadKeywordsForEditing();
-            showAlert('Keyword added successfully', 'success');
         } else {
-            showAlert('Error: ' + (data.error || data.message), 'danger');
+            showError(data.error || 'Failed to add keyword');
         }
     })
     .catch(error => {
         console.error('Error adding keyword:', error);
-        showAlert('Failed to add keyword', 'danger');
+        showError('Failed to add keyword');
+    });
+}
+
+function addBulkKeywords() {
+    const keywordsText = document.getElementById('bulkKeywordsText').value.trim();
+    const category = document.getElementById('bulkKeywordCategory').value;
+    const riskScore = parseInt(document.getElementById('bulkKeywordRisk').value);
+
+    if (!keywordsText) {
+        showError('Please enter keywords');
+        return;
+    }
+
+    if (riskScore < 1 || riskScore > 10) {
+        showError('Risk score must be between 1 and 10');
+        return;
+    }
+
+    // Parse keywords - handle both line breaks and commas
+    let keywords = [];
+
+    // First split by lines
+    const lines = keywordsText.split('\n');
+    for (let line of lines) {
+        line = line.trim();
+        if (line) {
+            // Then split each line by commas
+            const commaSplit = line.split(',');
+            for (let keyword of commaSplit) {
+                keyword = keyword.trim();
+                if (keyword && !keywords.includes(keyword.toLowerCase())) {
+                    keywords.push(keyword);
+                }
+            }
+        }
+    }
+
+    if (keywords.length === 0) {
+        showError('No valid keywords found');
+        return;
+    }
+
+    if (keywords.length > 100) {
+        showError('Maximum 100 keywords allowed per bulk import');
+        return;
+    }
+
+    // Show progress
+    const addButton = event.target;
+    const originalText = addButton.innerHTML;
+    addButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding Keywords...';
+    addButton.disabled = true;
+
+    // Send bulk request
+    fetch('/api/ml-keywords/bulk-add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            keywords: keywords,
+            category: category,
+            risk_score: riskScore
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccess(`Successfully added ${data.added_count} keywords (${data.skipped_count} duplicates skipped)`);
+            // Clear form
+            document.getElementById('bulkKeywordsText').value = '';
+            document.getElementById('bulkKeywordRisk').value = '5';
+            // Refresh the keywords list
+            loadKeywordsForEditing();
+        } else {
+            showError(data.error || 'Failed to add keywords');
+        }
+    })
+    .catch(error => {
+        console.error('Error adding keywords:', error);
+        showError('Failed to add keywords');
+    })
+    .finally(() => {
+        // Restore button
+        addButton.innerHTML = originalText;
+        addButton.disabled = false;
     });
 }
 
 function updateKeywordField(keywordId, field, value) {
     const data = {};
     data[field] = field === 'risk_score' ? parseInt(value) : value;
-    
+
     fetch(`/api/ml-keywords/update/${keywordId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2312,7 +2471,7 @@ function deleteKeyword(keywordId, keywordName) {
     if (!confirm(`Are you sure you want to delete the keyword "${keywordName}"?`)) {
         return;
     }
-    
+
     fetch(`/api/ml-keywords/delete/${keywordId}`, {
         method: 'DELETE'
     })
