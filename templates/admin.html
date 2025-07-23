@@ -376,20 +376,61 @@ suspicious activity"></textarea>
                             <!-- Read-only view -->
                             <div id="ml-factors-view" class="rule-factors">
                                 {% for factor in risk_scoring_info.algorithm_components.rule_based_factors.factors %}
-                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom risk-factor-item" 
-                                     style="cursor: pointer; border-radius: 4px; transition: all 0.2s;"
-                                     onclick="viewRiskFactorDetails({{ factor.id if factor.id else 'null' }}, '{{ factor.name }}', '{{ factor.description }}', {{ factor.max_score }}, '{{ factor.category if factor.category else 'General' }}', {{ factor.weight_percentage if factor.weight_percentage else 0.0 }})"
+                                <div class="d-flex justify-content-between py-3 border-bottom risk-factor-item" 
+                                     style="cursor: pointer; border-radius: 4px; transition: all 0.2s; min-height: 120px;"
+                                     onclick="viewRiskFactorDetails({{ factor.id if factor.id else 'null' }}, '{{ factor.name }}', '{{ factor.description }}', {{ factor.max_score }}, '{{ factor.category if factor.category else 'General' }}', {{ factor.weight_percentage if factor.weight_percentage else 0.0 }}, {{ factor.calculation_config|tojson if factor.calculation_config else '{}' }})"
                                      onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='translateX(5px)'"
                                      onmouseout="this.style.backgroundColor='transparent'; this.style.transform='translateX(0)'">
-                                    <div>
+                                    <div style="flex: 1;">
                                         <small class="fw-bold text-primary">{{ factor.name }}</small>
                                         <br><small class="text-muted">{{ factor.description }}</small>
+                                        
+                                        <!-- Implementation Details -->
+                                        {% if factor.calculation_config %}
+                                        <div class="mt-2 p-2 bg-white rounded border" style="font-size: 11px;">
+                                            <strong class="text-info"><i class="fas fa-cogs me-1"></i>Implementation:</strong>
+                                            <div class="mt-1">
+                                                {% if factor.calculation_config.field %}
+                                                    <span class="badge bg-light text-dark me-1">Field: <code>{{ factor.calculation_config.field }}</code></span>
+                                                {% endif %}
+                                                {% if factor.calculation_config.fields %}
+                                                    <span class="badge bg-light text-dark me-1">Fields: 
+                                                        {% for field in factor.calculation_config.fields %}
+                                                            <code>{{ field }}</code>{% if not loop.last %}, {% endif %}
+                                                        {% endfor %}
+                                                    </span>
+                                                {% endif %}
+                                                {% if factor.calculation_config.trigger_values %}
+                                                    <br><span class="badge bg-warning text-dark me-1">Triggers: {{ factor.calculation_config.trigger_values|join(', ') }}</span>
+                                                {% endif %}
+                                                {% if factor.calculation_config.patterns %}
+                                                    <br><span class="badge bg-warning text-dark me-1">Patterns: {{ factor.calculation_config.patterns|join(', ') }}</span>
+                                                {% endif %}
+                                                {% if factor.calculation_config.suspicious_patterns %}
+                                                    <br><span class="badge bg-danger text-light me-1">Suspicious: {{ factor.calculation_config.suspicious_patterns|join(', ') }}</span>
+                                                {% endif %}
+                                                {% if factor.calculation_config.risk_periods %}
+                                                    <br><span class="badge bg-info text-light me-1">Risk Periods: {{ factor.calculation_config.risk_periods|join(', ') }}</span>
+                                                {% endif %}
+                                                {% if factor.calculation_config.score_calculation %}
+                                                    <br><span class="badge bg-secondary text-light me-1">Method: {{ factor.calculation_config.score_calculation }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <div class="mt-2 p-2 bg-light rounded" style="font-size: 11px;">
+                                            <span class="text-muted"><i class="fas fa-info-circle me-1"></i>No implementation details configured</span>
+                                        </div>
+                                        {% endif %}
+                                        
                                         {% if factor.category %}
-                                        <br><span class="badge badge-sm 
-                                            {% if factor.category == 'Security' %}bg-danger
-                                            {% elif factor.category == 'Content' %}bg-warning  
-                                            {% elif factor.category == 'Time' %}bg-info
-                                            {% else %}bg-secondary{% endif %} mt-1">{{ factor.category }}</span>
+                                        <div class="mt-2">
+                                            <span class="badge badge-sm 
+                                                {% if factor.category == 'Security' %}bg-danger
+                                                {% elif factor.category == 'Content' %}bg-warning  
+                                                {% elif factor.category == 'Time' %}bg-info
+                                                {% else %}bg-secondary{% endif %}">{{ factor.category }}</span>
+                                        </div>
                                         {% endif %}
                                     </div>
                                     <div class="text-end">
@@ -2638,13 +2679,20 @@ function showAlert(message, type) {
 }
 
 // Risk Factor Management Functions
-function viewRiskFactorDetails(id, name, description, maxScore, category, weightPercentage) {
+function viewRiskFactorDetails(id, name, description, maxScore, category, weightPercentage, calculationConfig) {
     document.getElementById('riskFactorId').value = id || '';
     document.getElementById('riskFactorName').value = name;
     document.getElementById('riskFactorDescription').value = description;
     document.getElementById('riskFactorMaxScore').value = maxScore;
     document.getElementById('riskFactorCategory').value = category;
     document.getElementById('riskFactorWeight').value = weightPercentage;
+    
+    // Handle calculation config
+    if (calculationConfig && typeof calculationConfig === 'object') {
+        document.getElementById('riskFactorConfig').value = JSON.stringify(calculationConfig, null, 2);
+    } else {
+        document.getElementById('riskFactorConfig').value = '';
+    }
     
     // Update modal title and buttons based on whether it's new or existing
     const modalTitle = document.getElementById('riskFactorModalTitle');
@@ -2673,6 +2721,7 @@ function showAddRiskFactorModal() {
     document.getElementById('riskFactorMaxScore').value = '0.1';
     document.getElementById('riskFactorCategory').value = 'General';
     document.getElementById('riskFactorWeight').value = '0.0';
+    document.getElementById('riskFactorConfig').value = '';
     
     const modalTitle = document.getElementById('riskFactorModalTitle');
     const saveButton = document.getElementById('saveRiskFactorBtn');
@@ -2693,6 +2742,7 @@ function saveRiskFactor() {
     const maxScore = parseFloat(document.getElementById('riskFactorMaxScore').value);
     const category = document.getElementById('riskFactorCategory').value;
     const weightPercentage = parseFloat(document.getElementById('riskFactorWeight').value);
+    const configText = document.getElementById('riskFactorConfig').value.trim();
     
     if (!name || !description) {
         showAlert('Name and description are required', 'danger');
@@ -2709,13 +2759,24 @@ function saveRiskFactor() {
         return;
     }
     
+    // Parse calculation config JSON
+    let calculationConfig = {};
+    if (configText) {
+        try {
+            calculationConfig = JSON.parse(configText);
+        } catch (error) {
+            showAlert('Invalid JSON in implementation configuration: ' + error.message, 'danger');
+            return;
+        }
+    }
+    
     const data = {
         name: name,
         description: description,
         max_score: maxScore,
         category: category,
         weight_percentage: weightPercentage,
-        calculation_config: {}
+        calculation_config: calculationConfig
     };
     
     const url = id ? `/api/risk-factors/update/${id}` : '/api/risk-factors/add';
@@ -2851,12 +2912,21 @@ function populateDefaultRiskFactors() {
                         </div>
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Implementation Configuration</label>
+                            <textarea class="form-control" id="riskFactorConfig" rows="4" placeholder="JSON configuration for how this factor is calculated..."></textarea>
+                            <small class="text-muted">JSON format defining fields, triggers, patterns, and calculation methods</small>
+                        </div>
+                    </div>
+
                     <div class="alert alert-info">
                         <h6><i class="fas fa-info-circle me-1"></i>How Risk Factors Work</h6>
                         <ul class="mb-0 small">
                             <li><strong>Maximum Score:</strong> The highest risk score this factor can contribute to an email's total risk</li>
                             <li><strong>Weight Percentage:</strong> How much this factor influences the overall risk calculation</li>
                             <li><strong>Category:</strong> Groups similar factors for better organization and analysis</li>
+                            <li><strong>Implementation:</strong> JSON config defines fields to check, trigger values, and calculation methods</li>
                         </ul>
                     </div>
                 </form>
