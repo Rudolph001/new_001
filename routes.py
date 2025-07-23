@@ -1762,3 +1762,132 @@ def not_found_error(error):
 def internal_error(error):
     db.session.rollback()
     return render_template('500.html'), 500
+
+# ML Keywords Management API Endpoints
+@app.route('/api/ml-keywords/add', methods=['POST'])
+def add_ml_keyword():
+    """Add a new ML keyword"""
+    try:
+        data = request.get_json()
+        keyword = data.get('keyword', '').strip()
+        category = data.get('category', 'Business')
+        risk_score = int(data.get('risk_score', 5))
+        
+        if not keyword:
+            return jsonify({'error': 'Keyword is required'}), 400
+        
+        if category not in ['Business', 'Personal', 'Suspicious']:
+            return jsonify({'error': 'Invalid category'}), 400
+        
+        if not (1 <= risk_score <= 10):
+            return jsonify({'error': 'Risk score must be between 1 and 10'}), 400
+        
+        # Check if keyword already exists
+        existing = AttachmentKeyword.query.filter_by(keyword=keyword).first()
+        if existing:
+            return jsonify({'error': f'Keyword "{keyword}" already exists'}), 400
+        
+        # Add keyword to database
+        new_keyword = AttachmentKeyword(
+            keyword=keyword,
+            category=category,
+            risk_score=risk_score,
+            is_active=True
+        )
+        
+        db.session.add(new_keyword)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Keyword "{keyword}" added successfully',
+            'keyword': {
+                'id': new_keyword.id,
+                'keyword': keyword,
+                'category': category,
+                'risk_score': risk_score
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error adding ML keyword: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml-keywords/update/<int:keyword_id>', methods=['PUT'])
+def update_ml_keyword(keyword_id):
+    """Update an existing ML keyword"""
+    try:
+        keyword_obj = AttachmentKeyword.query.get_or_404(keyword_id)
+        data = request.get_json()
+        
+        keyword_obj.keyword = data.get('keyword', keyword_obj.keyword).strip()
+        keyword_obj.category = data.get('category', keyword_obj.category)
+        keyword_obj.risk_score = int(data.get('risk_score', keyword_obj.risk_score))
+        keyword_obj.is_active = data.get('is_active', keyword_obj.is_active)
+        
+        if not keyword_obj.keyword:
+            return jsonify({'error': 'Keyword is required'}), 400
+        
+        if keyword_obj.category not in ['Business', 'Personal', 'Suspicious']:
+            return jsonify({'error': 'Invalid category'}), 400
+        
+        if not (1 <= keyword_obj.risk_score <= 10):
+            return jsonify({'error': 'Risk score must be between 1 and 10'}), 400
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Keyword "{keyword_obj.keyword}" updated successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating ML keyword: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml-keywords/delete/<int:keyword_id>', methods=['DELETE'])
+def delete_ml_keyword(keyword_id):
+    """Delete an ML keyword"""
+    try:
+        keyword_obj = AttachmentKeyword.query.get_or_404(keyword_id)
+        keyword_name = keyword_obj.keyword
+        
+        db.session.delete(keyword_obj)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Keyword "{keyword_name}" deleted successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting ML keyword: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/ml-keywords/all', methods=['GET'])
+def get_all_ml_keywords_detailed():
+    """Get all ML keywords with full details for editing"""
+    try:
+        keywords = AttachmentKeyword.query.filter_by(is_active=True).order_by(AttachmentKeyword.category, AttachmentKeyword.keyword).all()
+        keywords_list = []
+        
+        for kw in keywords:
+            keywords_list.append({
+                'id': kw.id,
+                'keyword': kw.keyword,
+                'category': kw.category,
+                'risk_score': kw.risk_score,
+                'is_active': kw.is_active
+            })
+        
+        return jsonify({
+            'keywords': keywords_list,
+            'total': len(keywords_list)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting detailed ML keywords: {str(e)}")
+        return jsonify({'error': str(e)}), 500

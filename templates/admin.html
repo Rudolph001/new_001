@@ -214,6 +214,55 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Keyword Editor Modal -->
+                <div class="modal fade" id="keywordEditorModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-edit me-2"></i>ML Keywords Editor
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-8">
+                                        <input type="text" id="newKeywordInput" class="form-control" placeholder="Enter new keyword...">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <select id="newKeywordCategory" class="form-select">
+                                            <option value="Business">Business</option>
+                                            <option value="Personal">Personal</option>
+                                            <option value="Suspicious">Suspicious</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" id="newKeywordRisk" class="form-control" placeholder="Risk" min="1" max="10" value="5">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <button class="btn btn-success" onclick="addNewKeyword()">
+                                        <i class="fas fa-plus me-1"></i>Add Keyword
+                                    </button>
+                                </div>
+                                
+                                <div id="keywordsList">
+                                    <div class="text-center">
+                                        <div class="spinner-border text-primary"></div>
+                                        <p class="mt-2">Loading keywords...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" onclick="saveAllKeywords()">
+                                    <i class="fas fa-save me-1"></i>Save All Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2099,6 +2148,9 @@ function toggleNewMLKeywords() {
                             <button class="btn btn-sm btn-success" onclick="populateDefaultKeywords()">
                                 <i class="fas fa-plus me-1"></i>Populate Default Keywords
                             </button>
+                            <button class="btn btn-sm btn-warning ms-2" onclick="showKeywordEditor()">
+                                <i class="fas fa-edit me-1"></i>Edit Keywords
+                            </button>
                             <button class="btn btn-sm btn-primary ms-2" onclick="toggleNewMLKeywords()">
                                 <i class="fas fa-sync me-1"></i>Refresh
                             </button>
@@ -2127,6 +2179,182 @@ function toggleNewMLKeywords() {
         console.log('Hiding ML Keywords container');
         container.style.display = 'none';
     }
+}
+
+// Keyword Editor Functions
+function showKeywordEditor() {
+    console.log('Opening keyword editor...');
+    const modal = new bootstrap.Modal(document.getElementById('keywordEditorModal'));
+    modal.show();
+    loadKeywordsForEditing();
+}
+
+function loadKeywordsForEditing() {
+    const keywordsList = document.getElementById('keywordsList');
+    keywordsList.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div><p class="mt-2">Loading keywords...</p></div>';
+    
+    fetch('/api/ml-keywords/all')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                keywordsList.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            if (data.keywords.length === 0) {
+                keywordsList.innerHTML = '<div class="text-center text-muted"><p>No keywords found. Add some keywords above.</p></div>';
+                return;
+            }
+            
+            let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Keyword</th><th>Category</th><th>Risk Score</th><th>Actions</th></tr></thead><tbody>';
+            
+            data.keywords.forEach(keyword => {
+                const categoryClass = keyword.category === 'Business' ? 'success' : 
+                                    keyword.category === 'Personal' ? 'warning' : 'danger';
+                
+                html += `
+                    <tr id="keyword-${keyword.id}">
+                        <td>
+                            <input type="text" class="form-control form-control-sm" value="${keyword.keyword}" 
+                                   onchange="updateKeywordField(${keyword.id}, 'keyword', this.value)">
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm" 
+                                    onchange="updateKeywordField(${keyword.id}, 'category', this.value)">
+                                <option value="Business" ${keyword.category === 'Business' ? 'selected' : ''}>Business</option>
+                                <option value="Personal" ${keyword.category === 'Personal' ? 'selected' : ''}>Personal</option>
+                                <option value="Suspicious" ${keyword.category === 'Suspicious' ? 'selected' : ''}>Suspicious</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm" value="${keyword.risk_score}" 
+                                   min="1" max="10" style="width: 70px;"
+                                   onchange="updateKeywordField(${keyword.id}, 'risk_score', this.value)">
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="deleteKeyword(${keyword.id}, '${keyword.keyword}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            keywordsList.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading keywords:', error);
+            keywordsList.innerHTML = '<div class="alert alert-danger">Failed to load keywords</div>';
+        });
+}
+
+function addNewKeyword() {
+    const keyword = document.getElementById('newKeywordInput').value.trim();
+    const category = document.getElementById('newKeywordCategory').value;
+    const riskScore = document.getElementById('newKeywordRisk').value;
+    
+    if (!keyword) {
+        alert('Please enter a keyword');
+        return;
+    }
+    
+    fetch('/api/ml-keywords/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            keyword: keyword,
+            category: category,
+            risk_score: parseInt(riskScore)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('newKeywordInput').value = '';
+            document.getElementById('newKeywordRisk').value = '5';
+            loadKeywordsForEditing();
+            showAlert('Keyword added successfully', 'success');
+        } else {
+            showAlert('Error: ' + (data.error || data.message), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error adding keyword:', error);
+        showAlert('Failed to add keyword', 'danger');
+    });
+}
+
+function updateKeywordField(keywordId, field, value) {
+    const data = {};
+    data[field] = field === 'risk_score' ? parseInt(value) : value;
+    
+    fetch(`/api/ml-keywords/update/${keywordId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log('Keyword updated successfully');
+        } else {
+            showAlert('Error: ' + (data.error || data.message), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating keyword:', error);
+        showAlert('Failed to update keyword', 'danger');
+    });
+}
+
+function deleteKeyword(keywordId, keywordName) {
+    if (!confirm(`Are you sure you want to delete the keyword "${keywordName}"?`)) {
+        return;
+    }
+    
+    fetch(`/api/ml-keywords/delete/${keywordId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById(`keyword-${keywordId}`).remove();
+            showAlert('Keyword deleted successfully', 'success');
+        } else {
+            showAlert('Error: ' + (data.error || data.message), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting keyword:', error);
+        showAlert('Failed to delete keyword', 'danger');
+    });
+}
+
+function saveAllKeywords() {
+    showAlert('All changes are saved automatically', 'info');
+    // Refresh the main ML keywords display if it's open
+    if (document.getElementById('newMLKeywordsContainer').style.display !== 'none') {
+        toggleNewMLKeywords();
+        setTimeout(() => toggleNewMLKeywords(), 500);
+    }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 4000);
 }
 </script>
 
