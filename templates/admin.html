@@ -2491,12 +2491,78 @@ function deleteKeyword(keywordId, keywordName) {
 }
 
 function saveAllKeywords() {
-    showAlert('All changes are saved automatically', 'info');
-    // Refresh the main ML keywords display if it's open
-    if (document.getElementById('newMLKeywordsContainer').style.display !== 'none') {
-        toggleNewMLKeywords();
-        setTimeout(() => toggleNewMLKeywords(), 500);
+    const saveButton = document.querySelector('[onclick="saveAllKeywords()"]');
+    const originalText = saveButton.innerHTML;
+    
+    // Show saving state
+    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+    saveButton.disabled = true;
+    
+    // Collect all keyword data from the table
+    const keywordRows = document.querySelectorAll('#keywordsList tbody tr');
+    const updates = [];
+    let hasChanges = false;
+    
+    keywordRows.forEach(row => {
+        const keywordId = row.id.split('-')[1];
+        const keywordInput = row.querySelector('input[type="text"]');
+        const categorySelect = row.querySelector('select');
+        const riskInput = row.querySelector('input[type="number"]');
+        
+        if (keywordInput && categorySelect && riskInput) {
+            updates.push({
+                id: keywordId,
+                keyword: keywordInput.value.trim(),
+                category: categorySelect.value,
+                risk_score: parseInt(riskInput.value)
+            });
+            hasChanges = true;
+        }
+    });
+    
+    if (!hasChanges) {
+        saveButton.innerHTML = originalText;
+        saveButton.disabled = false;
+        showAlert('No changes to save', 'info');
+        return;
     }
+    
+    // Save all updates
+    Promise.all(updates.map(update => 
+        fetch(`/api/ml-keywords/update/${update.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                keyword: update.keyword,
+                category: update.category,
+                risk_score: update.risk_score
+            })
+        }).then(response => response.json())
+    ))
+    .then(results => {
+        const errors = results.filter(r => !r.success);
+        
+        if (errors.length === 0) {
+            showAlert(`Successfully saved all ${updates.length} keywords`, 'success');
+            
+            // Refresh the main ML keywords display if it's open
+            if (document.getElementById('newMLKeywordsContainer').style.display !== 'none') {
+                toggleNewMLKeywords();
+                setTimeout(() => toggleNewMLKeywords(), 500);
+            }
+        } else {
+            showAlert(`Saved ${updates.length - errors.length} keywords, ${errors.length} failed`, 'warning');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving keywords:', error);
+        showAlert('Error saving keywords: ' + error.message, 'danger');
+    })
+    .finally(() => {
+        // Restore button
+        saveButton.innerHTML = originalText;
+        saveButton.disabled = false;
+    });
 }
 
 function showAlert(message, type) {
