@@ -117,6 +117,27 @@ class AttachmentKeyword(db.Model):
     def __repr__(self):
         return f'<AttachmentKeyword {self.keyword}>'
 
+class RiskFactor(db.Model):
+    __tablename__ = 'risk_factors'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False, unique=True)
+    description = db.Column(Text, nullable=False)
+    max_score = db.Column(db.Float, nullable=False, default=0.1)
+    category = db.Column(db.String(50), nullable=False, default='General')  # General, Security, Content, Time
+    is_active = db.Column(db.Boolean, default=True)
+    sort_order = db.Column(db.Integer, default=0)
+    weight_percentage = db.Column(db.Float, default=0.0)  # Percentage of total risk score
+    
+    # Configuration for how this factor is calculated
+    calculation_config = db.Column(JSON)  # JSON config for calculation rules
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<RiskFactor {self.name}>'
+
 class ProcessingError(db.Model):
     __tablename__ = 'processing_errors'
     

@@ -376,16 +376,43 @@ suspicious activity"></textarea>
                             <!-- Read-only view -->
                             <div id="ml-factors-view" class="rule-factors">
                                 {% for factor in risk_scoring_info.algorithm_components.rule_based_factors.factors %}
-                                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                <div class="d-flex justify-content-between align-items-center py-2 border-bottom risk-factor-item" 
+                                     style="cursor: pointer; border-radius: 4px; transition: all 0.2s;"
+                                     onclick="viewRiskFactorDetails({{ factor.id if factor.id else 'null' }}, '{{ factor.name }}', '{{ factor.description }}', {{ factor.max_score }}, '{{ factor.category if factor.category else 'General' }}', {{ factor.weight_percentage if factor.weight_percentage else 0.0 }})"
+                                     onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='translateX(5px)'"
+                                     onmouseout="this.style.backgroundColor='transparent'; this.style.transform='translateX(0)'">
                                     <div>
-                                        <small class="fw-bold">{{ factor.name }}</small>
+                                        <small class="fw-bold text-primary">{{ factor.name }}</small>
                                         <br><small class="text-muted">{{ factor.description }}</small>
+                                        {% if factor.category %}
+                                        <br><span class="badge badge-sm 
+                                            {% if factor.category == 'Security' %}bg-danger
+                                            {% elif factor.category == 'Content' %}bg-warning  
+                                            {% elif factor.category == 'Time' %}bg-info
+                                            {% else %}bg-secondary{% endif %} mt-1">{{ factor.category }}</span>
+                                        {% endif %}
                                     </div>
                                     <div class="text-end">
                                         <small class="fw-bold">Max: {{ "%.1f"|format(factor.max_score) }}</small>
+                                        {% if factor.weight_percentage %}
+                                        <br><small class="text-muted">{{ "%.1f"|format(factor.weight_percentage) }}%</small>
+                                        {% endif %}
+                                        <br><i class="fas fa-chevron-right text-muted" style="font-size: 10px;"></i>
                                     </div>
                                 </div>
                                 {% endfor %}
+                                
+                                <!-- Add New Factor Button -->
+                                <div class="d-flex justify-content-center mt-3">
+                                    <button class="btn btn-sm btn-outline-success" onclick="showAddRiskFactorModal()">
+                                        <i class="fas fa-plus me-1"></i>Add New Risk Factor
+                                    </button>
+                                    {% if not risk_scoring_info.algorithm_components.rule_based_factors.factors or risk_scoring_info.algorithm_components.rule_based_factors.factors|length == 0 or risk_scoring_info.algorithm_components.rule_based_factors.factors[0].id is none %}
+                                    <button class="btn btn-sm btn-outline-primary ms-2" onclick="populateDefaultRiskFactors()">
+                                        <i class="fas fa-download me-1"></i>Load Defaults
+                                    </button>
+                                    {% endif %}
+                                </div>
                             </div>
 
                             <!-- Editable view -->
@@ -2609,6 +2636,242 @@ function showAlert(message, type) {
         }
     }, 4000);
 }
+
+// Risk Factor Management Functions
+function viewRiskFactorDetails(id, name, description, maxScore, category, weightPercentage) {
+    document.getElementById('riskFactorId').value = id || '';
+    document.getElementById('riskFactorName').value = name;
+    document.getElementById('riskFactorDescription').value = description;
+    document.getElementById('riskFactorMaxScore').value = maxScore;
+    document.getElementById('riskFactorCategory').value = category;
+    document.getElementById('riskFactorWeight').value = weightPercentage;
+    
+    // Update modal title and buttons based on whether it's new or existing
+    const modalTitle = document.getElementById('riskFactorModalTitle');
+    const saveButton = document.getElementById('saveRiskFactorBtn');
+    const deleteButton = document.getElementById('deleteRiskFactorBtn');
+    
+    if (id) {
+        modalTitle.textContent = 'Edit Risk Factor';
+        saveButton.textContent = 'Update Factor';
+        deleteButton.style.display = 'inline-block';
+    } else {
+        modalTitle.textContent = 'View Risk Factor';
+        saveButton.textContent = 'Save Changes';
+        deleteButton.style.display = 'none';
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('riskFactorModal'));
+    modal.show();
+}
+
+function showAddRiskFactorModal() {
+    // Clear form for new factor
+    document.getElementById('riskFactorId').value = '';
+    document.getElementById('riskFactorName').value = '';
+    document.getElementById('riskFactorDescription').value = '';
+    document.getElementById('riskFactorMaxScore').value = '0.1';
+    document.getElementById('riskFactorCategory').value = 'General';
+    document.getElementById('riskFactorWeight').value = '0.0';
+    
+    const modalTitle = document.getElementById('riskFactorModalTitle');
+    const saveButton = document.getElementById('saveRiskFactorBtn');
+    const deleteButton = document.getElementById('deleteRiskFactorBtn');
+    
+    modalTitle.textContent = 'Add New Risk Factor';
+    saveButton.textContent = 'Add Factor';
+    deleteButton.style.display = 'none';
+    
+    const modal = new bootstrap.Modal(document.getElementById('riskFactorModal'));
+    modal.show();
+}
+
+function saveRiskFactor() {
+    const id = document.getElementById('riskFactorId').value;
+    const name = document.getElementById('riskFactorName').value.trim();
+    const description = document.getElementById('riskFactorDescription').value.trim();
+    const maxScore = parseFloat(document.getElementById('riskFactorMaxScore').value);
+    const category = document.getElementById('riskFactorCategory').value;
+    const weightPercentage = parseFloat(document.getElementById('riskFactorWeight').value);
+    
+    if (!name || !description) {
+        showAlert('Name and description are required', 'danger');
+        return;
+    }
+    
+    if (maxScore < 0.0 || maxScore > 1.0) {
+        showAlert('Max score must be between 0.0 and 1.0', 'danger');
+        return;
+    }
+    
+    if (weightPercentage < 0.0 || weightPercentage > 100.0) {
+        showAlert('Weight percentage must be between 0.0 and 100.0', 'danger');
+        return;
+    }
+    
+    const data = {
+        name: name,
+        description: description,
+        max_score: maxScore,
+        category: category,
+        weight_percentage: weightPercentage,
+        calculation_config: {}
+    };
+    
+    const url = id ? `/api/risk-factors/update/${id}` : '/api/risk-factors/add';
+    const method = id ? 'PUT' : 'POST';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('riskFactorModal')).hide();
+            // Refresh the page to show updated factors
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error saving risk factor:', error);
+        showAlert('Failed to save risk factor', 'danger');
+    });
+}
+
+function deleteRiskFactor() {
+    const id = document.getElementById('riskFactorId').value;
+    const name = document.getElementById('riskFactorName').value;
+    
+    if (!id) {
+        showAlert('Cannot delete: No factor ID found', 'danger');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete the risk factor "${name}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    fetch(`/api/risk-factors/delete/${id}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('riskFactorModal')).hide();
+            // Refresh the page to show updated factors
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('Error: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting risk factor:', error);
+        showAlert('Failed to delete risk factor', 'danger');
+    });
+}
+
+function populateDefaultRiskFactors() {
+    if (!confirm('This will add default risk factors to the database. Continue?')) {
+        return;
+    }
+    
+    fetch('/admin/risk-factors/populate', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(data.message, 'success');
+            // Refresh the page to show new factors
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error populating risk factors:', error);
+        showAlert('Failed to populate risk factors', 'danger');
+    });
+}
 </script>
+
+<!-- Risk Factor Management Modal -->
+<div class="modal fade" id="riskFactorModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="riskFactorModalTitle">
+                    <i class="fas fa-cog me-2"></i>Risk Factor Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <input type="hidden" id="riskFactorId">
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="riskFactorName" class="form-label">Factor Name</label>
+                            <input type="text" class="form-control" id="riskFactorName" placeholder="e.g., Leaver Status">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="riskFactorCategory" class="form-label">Category</label>
+                            <select class="form-control" id="riskFactorCategory">
+                                <option value="General">General</option>
+                                <option value="Security">Security</option>
+                                <option value="Content">Content</option>
+                                <option value="Time">Time</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="riskFactorDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="riskFactorDescription" rows="3" placeholder="Describe what this risk factor detects..."></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="riskFactorMaxScore" class="form-label">Maximum Score</label>
+                            <input type="number" class="form-control" id="riskFactorMaxScore" min="0.0" max="1.0" step="0.1" placeholder="0.0 - 1.0">
+                            <small class="text-muted">Maximum risk score this factor can contribute (0.0 - 1.0)</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="riskFactorWeight" class="form-label">Weight Percentage</label>
+                            <input type="number" class="form-control" id="riskFactorWeight" min="0.0" max="100.0" step="1.0" placeholder="0.0 - 100.0">
+                            <small class="text-muted">Percentage of total risk score (0.0 - 100.0%)</small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-1"></i>How Risk Factors Work</h6>
+                        <ul class="mb-0 small">
+                            <li><strong>Maximum Score:</strong> The highest risk score this factor can contribute to an email's total risk</li>
+                            <li><strong>Weight Percentage:</strong> How much this factor influences the overall risk calculation</li>
+                            <li><strong>Category:</strong> Groups similar factors for better organization and analysis</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="deleteRiskFactorBtn" onclick="deleteRiskFactor()">
+                    <i class="fas fa-trash me-1"></i>Delete
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="saveRiskFactorBtn" onclick="saveRiskFactor()">
+                    <i class="fas fa-save me-1"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}

@@ -1,6 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify, send_file
 from app import app, db
-from models import ProcessingSession, EmailRecord, Rule, WhitelistDomain, AttachmentKeyword, ProcessingError
+from models import ProcessingSession, EmailRecord, Rule, WhitelistDomain, AttachmentKeyword, ProcessingError, RiskFactor
 from session_manager import SessionManager
 from data_processor import DataProcessor
 from ml_engine import MLEngine
@@ -444,6 +444,33 @@ def admin():
     whitelist_domains = WhitelistDomain.query.filter_by(is_active=True).all()
     attachment_keywords = AttachmentKeyword.query.filter_by(is_active=True).all()
 
+    # Get risk factors from database, fallback to default if empty
+    db_risk_factors = RiskFactor.query.filter_by(is_active=True).order_by(RiskFactor.sort_order, RiskFactor.name).all()
+    
+    if db_risk_factors:
+        # Use database risk factors
+        factors_list = []
+        for factor in db_risk_factors:
+            factors_list.append({
+                'id': factor.id,
+                'name': factor.name,
+                'max_score': factor.max_score,
+                'description': factor.description,
+                'category': factor.category,
+                'weight_percentage': factor.weight_percentage,
+                'calculation_config': factor.calculation_config
+            })
+    else:
+        # Fallback to hardcoded values if database is empty
+        factors_list = [
+            {'id': None, 'name': 'Leaver Status', 'max_score': 0.3, 'description': 'Employee leaving organization', 'category': 'Security', 'weight_percentage': 30.0, 'calculation_config': {}},
+            {'id': None, 'name': 'External Domain', 'max_score': 0.2, 'description': 'Public email domains (Gmail, Yahoo, etc.)', 'category': 'Security', 'weight_percentage': 20.0, 'calculation_config': {}},
+            {'id': None, 'name': 'Attachment Risk', 'max_score': 0.3, 'description': 'File type and suspicious patterns', 'category': 'Content', 'weight_percentage': 30.0, 'calculation_config': {}},
+            {'id': None, 'name': 'Wordlist Matches', 'max_score': 0.2, 'description': 'Suspicious keywords in subject/attachment', 'category': 'Content', 'weight_percentage': 15.0, 'calculation_config': {}},
+            {'id': None, 'name': 'Time-based Risk', 'max_score': 0.1, 'description': 'Weekend/after-hours activity', 'category': 'Time', 'weight_percentage': 3.0, 'calculation_config': {}},
+            {'id': None, 'name': 'Justification Analysis', 'max_score': 0.1, 'description': 'Suspicious terms in explanations', 'category': 'Content', 'weight_percentage': 2.0, 'calculation_config': {}}
+        ]
+
     # Risk scoring algorithm details for transparency
     risk_scoring_info = {
         'thresholds': {
@@ -462,14 +489,7 @@ def admin():
             },
             'rule_based_factors': {
                 'weight': 60,
-                'factors': [
-                    {'name': 'Leaver Status', 'max_score': 0.3, 'description': 'Employee leaving organization'},
-                    {'name': 'External Domain', 'max_score': 0.2, 'description': 'Public email domains (Gmail, Yahoo, etc.)'},
-                    {'name': 'Attachment Risk', 'max_score': 0.3, 'description': 'File type and suspicious patterns'},
-                    {'name': 'Wordlist Matches', 'max_score': 0.2, 'description': 'Suspicious keywords in subject/attachment'},
-                    {'name': 'Time-based Risk', 'max_score': 0.1, 'description': 'Weekend/after-hours activity'},
-                    {'name': 'Justification Analysis', 'max_score': 0.1, 'description': 'Suspicious terms in explanations'}
-                ]
+                'factors': factors_list
             }
         },
         'attachment_scoring': {
@@ -1994,3 +2014,295 @@ def get_all_ml_keywords_detailed():
     except Exception as e:
         logger.error(f"Error getting detailed ML keywords: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+# Risk Factor Management APIs
+@app.route('/api/risk-factors', methods=['GET'])
+def get_risk_factors():
+    """Get all risk factors"""
+    try:
+        factors = RiskFactor.query.filter_by(is_active=True).order_by(RiskFactor.sort_order, RiskFactor.name).all()
+        factors_list = []
+        
+        for factor in factors:
+            factors_list.append({
+                'id': factor.id,
+                'name': factor.name,
+                'description': factor.description,
+                'max_score': factor.max_score,
+                'category': factor.category,
+                'weight_percentage': factor.weight_percentage,
+                'calculation_config': factor.calculation_config or {},
+                'sort_order': factor.sort_order
+            })
+        
+        return jsonify({
+            'factors': factors_list,
+            'total': len(factors_list)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting risk factors: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk-factors/<int:factor_id>', methods=['GET'])
+def get_risk_factor_details(factor_id):
+    """Get detailed information about a specific risk factor"""
+    try:
+        factor = RiskFactor.query.get_or_404(factor_id)
+        
+        return jsonify({
+            'id': factor.id,
+            'name': factor.name,
+            'description': factor.description,
+            'max_score': factor.max_score,
+            'category': factor.category,
+            'weight_percentage': factor.weight_percentage,
+            'calculation_config': factor.calculation_config or {},
+            'sort_order': factor.sort_order,
+            'is_active': factor.is_active,
+            'created_at': factor.created_at.isoformat() if factor.created_at else None,
+            'updated_at': factor.updated_at.isoformat() if factor.updated_at else None
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting risk factor details: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk-factors/add', methods=['POST'])
+def add_risk_factor():
+    """Add a new risk factor"""
+    try:
+        data = request.get_json()
+        
+        name = data.get('name', '').strip()
+        description = data.get('description', '').strip()
+        max_score = float(data.get('max_score', 0.1))
+        category = data.get('category', 'General').strip()
+        weight_percentage = float(data.get('weight_percentage', 0.0))
+        calculation_config = data.get('calculation_config', {})
+        
+        if not name:
+            return jsonify({'error': 'Name is required'}), 400
+        
+        if not description:
+            return jsonify({'error': 'Description is required'}), 400
+        
+        if not (0.0 <= max_score <= 1.0):
+            return jsonify({'error': 'Max score must be between 0.0 and 1.0'}), 400
+        
+        if not (0.0 <= weight_percentage <= 100.0):
+            return jsonify({'error': 'Weight percentage must be between 0.0 and 100.0'}), 400
+        
+        # Check if factor name already exists
+        existing = RiskFactor.query.filter_by(name=name).first()
+        if existing:
+            return jsonify({'error': f'Risk factor "{name}" already exists'}), 400
+        
+        # Create new risk factor
+        new_factor = RiskFactor(
+            name=name,
+            description=description,
+            max_score=max_score,
+            category=category,
+            weight_percentage=weight_percentage,
+            calculation_config=calculation_config,
+            sort_order=data.get('sort_order', 0),
+            is_active=True
+        )
+        
+        db.session.add(new_factor)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Risk factor "{name}" added successfully',
+            'factor': {
+                'id': new_factor.id,
+                'name': name,
+                'description': description,
+                'max_score': max_score,
+                'category': category,
+                'weight_percentage': weight_percentage
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error adding risk factor: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk-factors/update/<int:factor_id>', methods=['PUT'])
+def update_risk_factor(factor_id):
+    """Update an existing risk factor"""
+    try:
+        factor = RiskFactor.query.get_or_404(factor_id)
+        data = request.get_json()
+        
+        factor.name = data.get('name', factor.name).strip()
+        factor.description = data.get('description', factor.description).strip()
+        factor.max_score = float(data.get('max_score', factor.max_score))
+        factor.category = data.get('category', factor.category).strip()
+        factor.weight_percentage = float(data.get('weight_percentage', factor.weight_percentage))
+        factor.calculation_config = data.get('calculation_config', factor.calculation_config)
+        factor.sort_order = int(data.get('sort_order', factor.sort_order))
+        factor.is_active = data.get('is_active', factor.is_active)
+        
+        if not factor.name:
+            return jsonify({'error': 'Name is required'}), 400
+        
+        if not factor.description:
+            return jsonify({'error': 'Description is required'}), 400
+        
+        if not (0.0 <= factor.max_score <= 1.0):
+            return jsonify({'error': 'Max score must be between 0.0 and 1.0'}), 400
+        
+        if not (0.0 <= factor.weight_percentage <= 100.0):
+            return jsonify({'error': 'Weight percentage must be between 0.0 and 100.0'}), 400
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Risk factor "{factor.name}" updated successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating risk factor: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk-factors/delete/<int:factor_id>', methods=['DELETE'])
+def delete_risk_factor(factor_id):
+    """Delete a risk factor"""
+    try:
+        factor = RiskFactor.query.get_or_404(factor_id)
+        factor_name = factor.name
+        
+        db.session.delete(factor)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Risk factor "{factor_name}" deleted successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error deleting risk factor: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/risk-factors/populate', methods=['POST'])
+def populate_default_risk_factors():
+    """Populate database with default risk factors"""
+    try:
+        # Check if risk factors already exist
+        existing_count = RiskFactor.query.count()
+        if existing_count > 0:
+            return jsonify({
+                'success': False,
+                'message': f'Risk factors already exist ({existing_count} found). Delete existing factors first if you want to reset.'
+            }), 400
+        
+        # Default risk factors based on current hardcoded values
+        default_factors = [
+            {
+                'name': 'Leaver Status',
+                'description': 'Employee leaving organization',
+                'max_score': 0.3,
+                'category': 'Security',
+                'weight_percentage': 30.0,
+                'sort_order': 1,
+                'calculation_config': {
+                    'field': 'leaver',
+                    'trigger_values': ['yes', 'true', '1'],
+                    'score_calculation': 'binary'
+                }
+            },
+            {
+                'name': 'External Domain',
+                'description': 'Public email domains (Gmail, Yahoo, etc.)',
+                'max_score': 0.2,
+                'category': 'Security',
+                'weight_percentage': 20.0,
+                'sort_order': 2,
+                'calculation_config': {
+                    'field': 'recipients_email_domain',
+                    'patterns': ['gmail', 'yahoo', 'hotmail', 'outlook'],
+                    'score_calculation': 'pattern_match'
+                }
+            },
+            {
+                'name': 'Attachment Risk',
+                'description': 'File type and suspicious patterns',
+                'max_score': 0.3,
+                'category': 'Content',
+                'weight_percentage': 30.0,
+                'sort_order': 3,
+                'calculation_config': {
+                    'field': 'attachments',
+                    'high_risk_extensions': ['.exe', '.scr', '.bat'],
+                    'medium_risk_extensions': ['.zip', '.rar'],
+                    'score_calculation': 'attachment_analysis'
+                }
+            },
+            {
+                'name': 'Wordlist Matches',
+                'description': 'Suspicious keywords in subject/attachment',
+                'max_score': 0.2,
+                'category': 'Content',
+                'weight_percentage': 15.0,
+                'sort_order': 4,
+                'calculation_config': {
+                    'fields': ['wordlist_subject', 'wordlist_attachment'],
+                    'score_calculation': 'keyword_analysis'
+                }
+            },
+            {
+                'name': 'Time-based Risk',
+                'description': 'Weekend/after-hours activity',
+                'max_score': 0.1,
+                'category': 'Time',
+                'weight_percentage': 3.0,
+                'sort_order': 5,
+                'calculation_config': {
+                    'field': 'time',
+                    'risk_periods': ['weekend', 'after_hours'],
+                    'score_calculation': 'time_analysis'
+                }
+            },
+            {
+                'name': 'Justification Analysis',
+                'description': 'Suspicious terms in explanations',
+                'max_score': 0.1,
+                'category': 'Content',
+                'weight_percentage': 2.0,
+                'sort_order': 6,
+                'calculation_config': {
+                    'field': 'justification',
+                    'suspicious_patterns': ['personal use', 'backup', 'external'],
+                    'score_calculation': 'text_analysis'
+                }
+            }
+        ]
+        
+        added_count = 0
+        for factor_data in default_factors:
+            new_factor = RiskFactor(**factor_data)
+            db.session.add(new_factor)
+            added_count += 1
+            logger.info(f"Added risk factor: {factor_data['name']}")
+        
+        db.session.commit()
+        logger.info(f"Successfully added {added_count} default risk factors")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully added {added_count} default risk factors',
+            'added_count': added_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error populating default risk factors: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
