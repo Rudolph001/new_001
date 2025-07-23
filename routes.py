@@ -2366,13 +2366,24 @@ def api_network_data(session_id):
                 if recipients_list:
                     target_value = recipients_list[0].strip()
             
-            if source_field == 'subject' and source_value != 'Unknown':
-                # Truncate long subjects for readability
+            # Truncate long text fields for readability
+            text_fields = ['subject', 'attachments', 'user_response', 'justification', 'wordlist_attachment', 'wordlist_subject']
+            if source_field in text_fields and source_value != 'Unknown':
                 source_value = str(source_value)[:50] + "..." if len(str(source_value)) > 50 else str(source_value)
                 
-            if target_field == 'subject' and target_value != 'Unknown':
-                # Truncate long subjects for readability
+            if target_field in text_fields and target_value != 'Unknown':
                 target_value = str(target_value)[:50] + "..." if len(str(target_value)) > 50 else str(target_value)
+            
+            # Handle date fields
+            if source_field == 'time' and source_value != 'Unknown':
+                # Extract just the date part if it's a full datetime
+                if ' ' in str(source_value):
+                    source_value = str(source_value).split(' ')[0]
+                    
+            if target_field == 'time' and target_value != 'Unknown':
+                # Extract just the date part if it's a full datetime
+                if ' ' in str(target_value):
+                    target_value = str(target_value).split(' ')[0]
             
             if not source_value or not target_value or source_value == target_value:
                 continue
