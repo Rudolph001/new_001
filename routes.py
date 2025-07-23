@@ -1876,22 +1876,25 @@ def bulk_add_ml_keywords():
         category = data.get('category', 'Business')
         risk_score = int(data.get('risk_score', 5))
         
+        logger.info(f"Bulk add request: {len(keywords_list)} keywords, category: {category}, risk_score: {risk_score}")
+        
         if not keywords_list:
-            return jsonify({'error': 'Keywords list is required'}), 400
+            return jsonify({'success': False, 'error': 'Keywords list is required'}), 400
         
         if category not in ['Business', 'Personal', 'Suspicious']:
-            return jsonify({'error': 'Invalid category'}), 400
+            return jsonify({'success': False, 'error': 'Invalid category'}), 400
         
         if not (1 <= risk_score <= 10):
-            return jsonify({'error': 'Risk score must be between 1 and 10'}), 400
+            return jsonify({'success': False, 'error': 'Risk score must be between 1 and 10'}), 400
         
         if len(keywords_list) > 100:
-            return jsonify({'error': 'Maximum 100 keywords allowed per bulk import'}), 400
+            return jsonify({'success': False, 'error': 'Maximum 100 keywords allowed per bulk import'}), 400
         
         added_count = 0
         skipped_count = 0
         errors = []
         
+        # Process each keyword
         for keyword in keywords_list:
             keyword = keyword.strip()
             
@@ -1902,9 +1905,13 @@ def bulk_add_ml_keywords():
                 errors.append(f'Keyword too long: "{keyword[:20]}..."')
                 continue
             
-            # Check if keyword already exists
-            existing = AttachmentKeyword.query.filter_by(keyword=keyword).first()
+            # Check if keyword already exists (case-insensitive)
+            existing = AttachmentKeyword.query.filter(
+                db.func.lower(AttachmentKeyword.keyword) == keyword.lower()
+            ).first()
+            
             if existing:
+                logger.info(f"Keyword '{keyword}' already exists, skipping")
                 skipped_count += 1
                 continue
             
@@ -1919,25 +1926,35 @@ def bulk_add_ml_keywords():
                 
                 db.session.add(new_keyword)
                 added_count += 1
+                logger.info(f"Added keyword: '{keyword}' (category: {category}, risk: {risk_score})")
                 
             except Exception as e:
-                errors.append(f'Error adding "{keyword}": {str(e)}')
+                error_msg = f'Error adding "{keyword}": {str(e)}'
+                errors.append(error_msg)
+                logger.error(error_msg)
                 continue
         
         # Commit all successful additions
         if added_count > 0:
             try:
                 db.session.commit()
-                logger.info(f"Bulk added {added_count} ML keywords")
+                logger.info(f"Successfully committed {added_count} new ML keywords to database")
             except Exception as e:
+                error_msg = f'Database commit error: {str(e)}'
+                logger.error(error_msg)
                 db.session.rollback()
-                return jsonify({'error': f'Database error: {str(e)}'}), 500
+                return jsonify({'success': False, 'error': error_msg}), 500
+        else:
+            logger.info("No new keywords to commit")
         
+        # Create success message
         message = f'Bulk import completed: {added_count} keywords added'
         if skipped_count > 0:
             message += f', {skipped_count} duplicates skipped'
         if errors:
             message += f', {len(errors)} errors occurred'
+        
+        logger.info(message)
         
         return jsonify({
             'success': True,
@@ -1948,9 +1965,10 @@ def bulk_add_ml_keywords():
         })
         
     except Exception as e:
-        logger.error(f"Error in bulk keyword import: {str(e)}")
+        error_msg = f"Error in bulk keyword import: {str(e)}"
+        logger.error(error_msg)
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'error': error_msg}), 500
 
 @app.route('/api/ml-keywords/all', methods=['GET'])
 def get_all_ml_keywords_detailed():

@@ -2364,12 +2364,12 @@ function addBulkKeywords() {
     const riskScore = parseInt(document.getElementById('bulkKeywordRisk').value);
 
     if (!keywordsText) {
-        showError('Please enter keywords');
+        showAlert('Please enter keywords', 'danger');
         return;
     }
 
     if (riskScore < 1 || riskScore > 10) {
-        showError('Risk score must be between 1 and 10');
+        showAlert('Risk score must be between 1 and 10', 'danger');
         return;
     }
 
@@ -2385,20 +2385,24 @@ function addBulkKeywords() {
             const commaSplit = line.split(',');
             for (let keyword of commaSplit) {
                 keyword = keyword.trim();
-                if (keyword && !keywords.includes(keyword.toLowerCase())) {
-                    keywords.push(keyword);
+                if (keyword && keyword.length > 0) {
+                    // Check for duplicates case-insensitive
+                    const keywordLower = keyword.toLowerCase();
+                    if (!keywords.some(k => k.toLowerCase() === keywordLower)) {
+                        keywords.push(keyword);
+                    }
                 }
             }
         }
     }
 
     if (keywords.length === 0) {
-        showError('No valid keywords found');
+        showAlert('No valid keywords found', 'danger');
         return;
     }
 
     if (keywords.length > 100) {
-        showError('Maximum 100 keywords allowed per bulk import');
+        showAlert('Maximum 100 keywords allowed per bulk import', 'danger');
         return;
     }
 
@@ -2407,6 +2411,8 @@ function addBulkKeywords() {
     const originalText = addButton.innerHTML;
     addButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding Keywords...';
     addButton.disabled = true;
+
+    console.log('Adding bulk keywords:', keywords);
 
     // Send bulk request
     fetch('/api/ml-keywords/bulk-add', {
@@ -2420,22 +2426,44 @@ function addBulkKeywords() {
             risk_score: riskScore
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Bulk add response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Bulk add response data:', data);
         if (data.success) {
-            showSuccess(`Successfully added ${data.added_count} keywords (${data.skipped_count} duplicates skipped)`);
+            const message = `Successfully added ${data.added_count} keywords`;
+            if (data.skipped_count > 0) {
+                message += ` (${data.skipped_count} duplicates skipped)`;
+            }
+            if (data.errors && data.errors.length > 0) {
+                message += `. ${data.errors.length} errors occurred.`;
+                console.log('Bulk add errors:', data.errors);
+            }
+            showAlert(message, 'success');
+            
             // Clear form
             document.getElementById('bulkKeywordsText').value = '';
             document.getElementById('bulkKeywordRisk').value = '5';
-            // Refresh the keywords list
+            
+            // Refresh both the keywords list in the modal AND the main keywords display
             loadKeywordsForEditing();
+            
+            // If the main ML keywords panel is open, refresh it too
+            if (document.getElementById('newMLKeywordsContainer').style.display !== 'none') {
+                setTimeout(() => {
+                    toggleNewMLKeywords(); // Close it
+                    setTimeout(() => toggleNewMLKeywords(), 500); // Re-open it
+                }, 1000);
+            }
         } else {
-            showError(data.error || 'Failed to add keywords');
+            showAlert(data.error || 'Failed to add keywords', 'danger');
         }
     })
     .catch(error => {
         console.error('Error adding keywords:', error);
-        showError('Failed to add keywords');
+        showAlert('Failed to add keywords: ' + error.message, 'danger');
     })
     .finally(() => {
         // Restore button
