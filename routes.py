@@ -2314,13 +2314,12 @@ def network_dashboard(session_id):
 
 @app.route('/api/network-data/<session_id>', methods=['POST'])
 def api_network_data(session_id):
-    """Generate network visualization data for a specific session"""
+    """Generate network visualization data for a specific session with multiple link support"""
     try:
         session = ProcessingSession.query.get_or_404(session_id)
         data = request.get_json()
         
-        source_field = data.get('source_field', 'sender')
-        target_field = data.get('target_field', 'recipients_email_domain')
+        link_configs = data.get('link_configs', [{'source_field': 'sender', 'target_field': 'recipients_email_domain', 'color': '#007bff', 'style': 'solid'}])
         risk_filter = data.get('risk_filter', 'all')
         min_connections = data.get('min_connections', 1)
         node_size_metric = data.get('node_size_metric', 'connections')
@@ -2344,107 +2343,122 @@ def api_network_data(session_id):
                 'message': 'No data available for network visualization'
             })
         
-        # Build network graph
+        # Build network graph for multiple link types
         nodes_dict = {}
-        links_dict = {}
+        links_list = []
         
-        for email in emails:
-            # Get source and target values with proper handling
-            source_value = getattr(email, source_field, '') or 'Unknown'
-            target_value = getattr(email, target_field, '') or 'Unknown'
+        # Process each link configuration
+        for link_idx, link_config in enumerate(link_configs):
+            source_field = link_config.get('source_field', 'sender')
+            target_field = link_config.get('target_field', 'recipients_email_domain')
+            link_color = link_config.get('color', '#007bff')
+            link_style = link_config.get('style', 'solid')
             
-            # Handle special fields that might need processing
-            if source_field == 'recipients' and source_value != 'Unknown':
-                # Extract first recipient email or domain
-                recipients_list = str(source_value).split(',')
-                if recipients_list:
-                    source_value = recipients_list[0].strip()
+            link_dict = {}  # For this specific link type
             
-            if target_field == 'recipients' and target_value != 'Unknown':
-                # Extract first recipient email or domain
-                recipients_list = str(target_value).split(',')
-                if recipients_list:
-                    target_value = recipients_list[0].strip()
+            for email in emails:
+                # Get source and target values with proper handling
+                source_value = getattr(email, source_field, '') or 'Unknown'
+                target_value = getattr(email, target_field, '') or 'Unknown'
             
-            # Truncate long text fields for readability
-            text_fields = ['subject', 'attachments', 'user_response', 'justification', 'wordlist_attachment', 'wordlist_subject']
-            if source_field in text_fields and source_value != 'Unknown':
-                source_value = str(source_value)[:50] + "..." if len(str(source_value)) > 50 else str(source_value)
+                # Handle special fields that might need processing
+                if source_field == 'recipients' and source_value != 'Unknown':
+                    # Extract first recipient email or domain
+                    recipients_list = str(source_value).split(',')
+                    if recipients_list:
+                        source_value = recipients_list[0].strip()
                 
-            if target_field in text_fields and target_value != 'Unknown':
-                target_value = str(target_value)[:50] + "..." if len(str(target_value)) > 50 else str(target_value)
-            
-            # Handle date fields
-            if source_field == 'time' and source_value != 'Unknown':
-                # Extract just the date part if it's a full datetime
-                if ' ' in str(source_value):
-                    source_value = str(source_value).split(' ')[0]
+                if target_field == 'recipients' and target_value != 'Unknown':
+                    # Extract first recipient email or domain
+                    recipients_list = str(target_value).split(',')
+                    if recipients_list:
+                        target_value = recipients_list[0].strip()
+                
+                # Truncate long text fields for readability
+                text_fields = ['subject', 'attachments', 'user_response', 'justification', 'wordlist_attachment', 'wordlist_subject']
+                if source_field in text_fields and source_value != 'Unknown':
+                    source_value = str(source_value)[:50] + "..." if len(str(source_value)) > 50 else str(source_value)
                     
-            if target_field == 'time' and target_value != 'Unknown':
-                # Extract just the date part if it's a full datetime
-                if ' ' in str(target_value):
-                    target_value = str(target_value).split(' ')[0]
-            
-            if not source_value or not target_value or source_value == target_value:
-                continue
+                if target_field in text_fields and target_value != 'Unknown':
+                    target_value = str(target_value)[:50] + "..." if len(str(target_value)) > 50 else str(target_value)
                 
-            # Clean and normalize values
-            source_value = str(source_value).strip()
-            target_value = str(target_value).strip()
-            
-            if len(source_value) == 0 or len(target_value) == 0:
-                continue
-            
-            # Create nodes
-            if source_value not in nodes_dict:
-                nodes_dict[source_value] = {
-                    'id': source_value,
-                    'label': source_value,
-                    'type': source_field,
-                    'connections': 0,
-                    'email_count': 0,
-                    'risk_score': 0,
-                    'risk_level': 'Low',
-                    'size': 10
-                }
-            
-            if target_value not in nodes_dict:
-                nodes_dict[target_value] = {
-                    'id': target_value,
-                    'label': target_value,
-                    'type': target_field,
-                    'connections': 0,
-                    'email_count': 0,
-                    'risk_score': 0,
-                    'risk_level': 'Low',
-                    'size': 10
-                }
-            
-            # Update node metrics
-            nodes_dict[source_value]['email_count'] += 1
-            nodes_dict[target_value]['email_count'] += 1
-            
-            # Update risk information
-            if email.ml_risk_score:
-                current_risk = nodes_dict[source_value]['risk_score']
-                nodes_dict[source_value]['risk_score'] = max(current_risk, email.ml_risk_score)
+                # Handle date fields
+                if source_field == 'time' and source_value != 'Unknown':
+                    # Extract just the date part if it's a full datetime
+                    if ' ' in str(source_value):
+                        source_value = str(source_value).split(' ')[0]
+                        
+                if target_field == 'time' and target_value != 'Unknown':
+                    # Extract just the date part if it's a full datetime
+                    if ' ' in str(target_value):
+                        target_value = str(target_value).split(' ')[0]
                 
-                if email.risk_level and email.risk_level != 'Low':
-                    nodes_dict[source_value]['risk_level'] = email.risk_level
+                if not source_value or not target_value or source_value == target_value:
+                    continue
+                    
+                # Clean and normalize values
+                source_value = str(source_value).strip()
+                target_value = str(target_value).strip()
+                
+                if len(source_value) == 0 or len(target_value) == 0:
+                    continue
+                
+                # Create nodes
+                if source_value not in nodes_dict:
+                    nodes_dict[source_value] = {
+                        'id': source_value,
+                        'label': source_value,
+                        'type': source_field,
+                        'connections': 0,
+                        'email_count': 0,
+                        'risk_score': 0,
+                        'risk_level': 'Low',
+                        'size': 10
+                    }
+                
+                if target_value not in nodes_dict:
+                    nodes_dict[target_value] = {
+                        'id': target_value,
+                        'label': target_value,
+                        'type': target_field,
+                        'connections': 0,
+                        'email_count': 0,
+                        'risk_score': 0,
+                        'risk_level': 'Low',
+                        'size': 10
+                    }
+                
+                # Update node metrics
+                nodes_dict[source_value]['email_count'] += 1
+                nodes_dict[target_value]['email_count'] += 1
+                
+                # Update risk information
+                if email.ml_risk_score:
+                    current_risk = nodes_dict[source_value]['risk_score']
+                    nodes_dict[source_value]['risk_score'] = max(current_risk, email.ml_risk_score)
+                    
+                    if email.risk_level and email.risk_level != 'Low':
+                        nodes_dict[source_value]['risk_level'] = email.risk_level
+                
+                # Create link for this specific link type
+                link_key = f"{source_value}->{target_value}"
+                if link_key not in link_dict:
+                    link_dict[link_key] = {
+                        'source': source_value,
+                        'target': target_value,
+                        'weight': 0,
+                        'color': link_color,
+                        'style': link_style,
+                        'type': f"{source_field}-{target_field}"
+                    }
+                
+                link_dict[link_key]['weight'] += 1
             
-            # Create link
-            link_key = f"{source_value}->{target_value}"
-            if link_key not in links_dict:
-                links_dict[link_key] = {
-                    'source': source_value,
-                    'target': target_value,
-                    'weight': 0
-                }
-            
-            links_dict[link_key]['weight'] += 1
+            # Add this link type's links to the main list
+            links_list.extend(link_dict.values())
         
-        # Calculate node connections
-        for link in links_dict.values():
+        # Calculate node connections from all link types
+        for link in links_list:
             nodes_dict[link['source']]['connections'] += 1
             nodes_dict[link['target']]['connections'] += 1
         
@@ -2452,7 +2466,7 @@ def api_network_data(session_id):
         filtered_nodes = {k: v for k, v in nodes_dict.items() if v['connections'] >= min_connections}
         
         # Filter links to only include nodes that passed the filter
-        filtered_links = [link for link in links_dict.values() 
+        filtered_links = [link for link in links_list 
                          if link['source'] in filtered_nodes and link['target'] in filtered_nodes]
         
         # Calculate node sizes based on selected metric

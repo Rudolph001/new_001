@@ -12,55 +12,21 @@
                     <h5 class="card-title">Network Configuration</h5>
                 </div>
                 <div class="card-body">
-                    <!-- Field Selection -->
+                    <!-- Link Count Selection -->
                     <div class="mb-3">
-                        <label class="form-label">Source Field</label>
-                        <select class="form-select" id="sourceField">
-                            <option value="sender">Sender Email</option>
-                            <option value="recipients">Recipients</option>
-                            <option value="recipients_email_domain">Recipient Domain</option>
-                            <option value="department">Department</option>
-                            <option value="bunit">Business Unit</option>
-                            <option value="subject">Email Subject</option>
-                            <option value="attachments">Attachments</option>
-                            <option value="leaver">Leaver Status</option>
-                            <option value="status">Email Status</option>
-                            <option value="user_response">User Response</option>
-                            <option value="final_outcome">Final Outcome</option>
-                            <option value="justification">Justification</option>
-                            <option value="risk_level">Risk Level</option>
-                            <option value="termination_date">Termination Date</option>
-                            <option value="wordlist_attachment">Wordlist Attachment</option>
-                            <option value="wordlist_subject">Wordlist Subject</option>
-                            <option value="case_status">Case Status</option>
-                            <option value="assigned_to">Assigned To</option>
-                            <option value="time">Time</option>
+                        <label class="form-label">Number of Links to Create</label>
+                        <select class="form-select" id="linkCount" onchange="generateLinkFields()">
+                            <option value="1">1 Link</option>
+                            <option value="2">2 Links</option>
+                            <option value="3">3 Links</option>
+                            <option value="4">4 Links</option>
+                            <option value="5">5 Links</option>
                         </select>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Target Field</label>
-                        <select class="form-select" id="targetField">
-                            <option value="recipients_email_domain">Recipient Domain</option>
-                            <option value="sender">Sender Email</option>
-                            <option value="recipients">Recipients</option>
-                            <option value="department">Department</option>
-                            <option value="bunit">Business Unit</option>
-                            <option value="subject">Email Subject</option>
-                            <option value="attachments">Attachments</option>
-                            <option value="leaver">Leaver Status</option>
-                            <option value="status">Email Status</option>
-                            <option value="user_response">User Response</option>
-                            <option value="final_outcome">Final Outcome</option>
-                            <option value="justification">Justification</option>
-                            <option value="risk_level">Risk Level</option>
-                            <option value="termination_date">Termination Date</option>
-                            <option value="wordlist_attachment">Wordlist Attachment</option>
-                            <option value="wordlist_subject">Wordlist Subject</option>
-                            <option value="case_status">Case Status</option>
-                            <option value="assigned_to">Assigned To</option>
-                            <option value="time">Time</option>
-                        </select>
+                    <!-- Dynamic Link Fields -->
+                    <div id="linkFieldsContainer">
+                        <!-- Link fields will be dynamically generated here -->
                     </div>
                     
                     <!-- Visualization Type -->
@@ -266,15 +232,128 @@ function initializeNetwork() {
     window.networkHeight = height;
 }
 
+// Generate dynamic link fields based on selected count
+function generateLinkFields() {
+    const linkCount = parseInt(document.getElementById("linkCount").value);
+    const container = document.getElementById("linkFieldsContainer");
+    
+    const fieldOptions = `
+        <option value="sender">Sender Email</option>
+        <option value="recipients">Recipients</option>
+        <option value="recipients_email_domain">Recipient Domain</option>
+        <option value="department">Department</option>
+        <option value="bunit">Business Unit</option>
+        <option value="subject">Email Subject</option>
+        <option value="attachments">Attachments</option>
+        <option value="leaver">Leaver Status</option>
+        <option value="status">Email Status</option>
+        <option value="user_response">User Response</option>
+        <option value="final_outcome">Final Outcome</option>
+        <option value="justification">Justification</option>
+        <option value="risk_level">Risk Level</option>
+        <option value="termination_date">Termination Date</option>
+        <option value="wordlist_attachment">Wordlist Attachment</option>
+        <option value="wordlist_subject">Wordlist Subject</option>
+        <option value="case_status">Case Status</option>
+        <option value="assigned_to">Assigned To</option>
+        <option value="time">Time</option>
+    `;
+    
+    let html = '';
+    for (let i = 1; i <= linkCount; i++) {
+        html += `
+            <div class="card mb-3" style="border-left: 4px solid #007bff;">
+                <div class="card-header py-2">
+                    <h6 class="mb-0">Link ${i} Configuration</h6>
+                </div>
+                <div class="card-body py-2">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Source Field</label>
+                            <select class="form-select form-select-sm" id="sourceField${i}">
+                                ${fieldOptions}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Target Field</label>
+                            <select class="form-select form-select-sm" id="targetField${i}">
+                                ${fieldOptions}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Link Color</label>
+                            <select class="form-select form-select-sm" id="linkColor${i}">
+                                <option value="#007bff">Blue</option>
+                                <option value="#28a745">Green</option>
+                                <option value="#dc3545">Red</option>
+                                <option value="#ffc107">Yellow</option>
+                                <option value="#6f42c1">Purple</option>
+                                <option value="#fd7e14">Orange</option>
+                                <option value="#20c997">Teal</option>
+                                <option value="#6c757d">Gray</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Link Style</label>
+                            <select class="form-select form-select-sm" id="linkStyle${i}">
+                                <option value="solid">Solid Line</option>
+                                <option value="dashed">Dashed Line</option>
+                                <option value="dotted">Dotted Line</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+    
+    // Set default values for first link
+    if (linkCount >= 1) {
+        document.getElementById("sourceField1").value = "sender";
+        document.getElementById("targetField1").value = "recipients_email_domain";
+    }
+    if (linkCount >= 2) {
+        document.getElementById("sourceField2").value = "department";
+        document.getElementById("targetField2").value = "bunit";
+        document.getElementById("linkColor2").value = "#28a745";
+    }
+    if (linkCount >= 3) {
+        document.getElementById("sourceField3").value = "risk_level";
+        document.getElementById("targetField3").value = "case_status";
+        document.getElementById("linkColor3").value = "#dc3545";
+    }
+}
+
 // Load and update network data
 function updateNetwork() {
     const sessionId = "{{ session.id if session else 'demo' }}";
-    const sourceField = document.getElementById("sourceField").value;
-    const targetField = document.getElementById("targetField").value;
+    const linkCount = parseInt(document.getElementById("linkCount").value);
     const riskFilter = document.getElementById("riskFilter").value;
     const minConnections = document.getElementById("minConnections").value;
     const nodeSizeMetric = document.getElementById("nodeSizeMetric").value;
     const visualizationType = document.getElementById("visualizationType").value;
+    
+    // Collect all link configurations
+    const linkConfigs = [];
+    for (let i = 1; i <= linkCount; i++) {
+        const sourceField = document.getElementById(`sourceField${i}`);
+        const targetField = document.getElementById(`targetField${i}`);
+        const linkColor = document.getElementById(`linkColor${i}`);
+        const linkStyle = document.getElementById(`linkStyle${i}`);
+        
+        if (sourceField && targetField) {
+            linkConfigs.push({
+                source_field: sourceField.value,
+                target_field: targetField.value,
+                color: linkColor.value,
+                style: linkStyle.value
+            });
+        }
+    }
     
     // Show loading modal
     const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
@@ -287,8 +366,7 @@ function updateNetwork() {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            source_field: sourceField,
-            target_field: targetField,
+            link_configs: linkConfigs,
             risk_filter: riskFilter,
             min_connections: parseInt(minConnections),
             node_size_metric: nodeSizeMetric,
@@ -356,15 +434,20 @@ function renderNetwork(data) {
             .force("collision", d3.forceCollide().radius(d => d.size + 5));
     }
     
-    // Create links
+    // Create links with multi-link support
     linkElements = g.selectAll(".link")
         .data(data.links)
         .enter()
         .append("line")
         .attr("class", "link")
-        .attr("stroke", "#999")
+        .attr("stroke", d => d.color || "#999")
         .attr("stroke-opacity", 0.6)
         .attr("stroke-width", d => Math.max(1, Math.min(4, Math.sqrt(d.weight))))
+        .attr("stroke-dasharray", d => {
+            if (d.style === 'dashed') return "5,5";
+            if (d.style === 'dotted') return "2,2";
+            return null;
+        })
         .attr("marker-end", document.getElementById("showDirections").checked ? "url(#arrowhead)" : "");
     
     // Create link labels for email counts
@@ -666,6 +749,8 @@ function hideTooltip() {
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function() {
     initializeNetwork();
+    // Generate initial link fields
+    generateLinkFields();
     // Load initial network with default settings
     updateNetwork();
 });
