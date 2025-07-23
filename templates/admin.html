@@ -2715,6 +2715,200 @@ function viewRiskFactorSimple(element) {
     viewRiskFactorDetails(id, name, description, maxScore, category, weightPercentage, calculationConfig);
 }
 
+// Configuration editing helper functions
+function showConfigTemplates() {
+    const templates = {
+        'Binary Field Check': {
+            "field": "leaver",
+            "trigger_values": ["yes", "true", "1"],
+            "score_calculation": "binary"
+        },
+        'Pattern Matching': {
+            "field": "recipients_email_domain",
+            "patterns": ["gmail", "yahoo", "hotmail", "outlook"],
+            "score_calculation": "pattern_match"
+        },
+        'Attachment Analysis': {
+            "field": "attachments",
+            "high_risk_extensions": [".exe", ".scr", ".bat"],
+            "medium_risk_extensions": [".zip", ".rar"],
+            "score_calculation": "attachment_analysis"
+        },
+        'Keyword Analysis': {
+            "fields": ["wordlist_subject", "wordlist_attachment"],
+            "score_calculation": "keyword_analysis"
+        },
+        'Text Analysis': {
+            "field": "justification",
+            "suspicious_patterns": ["personal use", "backup", "external"],
+            "score_calculation": "text_analysis"
+        },
+        'Time-based Risk': {
+            "field": "time",
+            "risk_periods": ["weekend", "after_hours"],
+            "score_calculation": "time_analysis"
+        }
+    };
+
+    let templateOptions = '<div class="row">';
+    Object.keys(templates).forEach((templateName, index) => {
+        if (index % 2 === 0 && index > 0) templateOptions += '</div><div class="row">';
+        templateOptions += `
+            <div class="col-md-6 mb-2">
+                <button type="button" class="btn btn-outline-info btn-sm w-100" onclick="applyConfigTemplate('${templateName}')">
+                    <i class="fas fa-copy me-1"></i>${templateName}
+                </button>
+            </div>
+        `;
+    });
+    templateOptions += '</div>';
+
+    document.getElementById('configHints').innerHTML = `
+        <div class="card border-info">
+            <div class="card-header bg-info text-white py-2">
+                <h6 class="mb-0"><i class="fas fa-lightbulb me-1"></i>Configuration Templates</h6>
+            </div>
+            <div class="card-body py-2">
+                ${templateOptions}
+                <hr class="my-2">
+                <small class="text-muted">Click a template to copy its JSON structure to the configuration field.</small>
+            </div>
+        </div>
+    `;
+    document.getElementById('configHints').style.display = 'block';
+    
+    // Store templates for later use
+    window.configTemplatesData = templates;
+}
+
+function applyConfigTemplate(templateName) {
+    if (window.configTemplatesData && window.configTemplatesData[templateName]) {
+        const config = window.configTemplatesData[templateName];
+        document.getElementById('riskFactorConfig').value = JSON.stringify(config, null, 2);
+        validateConfigJSON();
+        showSuccess(`Applied "${templateName}" template`);
+    }
+}
+
+function validateConfigJSON() {
+    const configText = document.getElementById('riskFactorConfig').value.trim();
+    const feedbackDiv = document.getElementById('configValidationFeedback');
+    
+    if (!configText) {
+        feedbackDiv.innerHTML = '<div class="alert alert-warning alert-sm py-1"><i class="fas fa-exclamation-triangle me-1"></i>Configuration is empty</div>';
+        return false;
+    }
+    
+    try {
+        const config = JSON.parse(configText);
+        
+        // Validate common structure
+        let issues = [];
+        let suggestions = [];
+        
+        // Check for required fields
+        if (!config.field && !config.fields) {
+            issues.push('Missing "field" or "fields" property');
+        }
+        
+        if (!config.score_calculation) {
+            suggestions.push('Consider adding "score_calculation" method');
+        }
+        
+        // Check field types
+        if (config.trigger_values && !Array.isArray(config.trigger_values)) {
+            issues.push('"trigger_values" should be an array');
+        }
+        
+        if (config.patterns && !Array.isArray(config.patterns)) {
+            issues.push('"patterns" should be an array');
+        }
+        
+        if (issues.length === 0) {
+            feedbackDiv.innerHTML = `
+                <div class="alert alert-success alert-sm py-1">
+                    <i class="fas fa-check-circle me-1"></i>Valid JSON configuration
+                    ${suggestions.length > 0 ? '<br><small>' + suggestions.join(', ') + '</small>' : ''}
+                </div>
+            `;
+            return true;
+        } else {
+            feedbackDiv.innerHTML = `
+                <div class="alert alert-danger alert-sm py-1">
+                    <i class="fas fa-exclamation-circle me-1"></i>Issues found: ${issues.join(', ')}
+                </div>
+            `;
+            return false;
+        }
+        
+    } catch (error) {
+        feedbackDiv.innerHTML = `
+            <div class="alert alert-danger alert-sm py-1">
+                <i class="fas fa-times-circle me-1"></i>Invalid JSON: ${error.message}
+            </div>
+        `;
+        return false;
+    }
+}
+
+function formatConfigJSON() {
+    const configText = document.getElementById('riskFactorConfig').value.trim();
+    
+    if (!configText) {
+        showAlert('Configuration is empty - nothing to format', 'warning');
+        return;
+    }
+    
+    try {
+        const config = JSON.parse(configText);
+        document.getElementById('riskFactorConfig').value = JSON.stringify(config, null, 2);
+        showSuccess('JSON formatted successfully');
+        validateConfigJSON();
+    } catch (error) {
+        showAlert('Cannot format invalid JSON: ' + error.message, 'danger');
+    }
+}
+
+function setupConfigEditor() {
+    const configTextarea = document.getElementById('riskFactorConfig');
+    
+    // Add event listeners for real-time validation
+    configTextarea.addEventListener('input', debounce(validateConfigJSON, 500));
+    configTextarea.addEventListener('blur', validateConfigJSON);
+    
+    // Add keyboard shortcuts
+    configTextarea.addEventListener('keydown', function(e) {
+        // Ctrl+S to format
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            formatConfigJSON();
+        }
+        
+        // Tab support for better editing
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            
+            this.value = this.value.substring(0, start) + '  ' + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 2;
+        }
+    });
+}
+
+// Debounce function for performance
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 function viewRiskFactorDetails(id, name, description, maxScore, category, weightPercentage, calculationConfig) {
     document.getElementById('riskFactorId').value = id || '';
     document.getElementById('riskFactorName').value = name;
@@ -2729,6 +2923,12 @@ function viewRiskFactorDetails(id, name, description, maxScore, category, weight
     } else {
         document.getElementById('riskFactorConfig').value = '';
     }
+    
+    // Add real-time validation
+    setTimeout(() => {
+        setupConfigEditor();
+        validateConfigJSON();
+    }, 100);
     
     // Update modal title and buttons based on whether it's new or existing
     const modalTitle = document.getElementById('riskFactorModalTitle');
@@ -2795,11 +2995,17 @@ function saveRiskFactor() {
         return;
     }
     
-    // Parse calculation config JSON
+    // Parse and validate calculation config JSON
     let calculationConfig = {};
     if (configText) {
         try {
             calculationConfig = JSON.parse(configText);
+            
+            // Validate the configuration structure
+            if (!validateConfigJSON()) {
+                showAlert('Please fix the configuration issues before saving', 'danger');
+                return;
+            }
         } catch (error) {
             showAlert('Invalid JSON in implementation configuration: ' + error.message, 'danger');
             return;
@@ -2950,9 +3156,30 @@ function populateDefaultRiskFactors() {
 
                     <div class="row mb-3">
                         <div class="col-12">
-                            <label class="form-label">Implementation Configuration</label>
-                            <textarea class="form-control" id="riskFactorConfig" rows="4" placeholder="JSON configuration for how this factor is calculated..."></textarea>
-                            <small class="text-muted">JSON format defining fields, triggers, patterns, and calculation methods</small>
+                            <label class="form-label d-flex justify-content-between align-items-center">
+                                Implementation Configuration
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-info" onclick="showConfigTemplates()">
+                                        <i class="fas fa-lightbulb me-1"></i>Templates
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success" onclick="validateConfigJSON()">
+                                        <i class="fas fa-check me-1"></i>Validate
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="formatConfigJSON()">
+                                        <i class="fas fa-code me-1"></i>Format
+                                    </button>
+                                </div>
+                            </label>
+                            <textarea class="form-control font-monospace" id="riskFactorConfig" rows="8" placeholder="JSON configuration for how this factor is calculated..." style="background-color: #f8f9fa; border: 2px solid #dee2e6;"></textarea>
+                            <div id="configValidationFeedback" class="mt-2"></div>
+                            <div class="mt-2">
+                                <small class="text-muted d-block">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    <strong>Common Fields:</strong> field, fields, trigger_values, patterns, suspicious_patterns, score_calculation
+                                </small>
+                                <div class="mt-1" id="configHints" style="display: none;">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
