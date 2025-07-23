@@ -228,11 +228,11 @@ class RuleEngine:
             
             # Get field value from record
             record_value = self._get_field_value(record, field)
-            logger.debug(f"Record value for field '{field}': {record_value}")
+            logger.info(f"RULE DEBUG - Field '{field}': Record='{record_value}' vs Condition='{value}' (operator={operator})")
             
             # Apply operator with enhanced regex support
             result = self._apply_operator_with_regex(record_value, operator, value)
-            logger.debug(f"Condition result: {record_value} {operator} {value} = {result}")
+            logger.info(f"RULE DEBUG - Condition result: '{record_value}' {operator} '{value}' = {result}")
             return result
             
         except Exception as e:
@@ -242,54 +242,65 @@ class RuleEngine:
     def _apply_operator_with_regex(self, record_value, operator, condition_value):
         """Apply comparison operator with comprehensive regex support"""
         try:
-            # Convert to string for comparison
-            record_str = str(record_value).lower() if record_value else ""
-            condition_str = str(condition_value).lower() if condition_value else ""
+            # Convert to string for comparison, handle None and empty values
+            record_str = str(record_value).strip().lower() if record_value is not None else ""
+            condition_str = str(condition_value).strip().lower() if condition_value is not None else ""
+            
+            # Handle common CSV representations of empty/none values
+            if record_str in ['', 'none', 'null', 'n/a', 'na', 'nil']:
+                record_str = ""
+            if condition_str in ['', 'none', 'null', 'n/a', 'na', 'nil']:
+                condition_str = ""
+            
+            logger.info(f"OPERATOR DEBUG - Comparing: '{record_str}' {operator} '{condition_str}'")
             
             if operator == 'equals':
-                return record_str == condition_str
+                result = record_str == condition_str
             elif operator == 'contains':
-                return condition_str in record_str
+                result = condition_str in record_str
             elif operator == 'not_equals':
-                return record_str != condition_str
+                result = record_str != condition_str
             elif operator == 'not_contains':
-                return condition_str not in record_str
+                result = condition_str not in record_str
             elif operator == 'starts_with':
-                return record_str.startswith(condition_str)
+                result = record_str.startswith(condition_str)
             elif operator == 'ends_with':
-                return record_str.endswith(condition_str)
+                result = record_str.endswith(condition_str)
             elif operator == 'regex':
                 try:
                     # Enhanced regex with flags and escaping
                     pattern = re.compile(str(condition_value), re.IGNORECASE | re.MULTILINE)
-                    return bool(pattern.search(str(record_value)))
+                    result = bool(pattern.search(str(record_value)))
                 except re.error as e:
                     logger.warning(f"Invalid regex pattern '{condition_value}': {str(e)}")
-                    return False
+                    result = False
             elif operator == 'greater_than':
                 try:
-                    return float(record_value) > float(condition_value)
+                    result = float(record_value) > float(condition_value)
                 except (ValueError, TypeError):
-                    return False
+                    result = False
             elif operator == 'less_than':
                 try:
-                    return float(record_value) < float(condition_value)
+                    result = float(record_value) < float(condition_value)
                 except (ValueError, TypeError):
-                    return False
+                    result = False
             elif operator == 'in_list':
                 if isinstance(condition_value, list):
-                    return record_str in [str(v).lower() for v in condition_value]
+                    result = record_str in [str(v).lower() for v in condition_value]
                 else:
                     # Split comma-separated values
                     values = [v.strip().lower() for v in str(condition_value).split(',')]
-                    return record_str in values
+                    result = record_str in values
             elif operator == 'is_empty':
-                return not record_value or str(record_value).strip() == ""
+                result = record_str == ""
             elif operator == 'is_not_empty':
-                return record_value and str(record_value).strip() != ""
+                result = record_str != ""
             else:
                 logger.warning(f"Unknown operator: {operator}")
-                return False
+                result = False
+            
+            logger.info(f"OPERATOR RESULT: {result}")
+            return result
                 
         except Exception as e:
             logger.error(f"Error applying operator {operator}: {str(e)}")

@@ -163,6 +163,9 @@ def processing_status(session_id):
 def dashboard_stats(session_id):
     """Get real-time dashboard statistics for animations"""
     try:
+        # Get session info
+        session = ProcessingSession.query.get_or_404(session_id)
+        
         # Get basic stats
         stats = session_manager.get_processing_stats(session_id)
         ml_insights = ml_engine.get_insights(session_id)
