@@ -6,22 +6,33 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Controls Panel -->
-        <div class="col-md-3">
-            <div class="card">
+        <div class="col-md-3" style="overflow: visible; z-index: 9999; position: relative;">
+            <div class="card" style="overflow: visible; position: static;">
                 <div class="card-header">
                     <h5 class="card-title">Network Configuration</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body" style="overflow: visible; position: static; z-index: 9999;">
                     <!-- Link Count Selection -->
-                    <div class="mb-3">
+                    <div class="mb-3" style="position: static; z-index: 9999;">
                         <label class="form-label">Number of Target Fields to Create</label>
-                        <select class="form-select" id="linkCount" onchange="generateLinkFields()" style="z-index: 1050;">
-                            <option value="1">1 Target Field</option>
-                            <option value="2">2 Target Fields</option>
-                            <option value="3">3 Target Fields</option>
-                            <option value="4">4 Target Fields</option>
-                            <option value="5">5 Target Fields</option>
-                        </select>
+                        <div class="dropdown" style="position: static;">
+                            <button class="btn btn-outline-primary dropdown-toggle w-100 text-start" type="button" 
+                                    id="linkCountDropdown" data-bs-toggle="dropdown" aria-expanded="false" 
+                                    style="position: static !important; z-index: 9999 !important;">
+                                <span id="linkCountText">1 Target Field</span>
+                            </button>
+                            <ul class="dropdown-menu w-100" aria-labelledby="linkCountDropdown" 
+                                style="position: absolute !important; z-index: 10000 !important; 
+                                       inset: auto auto auto 0px !important; transform: translate(0px, 38px) !important;">
+                                <li><a class="dropdown-item" href="#" data-value="1" onclick="selectLinkCount(1, '1 Target Field')">1 Target Field</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="2" onclick="selectLinkCount(2, '2 Target Fields')">2 Target Fields</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="3" onclick="selectLinkCount(3, '3 Target Fields')">3 Target Fields</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="4" onclick="selectLinkCount(4, '4 Target Fields')">4 Target Fields</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="5" onclick="selectLinkCount(5, '5 Target Fields')">5 Target Fields</a></li>
+                            </ul>
+                        </div>
+                        <!-- Hidden input to store the selected value -->
+                        <input type="hidden" id="linkCount" value="1">
                     </div>
                     
                     <!-- Dynamic Link Fields -->
@@ -776,6 +787,13 @@ function hideTooltip() {
     d3.select("#network-tooltip").remove();
 }
 
+// Handle custom dropdown selection
+function selectLinkCount(value, text) {
+    document.getElementById('linkCount').value = value;
+    document.getElementById('linkCountText').textContent = text;
+    generateLinkFields();
+}
+
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function() {
     initializeNetwork();
@@ -835,15 +853,32 @@ window.addEventListener("resize", function() {
 
 .card-body {
     overflow: visible !important;
-}
-
-.form-select {
     position: relative;
-    z-index: auto;
+    z-index: 1000;
 }
 
-.form-select:focus {
+/* Specific fix for select dropdowns */
+select {
+    position: relative;
+    z-index: 1001;
+}
+
+select:focus,
+select:active {
     z-index: 1060 !important;
+}
+
+/* Force dropdown options to appear above everything */
+.form-select {
+    position: relative !important;
+    z-index: 1001 !important;
+}
+
+.form-select:focus,
+.form-select:active,
+.form-select:hover {
+    z-index: 1060 !important;
+    position: relative !important;
 }
 
 /* Ensure dropdowns appear above other elements */
@@ -855,12 +890,14 @@ window.addEventListener("resize", function() {
 .card .card-body .mb-2,
 .card .card-body .mb-3 {
     position: relative;
+    z-index: 1000;
 }
 
 /* Improve visual hierarchy */
 .card[style*="border-left"] {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 1rem;
+    overflow: visible !important;
 }
 
 .card[style*="border-left"] .card-header {
@@ -868,21 +905,62 @@ window.addEventListener("resize", function() {
     border-bottom: 1px solid rgba(0, 123, 255, 0.2);
 }
 
-/* Fix select dropdown cutoff issues */
-.card-body .form-select {
+.card[style*="border-left"] .card-body {
+    overflow: visible !important;
     position: relative;
-    z-index: 1;
-}
-
-.card-body .form-select:hover,
-.card-body .form-select:focus {
-    z-index: 1060;
+    z-index: 1000;
 }
 
 /* Make sure dropdown options are visible */
 select option {
-    background: white;
-    color: black;
+    background: white !important;
+    color: black !important;
+}
+
+/* Force container to not clip dropdowns */
+.col-md-3 {
+    overflow: visible !important;
+}
+
+/* Remove any potential clipping from parent containers */
+.container-fluid,
+.row {
+    overflow: visible !important;
+}
+
+/* Ultimate dropdown fix - force static positioning and high z-index */
+#linkCount {
+    position: static !important;
+    z-index: 9999 !important;
+}
+
+#linkCount option {
+    background: white !important;
+    color: black !important;
+    padding: 8px !important;
+}
+
+/* Ensure select dropdown expands properly */
+.form-select:focus {
+    position: static !important;
+    z-index: 9999 !important;
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+}
+
+/* Make sure all parent elements allow overflow */
+.col-md-3,
+.card,
+.card-body,
+.mb-3 {
+    overflow: visible !important;
+    position: static !important;
+}
+
+/* Override Bootstrap select styling that might cause issues */
+select.form-select {
+    appearance: menulist !important;
+    -webkit-appearance: menulist !important;
+    -moz-appearance: menulist !important;
 }
 </style>
 {% endblock %}
