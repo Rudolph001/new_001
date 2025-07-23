@@ -554,26 +554,54 @@ def create_rule():
             if not data.get(field):
                 return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
 
+        # Ensure rule_type is properly set (default to security if not exclusion)
+        rule_type = data.get('rule_type', 'security')
+        if rule_type not in ['security', 'exclusion']:
+            rule_type = 'security'
+
+        # Process conditions - ensure it's stored as JSON
+        conditions = data['conditions']
+        if isinstance(conditions, str):
+            try:
+                # Validate JSON if it's a string
+                json.loads(conditions)
+            except json.JSONDecodeError:
+                return jsonify({'success': False, 'message': 'Invalid JSON in conditions'}), 400
+        
+        # Process actions
+        actions = data.get('actions', {})
+        if isinstance(actions, str):
+            if actions == 'flag':
+                actions = {'flag': True}
+            else:
+                try:
+                    actions = json.loads(actions)
+                except json.JSONDecodeError:
+                    actions = {'flag': True}
+
         # Create new rule
         rule = Rule(
             name=data['name'],
-            rule_type=data['rule_type'],
+            rule_type=rule_type,
             description=data.get('description', ''),
             priority=data.get('priority', 50),
-            conditions=data['conditions'],  # Already JSON string from frontend
-            actions=data.get('actions', 'flag'),
+            conditions=conditions,
+            actions=actions,
             is_active=data.get('is_active', True)
         )
 
         db.session.add(rule)
         db.session.commit()
 
-        logger.info(f"Created new rule: {rule.name} (ID: {rule.id})")
+        logger.info(f"Created new rule: {rule.name} (ID: {rule.id}, Type: {rule_type})")
+        logger.info(f"Rule conditions: {conditions}")
+        logger.info(f"Rule actions: {actions}")
 
         return jsonify({
             'success': True,
             'message': 'Rule created successfully',
-            'rule_id': rule.id
+            'rule_id': rule.id,
+            'rule_type': rule_type
         })
 
     except Exception as e:
@@ -2386,6 +2414,50 @@ def debug_whitelist_matching(session_id):
         
     except Exception as e:
         logger.error(f"Error in whitelist debug for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debug-rules/<session_id>')
+def debug_rules(session_id):
+    """Debug endpoint to check rule evaluation"""
+    try:
+        # Get all active rules
+        all_rules = Rule.query.filter_by(is_active=True).all()
+        
+        rule_info = []
+        for rule in all_rules:
+            rule_info.append({
+                'id': rule.id,
+                'name': rule.name,
+                'rule_type': rule.rule_type,
+                'conditions': rule.conditions,
+                'actions': rule.actions,
+                'priority': rule.priority,
+                'is_active': rule.is_active
+            })
+        
+        # Get sample records to test against
+        sample_records = EmailRecord.query.filter_by(session_id=session_id).limit(5).all()
+        
+        sample_data = []
+        for record in sample_records:
+            sample_data.append({
+                'record_id': record.record_id,
+                'sender': record.sender,
+                'subject': record.subject,
+                'recipients_email_domain': record.recipients_email_domain,
+                'leaver': record.leaver,
+                'attachments': record.attachments
+            })
+        
+        return jsonify({
+            'rules': rule_info,
+            'total_rules': len(all_rules),
+            'sample_records': sample_data,
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in rules debug for session {session_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/reprocess-session/<session_id>', methods=['POST'])

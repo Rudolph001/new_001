@@ -37,6 +37,8 @@ class RuleEngine:
                 logger.info("No exclusion rules found")
                 return 0
             
+            logger.info(f"Found {len(exclusion_rules)} active exclusion rules")
+            
             # Get all records for the session
             records = EmailRecord.query.filter_by(session_id=session_id).all()
             excluded_count = 0
@@ -46,11 +48,15 @@ class RuleEngine:
                     continue
                 
                 for rule in exclusion_rules:
-                    if self._evaluate_rule_conditions(record, rule):
-                        record.excluded_by_rule = rule.name
-                        excluded_count += 1
-                        logger.debug(f"Record {record.record_id} excluded by rule: {rule.name}")
-                        break  # First matching rule excludes the record
+                    try:
+                        if self._evaluate_rule_conditions(record, rule):
+                            record.excluded_by_rule = rule.name
+                            excluded_count += 1
+                            logger.info(f"Record {record.record_id} excluded by rule: {rule.name}")
+                            break  # First matching rule excludes the record
+                    except Exception as e:
+                        logger.error(f"Error evaluating exclusion rule '{rule.name}': {str(e)}")
+                        continue
             
             db.session.commit()
             logger.info(f"Exclusion rules applied: {excluded_count} records excluded")
@@ -66,22 +72,27 @@ class RuleEngine:
         try:
             logger.info(f"Applying security rules for session {session_id}")
             
-            # Get all active security rules
-            security_rules = Rule.query.filter_by(
-                rule_type='security',
-                is_active=True
+            # Get all active security rules (including those without explicit rule_type)
+            security_rules = Rule.query.filter(
+                Rule.is_active == True,
+                db.or_(Rule.rule_type == 'security', Rule.rule_type.is_(None))
             ).order_by(Rule.priority.desc()).all()
             
             if not security_rules:
                 logger.info("No security rules found")
                 return []
             
+            logger.info(f"Found {len(security_rules)} active security rules")
+            
             # Get non-excluded, non-whitelisted records
             records = EmailRecord.query.filter(
                 EmailRecord.session_id == session_id,
-                EmailRecord.excluded_by_rule.is_(None),
-                EmailRecord.whitelisted == False
+                EmailRecord.excluded_by_rule.is_(None)
+            ).filter(
+                db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
             ).all()
+            
+            logger.info(f"Evaluating {len(records)} records against security rules")
             
             rule_matches = []
             
@@ -89,17 +100,22 @@ class RuleEngine:
                 matched_rules = []
                 
                 for rule in security_rules:
-                    if self._evaluate_rule_conditions(record, rule):
-                        matched_rules.append({
-                            'rule_id': rule.id,
-                            'rule_name': rule.name,
-                            'description': rule.description,
-                            'priority': rule.priority,
-                            'actions': rule.actions
-                        })
-                        
-                        # Apply rule actions
-                        self._apply_rule_actions(record, rule)
+                    try:
+                        if self._evaluate_rule_conditions(record, rule):
+                            logger.info(f"Rule '{rule.name}' matched record {record.record_id}")
+                            matched_rules.append({
+                                'rule_id': rule.id,
+                                'rule_name': rule.name,
+                                'description': rule.description,
+                                'priority': rule.priority,
+                                'actions': rule.actions
+                            })
+                            
+                            # Apply rule actions
+                            self._apply_rule_actions(record, rule)
+                    except Exception as e:
+                        logger.error(f"Error evaluating rule '{rule.name}': {str(e)}")
+                        continue
                 
                 if matched_rules:
                     record.rule_matches = json.dumps(matched_rules)
@@ -123,27 +139,56 @@ class RuleEngine:
         """Evaluate rule conditions against a record"""
         try:
             if not rule.conditions:
+                logger.debug(f"Rule '{rule.name}' has no conditions")
                 return False
             
             conditions = rule.conditions
+            logger.debug(f"Evaluating rule '{rule.name}' with conditions: {conditions}")
             
             # Handle different condition structures
             if isinstance(conditions, dict):
                 if 'logic' in conditions and 'conditions' in conditions:
                     # Complex condition with logic operator
-                    return self._evaluate_complex_conditions(record, conditions)
+                    result = self._evaluate_complex_conditions(record, conditions)
+                    logger.debug(f"Complex condition result for rule '{rule.name}': {result}")
+                    return result
                 else:
                     # Simple single condition
-                    return self._evaluate_single_condition(record, conditions)
+                    result = self._evaluate_single_condition(record, conditions)
+                    logger.debug(f"Single condition result for rule '{rule.name}': {result}")
+                    return result
             elif isinstance(conditions, list):
                 # List of conditions (default AND logic)
-                return all(self._evaluate_single_condition(record, cond) for cond in conditions)
+                results = [self._evaluate_single_condition(record, cond) for cond in conditions]
+                result = all(results)
+                logger.debug(f"List conditions result for rule '{rule.name}': {results} -> {result}")
+                return result
+            elif isinstance(conditions, str):
+                # Handle JSON string conditions
+                try:
+                    parsed_conditions = json.loads(conditions)
+                    return self._evaluate_rule_conditions_with_parsed(record, rule, parsed_conditions)
+                except json.JSONDecodeError:
+                    logger.error(f"Invalid JSON conditions for rule '{rule.name}': {conditions}")
+                    return False
             
+            logger.warning(f"Unknown condition format for rule '{rule.name}': {type(conditions)}")
             return False
             
         except Exception as e:
             logger.error(f"Error evaluating rule conditions for rule {rule.name}: {str(e)}")
             return False
+    
+    def _evaluate_rule_conditions_with_parsed(self, record, rule, conditions):
+        """Helper method for parsed JSON conditions"""
+        if isinstance(conditions, dict):
+            if 'logic' in conditions and 'conditions' in conditions:
+                return self._evaluate_complex_conditions(record, conditions)
+            else:
+                return self._evaluate_single_condition(record, conditions)
+        elif isinstance(conditions, list):
+            return all(self._evaluate_single_condition(record, cond) for cond in conditions)
+        return False
     
     def _evaluate_complex_conditions(self, record, conditions):
         """Evaluate complex conditions with AND/OR logic"""
@@ -175,14 +220,20 @@ class RuleEngine:
             operator = condition.get('operator')
             value = condition.get('value')
             
+            logger.debug(f"Evaluating condition: field={field}, operator={operator}, value={value}")
+            
             if not field or not operator:
+                logger.debug(f"Missing field or operator: field={field}, operator={operator}")
                 return False
             
             # Get field value from record
             record_value = self._get_field_value(record, field)
+            logger.debug(f"Record value for field '{field}': {record_value}")
             
             # Apply operator with enhanced regex support
-            return self._apply_operator_with_regex(record_value, operator, value)
+            result = self._apply_operator_with_regex(record_value, operator, value)
+            logger.debug(f"Condition result: {record_value} {operator} {value} = {result}")
+            return result
             
         except Exception as e:
             logger.error(f"Error evaluating single condition: {str(e)}")
