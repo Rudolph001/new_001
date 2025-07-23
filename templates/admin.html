@@ -384,8 +384,7 @@ suspicious activity"></textarea>
                                      data-factor-max-score="{{ factor.max_score }}"
                                      data-factor-category="{{ factor.category if factor.category else 'General' }}"
                                      data-factor-weight="{{ factor.weight_percentage if factor.weight_percentage else 0.0 }}"
-                                     data-factor-config="{{ factor.calculation_config|tojson|escape if factor.calculation_config else '{}' }}"
-                                     onclick="viewRiskFactorFromElement(this)"
+                                     onclick="viewRiskFactorSimple(this)"
                                      onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='translateX(5px)'"
                                      onmouseout="this.style.backgroundColor='transparent'; this.style.transform='translateX(0)'">
                                     <div style="flex: 1;">
@@ -447,6 +446,11 @@ suspicious activity"></textarea>
                                         {% endif %}
                                         <br><i class="fas fa-chevron-right text-muted" style="font-size: 10px;"></i>
                                     </div>
+                                    
+                                    <!-- Hidden calculation config data -->
+                                    <script type="application/json" class="risk-factor-config" data-factor-id="{{ factor.id }}">
+                                        {{ factor.calculation_config|tojson if factor.calculation_config else '{}' }}
+                                    </script>
                                 </div>
                                 {% endfor %}
                                 
@@ -2686,24 +2690,26 @@ function showAlert(message, type) {
 }
 
 // Risk Factor Management Functions
-function viewRiskFactorFromElement(element) {
+function viewRiskFactorSimple(element) {
     const id = element.getAttribute('data-factor-id');
     const name = element.getAttribute('data-factor-name');
     const description = element.getAttribute('data-factor-description');
     const maxScore = parseFloat(element.getAttribute('data-factor-max-score'));
     const category = element.getAttribute('data-factor-category');
     const weightPercentage = parseFloat(element.getAttribute('data-factor-weight'));
-    const configJson = element.getAttribute('data-factor-config');
     
+    // Find the hidden config script for this factor
     let calculationConfig = {};
-    try {
-        // Decode HTML entities and parse JSON
-        const parser = new DOMParser();
-        const decodedJson = parser.parseFromString(configJson, 'text/html').documentElement.textContent;
-        calculationConfig = JSON.parse(decodedJson);
-        console.log('Parsed calculation config:', calculationConfig);
-    } catch (error) {
-        console.warn('Could not parse calculation config:', error, 'Raw data:', configJson);
+    const configScript = element.querySelector('.risk-factor-config[data-factor-id="' + id + '"]');
+    if (configScript) {
+        try {
+            calculationConfig = JSON.parse(configScript.textContent.trim());
+            console.log('Found calculation config:', calculationConfig);
+        } catch (error) {
+            console.warn('Could not parse calculation config:', error);
+        }
+    } else {
+        console.warn('No config script found for factor ID:', id);
     }
     
     viewRiskFactorDetails(id, name, description, maxScore, category, weightPercentage, calculationConfig);
