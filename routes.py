@@ -2349,9 +2349,30 @@ def api_network_data(session_id):
         links_dict = {}
         
         for email in emails:
-            # Get source and target values
+            # Get source and target values with proper handling
             source_value = getattr(email, source_field, '') or 'Unknown'
             target_value = getattr(email, target_field, '') or 'Unknown'
+            
+            # Handle special fields that might need processing
+            if source_field == 'recipients' and source_value != 'Unknown':
+                # Extract first recipient email or domain
+                recipients_list = str(source_value).split(',')
+                if recipients_list:
+                    source_value = recipients_list[0].strip()
+            
+            if target_field == 'recipients' and target_value != 'Unknown':
+                # Extract first recipient email or domain
+                recipients_list = str(target_value).split(',')
+                if recipients_list:
+                    target_value = recipients_list[0].strip()
+            
+            if source_field == 'subject' and source_value != 'Unknown':
+                # Truncate long subjects for readability
+                source_value = str(source_value)[:50] + "..." if len(str(source_value)) > 50 else str(source_value)
+                
+            if target_field == 'subject' and target_value != 'Unknown':
+                # Truncate long subjects for readability
+                target_value = str(target_value)[:50] + "..." if len(str(target_value)) > 50 else str(target_value)
             
             if not source_value or not target_value or source_value == target_value:
                 continue
@@ -2440,7 +2461,7 @@ def api_network_data(session_id):
             max_metric = max(metric_values) if metric_values else 1
             metric_range = max_metric - min_metric if max_metric > min_metric else 1
             
-            # Scale node sizes between 8 and 30
+            # Scale node sizes between 6 and 25
             for node in filtered_nodes.values():
                 if node_size_metric == 'connections':
                     metric_val = node['connections']
@@ -2452,7 +2473,7 @@ def api_network_data(session_id):
                     metric_val = node['connections']
                 
                 normalized = (metric_val - min_metric) / metric_range if metric_range > 0 else 0
-                node['size'] = 8 + (normalized * 22)  # Scale between 8 and 30
+                node['size'] = 6 + (normalized * 19)  # Scale between 6 and 25
         
         # Convert to lists
         nodes_list = list(filtered_nodes.values())
