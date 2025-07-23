@@ -332,6 +332,7 @@ class DataProcessor:
         try:
             logger.info(f"Applying ML analysis for session {session_id}")
             
+            # Only analyze non-whitelisted records
             analysis_results = self.ml_engine.analyze_session(session_id)
             
             # Update session

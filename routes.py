@@ -297,7 +297,7 @@ def cases(session_id):
 
     # Build query with filters - exclude whitelisted records from cases
     query = EmailRecord.query.filter_by(session_id=session_id).filter(
-        EmailRecord.whitelisted != True
+        db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
     )
 
     if risk_level:
