@@ -2335,59 +2335,73 @@ def reprocess_session_data(session_id):
     try:
         session = ProcessingSession.query.get_or_404(session_id)
         
-        if not session.data_path or session.status == 'processing':
+        if session.status == 'processing':
             return jsonify({
-                'error': 'Session data not available for re-processing or already processing'
+                'error': 'Session is already processing'
             }), 400
+        
+        # Look for the original uploaded CSV file
+        import os
+        upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
+        csv_path = None
+        
+        # Check for uploaded file with session ID prefix
+        if os.path.exists(upload_folder):
+            for filename in os.listdir(upload_folder):
+                if filename.startswith(session_id):
+                    csv_path = os.path.join(upload_folder, filename)
+                    break
+        
+        # If no uploaded file found, check session.data_path
+        if not csv_path and session.data_path and os.path.exists(session.data_path):
+            csv_path = session.data_path
+        
+        if not csv_path:
+            return jsonify({
+                'error': 'Original CSV file not found for re-processing'
+            }), 404
         
         # Update session status
         session.status = 'processing'
         session.processed_records = 0
         session.error_message = None
+        session.current_chunk = 0
+        session.total_chunks = 0
         db.session.commit()
-        
-        # Get the original CSV file path
-        import os
-        csv_path = session.data_path
-        if session.is_compressed:
-            # Handle compressed data - decompress first
-            from session_manager import SessionManager
-            session_manager = SessionManager()
-            csv_path = session_manager.decompress_session_data(session_id)
-        
-        # Check if file exists
-        if not os.path.exists(csv_path):
-            session.status = 'error'
-            session.error_message = 'Original CSV file not found'
-            db.session.commit()
-            return jsonify({'error': 'Original CSV file not found'}), 404
         
         # Clear existing processed data for this session
         EmailRecord.query.filter_by(session_id=session_id).delete()
+        ProcessingError.query.filter_by(session_id=session_id).delete()
         db.session.commit()
         
-        # Re-process with current configurations
-        from data_processor import DataProcessor
-        processor = DataProcessor()
-        result = processor.process_csv(session_id, csv_path)
+        # Re-process with current configurations in background thread
+        def background_reprocessing():
+            with app.app_context():
+                try:
+                    data_processor.process_csv(session_id, csv_path)
+                    logger.info(f"Background re-processing completed for session {session_id}")
+                except Exception as e:
+                    logger.error(f"Background re-processing error for session {session_id}: {str(e)}")
+                    session = ProcessingSession.query.get(session_id)
+                    if session:
+                        session.status = 'error'
+                        session.error_message = str(e)
+                        db.session.commit()
         
-        if result['success']:
-            session.status = 'completed'
-            session.processing_completed_at = datetime.utcnow()
-        else:
-            session.status = 'error'
-            session.error_message = result.get('error', 'Re-processing failed')
-        
-        db.session.commit()
+        # Start background thread
+        import threading
+        thread = threading.Thread(target=background_reprocessing)
+        thread.daemon = True
+        thread.start()
         
         return jsonify({
-            'success': result['success'],
-            'message': 'Data re-processed successfully with current configurations' if result['success'] else result.get('error'),
-            'processed_records': result.get('processed_records', 0)
+            'success': True,
+            'message': 'Re-processing started with current configurations',
+            'session_id': session_id
         })
         
     except Exception as e:
-        logger.error(f"Error re-processing session {session_id}: {str(e)}")
+        logger.error(f"Error starting re-processing for session {session_id}: {str(e)}")
         session = ProcessingSession.query.get(session_id)
         if session:
             session.status = 'error'

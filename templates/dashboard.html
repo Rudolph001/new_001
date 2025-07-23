@@ -641,7 +641,7 @@ function reprocessSessionData() {
     const btn = document.getElementById('reprocessBtn');
     const originalHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Re-processing...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Starting re-processing...';
 
     fetch(`/api/reprocess-session/${sessionId}`, {
         method: 'POST',
@@ -652,17 +652,17 @@ function reprocessSessionData() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(`Success! ${data.processed_records} records re-processed with current configurations.`);
-            location.reload(); // Refresh to show updated results
+            alert('Re-processing started successfully! The page will refresh to show progress.');
+            location.reload(); // Refresh to show processing status
         } else {
             alert(`Error: ${data.error || 'Re-processing failed'}`);
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Network error occurred during re-processing');
-    })
-    .finally(() => {
         btn.disabled = false;
         btn.innerHTML = originalHtml;
     });
