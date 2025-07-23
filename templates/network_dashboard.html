@@ -14,13 +14,13 @@
                 <div class="card-body">
                     <!-- Link Count Selection -->
                     <div class="mb-3">
-                        <label class="form-label">Number of Links to Create</label>
-                        <select class="form-select" id="linkCount" onchange="generateLinkFields()">
-                            <option value="1">1 Link</option>
-                            <option value="2">2 Links</option>
-                            <option value="3">3 Links</option>
-                            <option value="4">4 Links</option>
-                            <option value="5">5 Links</option>
+                        <label class="form-label">Number of Target Fields to Create</label>
+                        <select class="form-select" id="linkCount" onchange="generateLinkFields()" style="z-index: 1050;">
+                            <option value="1">1 Target Field</option>
+                            <option value="2">2 Target Fields</option>
+                            <option value="3">3 Target Fields</option>
+                            <option value="4">4 Target Fields</option>
+                            <option value="5">5 Target Fields</option>
                         </select>
                     </div>
                     
@@ -43,7 +43,7 @@
                     <!-- Risk Level Filter -->
                     <div class="mb-3">
                         <label class="form-label">Risk Level Filter</label>
-                        <select class="form-select" id="riskFilter">
+                        <select class="form-select" id="riskFilter" onchange="updateNetwork()">
                             <option value="all">All Risk Levels</option>
                             <option value="Critical">Critical Only</option>
                             <option value="High">High Only</option>
@@ -234,7 +234,7 @@ function initializeNetwork() {
 
 // Generate dynamic link fields based on selected count
 function generateLinkFields() {
-    const linkCount = parseInt(document.getElementById("linkCount").value);
+    const targetCount = parseInt(document.getElementById("linkCount").value);
     const container = document.getElementById("linkFieldsContainer");
     
     const fieldOptions = `
@@ -260,31 +260,47 @@ function generateLinkFields() {
     `;
     
     let html = '';
-    for (let i = 1; i <= linkCount; i++) {
+    
+    // Main source field (always present)
+    html += `
+        <div class="card mb-3" style="border-left: 4px solid #007bff;">
+            <div class="card-header py-2">
+                <h6 class="mb-0"><i class="fas fa-arrow-right me-1"></i> Source Field (Main Node)</h6>
+            </div>
+            <div class="card-body py-2">
+                <div class="row">
+                    <div class="col-12 mb-2">
+                        <label class="form-label">Source Field</label>
+                        <select class="form-select form-select-sm" id="mainSourceField" style="z-index: 1040;">
+                            ${fieldOptions}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Generate target field cards
+    for (let i = 1; i <= targetCount; i++) {
+        const colors = ['#007bff', '#28a745', '#dc3545', '#ffc107', '#6f42c1'];
+        const defaultColor = colors[(i-1) % colors.length];
+        
         html += `
-            <div class="card mb-3" style="border-left: 4px solid #007bff;">
+            <div class="card mb-3" style="border-left: 4px solid ${defaultColor};">
                 <div class="card-header py-2">
-                    <h6 class="mb-0">Link ${i} Configuration</h6>
+                    <h6 class="mb-0"><i class="fas fa-bullseye me-1"></i> Target Field ${i}</h6>
                 </div>
                 <div class="card-body py-2">
                     <div class="row">
                         <div class="col-md-6 mb-2">
-                            <label class="form-label">Source Field</label>
-                            <select class="form-select form-select-sm" id="sourceField${i}">
+                            <label class="form-label">Target Field ${i}</label>
+                            <select class="form-select form-select-sm" id="targetField${i}" style="z-index: ${1040 - i};">
                                 ${fieldOptions}
                             </select>
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Target Field</label>
-                            <select class="form-select form-select-sm" id="targetField${i}">
-                                ${fieldOptions}
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Link Color</label>
-                            <select class="form-select form-select-sm" id="linkColor${i}">
+                        <div class="col-md-3 mb-2">
+                            <label class="form-label">Color</label>
+                            <select class="form-select form-select-sm" id="linkColor${i}" style="z-index: ${1035 - i};">
                                 <option value="#007bff">Blue</option>
                                 <option value="#28a745">Green</option>
                                 <option value="#dc3545">Red</option>
@@ -295,12 +311,12 @@ function generateLinkFields() {
                                 <option value="#6c757d">Gray</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Link Style</label>
-                            <select class="form-select form-select-sm" id="linkStyle${i}">
-                                <option value="solid">Solid Line</option>
-                                <option value="dashed">Dashed Line</option>
-                                <option value="dotted">Dotted Line</option>
+                        <div class="col-md-3 mb-2">
+                            <label class="form-label">Style</label>
+                            <select class="form-select form-select-sm" id="linkStyle${i}" style="z-index: ${1030 - i};">
+                                <option value="solid">Solid</option>
+                                <option value="dashed">Dashed</option>
+                                <option value="dotted">Dotted</option>
                             </select>
                         </div>
                     </div>
@@ -311,46 +327,60 @@ function generateLinkFields() {
     
     container.innerHTML = html;
     
-    // Set default values for first link
-    if (linkCount >= 1) {
-        document.getElementById("sourceField1").value = "sender";
+    // Set default values
+    document.getElementById("mainSourceField").value = "sender";
+    
+    if (targetCount >= 1) {
         document.getElementById("targetField1").value = "recipients_email_domain";
+        document.getElementById("linkColor1").value = "#007bff";
     }
-    if (linkCount >= 2) {
-        document.getElementById("sourceField2").value = "department";
-        document.getElementById("targetField2").value = "bunit";
+    if (targetCount >= 2) {
+        document.getElementById("targetField2").value = "department";
         document.getElementById("linkColor2").value = "#28a745";
     }
-    if (linkCount >= 3) {
-        document.getElementById("sourceField3").value = "risk_level";
-        document.getElementById("targetField3").value = "case_status";
+    if (targetCount >= 3) {
+        document.getElementById("targetField3").value = "risk_level";
         document.getElementById("linkColor3").value = "#dc3545";
+    }
+    if (targetCount >= 4) {
+        document.getElementById("targetField4").value = "bunit";
+        document.getElementById("linkColor4").value = "#ffc107";
+    }
+    if (targetCount >= 5) {
+        document.getElementById("targetField5").value = "case_status";
+        document.getElementById("linkColor5").value = "#6f42c1";
     }
 }
 
 // Load and update network data
 function updateNetwork() {
     const sessionId = "{{ session.id if session else 'demo' }}";
-    const linkCount = parseInt(document.getElementById("linkCount").value);
+    const targetCount = parseInt(document.getElementById("linkCount").value);
     const riskFilter = document.getElementById("riskFilter").value;
     const minConnections = document.getElementById("minConnections").value;
     const nodeSizeMetric = document.getElementById("nodeSizeMetric").value;
     const visualizationType = document.getElementById("visualizationType").value;
     
-    // Collect all link configurations
+    // Get main source field
+    const mainSourceField = document.getElementById("mainSourceField");
+    if (!mainSourceField) {
+        console.error("Main source field not found");
+        return;
+    }
+    
+    // Collect all link configurations with main source field
     const linkConfigs = [];
-    for (let i = 1; i <= linkCount; i++) {
-        const sourceField = document.getElementById(`sourceField${i}`);
+    for (let i = 1; i <= targetCount; i++) {
         const targetField = document.getElementById(`targetField${i}`);
         const linkColor = document.getElementById(`linkColor${i}`);
         const linkStyle = document.getElementById(`linkStyle${i}`);
         
-        if (sourceField && targetField) {
+        if (targetField) {
             linkConfigs.push({
-                source_field: sourceField.value,
+                source_field: mainSourceField.value,
                 target_field: targetField.value,
-                color: linkColor.value,
-                style: linkStyle.value
+                color: linkColor ? linkColor.value : "#007bff",
+                style: linkStyle ? linkStyle.value : "solid"
             });
         }
     }
@@ -796,6 +826,63 @@ window.addEventListener("resize", function() {
 #nodeInfoCard {
     max-height: 400px;
     overflow-y: auto;
+}
+
+/* Fix dropdown z-index and display issues */
+.card {
+    overflow: visible !important;
+}
+
+.card-body {
+    overflow: visible !important;
+}
+
+.form-select {
+    position: relative;
+    z-index: auto;
+}
+
+.form-select:focus {
+    z-index: 1060 !important;
+}
+
+/* Ensure dropdowns appear above other elements */
+.dropdown-menu {
+    z-index: 1070 !important;
+}
+
+/* Fix for overlapping elements */
+.card .card-body .mb-2,
+.card .card-body .mb-3 {
+    position: relative;
+}
+
+/* Improve visual hierarchy */
+.card[style*="border-left"] {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.card[style*="border-left"] .card-header {
+    background-color: rgba(0, 123, 255, 0.1);
+    border-bottom: 1px solid rgba(0, 123, 255, 0.2);
+}
+
+/* Fix select dropdown cutoff issues */
+.card-body .form-select {
+    position: relative;
+    z-index: 1;
+}
+
+.card-body .form-select:hover,
+.card-body .form-select:focus {
+    z-index: 1060;
+}
+
+/* Make sure dropdown options are visible */
+select option {
+    background: white;
+    color: black;
 }
 </style>
 {% endblock %}
