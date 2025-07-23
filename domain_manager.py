@@ -45,11 +45,13 @@ class DomainManager:
             
             # Get active whitelist domains
             whitelist_domains = WhitelistDomain.query.filter_by(is_active=True).all()
-            whitelist_set = set(domain.domain.lower() for domain in whitelist_domains)
+            whitelist_set = set(domain.domain.lower().strip() for domain in whitelist_domains)
             
             if not whitelist_set:
                 logger.info("No whitelist domains found")
                 return 0
+            
+            logger.info(f"Active whitelist domains: {list(whitelist_set)}")
             
             # Get non-excluded records
             records = EmailRecord.query.filter(
@@ -61,11 +63,26 @@ class DomainManager:
             
             for record in records:
                 if record.recipients_email_domain:
-                    domain = record.recipients_email_domain.lower()
+                    domain = record.recipients_email_domain.lower().strip()
+                    
+                    # Direct match
                     if domain in whitelist_set:
                         record.whitelisted = True
                         whitelisted_count += 1
                         logger.debug(f"Record {record.record_id} whitelisted for domain: {domain}")
+                    else:
+                        # Check if any whitelisted domain is a substring of the record domain
+                        # or if the record domain is a substring of any whitelisted domain
+                        for whitelist_domain in whitelist_set:
+                            if (domain == whitelist_domain or 
+                                domain.endswith('.' + whitelist_domain) or 
+                                whitelist_domain.endswith('.' + domain) or
+                                domain in whitelist_domain or 
+                                whitelist_domain in domain):
+                                record.whitelisted = True
+                                whitelisted_count += 1
+                                logger.debug(f"Record {record.record_id} whitelisted for domain: {domain} (matched with {whitelist_domain})")
+                                break
             
             db.session.commit()
             logger.info(f"Whitelist filtering applied: {whitelisted_count} records whitelisted")

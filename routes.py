@@ -297,7 +297,7 @@ def cases(session_id):
 
     # Build query with filters - exclude whitelisted records from cases
     query = EmailRecord.query.filter_by(session_id=session_id).filter(
-        db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False, EmailRecord.whitelisted.is_(False))
     )
 
     if risk_level:
@@ -2336,6 +2336,57 @@ def config_last_modified():
     except Exception as e:
         logger.error(f"Error checking config modification time: {str(e)}")
         return jsonify({'last_modified': None}), 500
+
+@app.route('/api/debug-whitelist/<session_id>')
+def debug_whitelist_matching(session_id):
+    """Debug endpoint to check whitelist domain matching"""
+    try:
+        # Get active whitelist domains
+        whitelist_domains = WhitelistDomain.query.filter_by(is_active=True).all()
+        whitelist_set = {domain.domain.lower().strip() for domain in whitelist_domains}
+        
+        # Get unique domains from email records
+        records = EmailRecord.query.filter_by(session_id=session_id).all()
+        email_domains = {record.recipients_email_domain.lower().strip() 
+                        for record in records 
+                        if record.recipients_email_domain}
+        
+        # Check matches
+        matches = []
+        non_matches = []
+        
+        for email_domain in email_domains:
+            matched = False
+            for whitelist_domain in whitelist_set:
+                if (email_domain == whitelist_domain or 
+                    email_domain.endswith('.' + whitelist_domain) or 
+                    whitelist_domain.endswith('.' + email_domain) or
+                    email_domain in whitelist_domain or 
+                    whitelist_domain in email_domain):
+                    matches.append({
+                        'email_domain': email_domain,
+                        'whitelist_domain': whitelist_domain,
+                        'match_type': 'exact' if email_domain == whitelist_domain else 'partial'
+                    })
+                    matched = True
+                    break
+            
+            if not matched:
+                non_matches.append(email_domain)
+        
+        return jsonify({
+            'whitelist_domains': list(whitelist_set),
+            'email_domains': list(email_domains),
+            'matches': matches,
+            'non_matches': non_matches,
+            'total_email_domains': len(email_domains),
+            'total_matches': len(matches),
+            'total_non_matches': len(non_matches)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in whitelist debug for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/reprocess-session/<session_id>', methods=['POST'])
 def reprocess_session_data(session_id):
