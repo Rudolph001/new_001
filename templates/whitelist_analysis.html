@@ -93,114 +93,315 @@
 
 <!-- Main Content -->
 <div class="row">
-    <!-- Whitelist Recommendations -->
-    <div class="col-lg-8 mb-4">
+    <!-- All Domains Analysis -->
+    <div class="col-12 mb-4">
         <div class="card">
             <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-star text-success"></i>
-                        Whitelist Recommendations
-                    </h5>
                     <div>
-                        <button class="btn btn-outline-success btn-sm" onclick="bulkAddRecommendations()">
+                        <ul class="nav nav-tabs card-header-tabs" id="domainsTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="all-domains-tab" data-bs-toggle="tab" data-bs-target="#all-domains" type="button" role="tab">
+                                    <i class="fas fa-globe"></i> All Domains ({{ analysis.all_domains|length if analysis.all_domains else 0 }})
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="bau-domains-tab" data-bs-toggle="tab" data-bs-target="#bau-domains" type="button" role="tab">
+                                    <i class="fas fa-building"></i> BAU Domains ({{ analysis.bau_patterns.high_frequency_domains|length if analysis.bau_patterns and analysis.bau_patterns.high_frequency_domains else 0 }})
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab" data-bs-target="#recommendations" type="button" role="tab">
+                                    <i class="fas fa-star"></i> Recommendations ({{ analysis.whitelist_recommendations|length if analysis.whitelist_recommendations else 0 }})
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline-success btn-sm" onclick="bulkAddSelected()">
                             <i class="fas fa-plus-circle"></i> Add Selected
                         </button>
-                        <button class="btn btn-outline-primary btn-sm" onclick="exportRecommendations()">
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportDomainsData()">
                             <i class="fas fa-download"></i> Export
                         </button>
                     </div>
                 </div>
             </div>
             <div class="card-body">
-                {% if analysis.whitelist_recommendations %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>
-                                    <input type="checkbox" id="selectAllRecommendations" onchange="toggleSelectAllRecommendations()">
-                                </th>
-                                <th>Domain</th>
-                                <th>Communications</th>
-                                <th>Trust Score</th>
-                                <th>Risk Profile</th>
-                                <th>Confidence</th>
-                                <th>Impact</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for rec in analysis.whitelist_recommendations %}
-                            <tr>
-                                <td>
-                                    <input type="checkbox" class="recommendation-checkbox" value="{{ rec.domain }}">
-                                </td>
-                                <td>
-                                    <div>
-                                        <strong>{{ rec.domain }}</strong>
-                                        <br><small class="text-muted">{{ rec.classification }}</small>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="text-center">
-                                        <span class="badge bg-info">{{ rec.communication_count }}</span>
-                                        <br><small class="text-muted">{{ rec.unique_senders }} senders</small>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <span class="fw-bold text-{% if rec.trust_score >= 80 %}success{% elif rec.trust_score >= 60 %}warning{% else %}danger{% endif %}">
-                                            {{ rec.trust_score }}
-                                        </span>
-                                        <div class="progress ms-2" style="width: 50px; height: 6px;">
-                                            <div class="progress-bar bg-{% if rec.trust_score >= 80 %}success{% elif rec.trust_score >= 60 %}warning{% else %}danger{% endif %}" 
-                                                 style="width: {{ rec.trust_score }}%"></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="text-center">
-                                        <span class="fw-bold text-success">{{ "%.3f"|format(rec.avg_risk_score) }}</span>
-                                        <br><small class="text-muted">{{ rec.high_risk_count }} high-risk</small>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-{% if rec.confidence_level == 'High' %}success{% elif rec.confidence_level == 'Medium' %}warning{% else %}secondary{% endif %}">
-                                        {{ rec.confidence_level }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <small class="text-muted">
-                                        {{ rec.potential_impact.records_affected }} records<br>
-                                        {{ rec.potential_impact.percentage_of_total }}% of total
-                                    </small>
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <button class="btn btn-outline-success" onclick="addDomainToWhitelist('{{ rec.domain }}')">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
-                                        <button class="btn btn-outline-info" onclick="analyzeDomain('{{ rec.domain }}')">
-                                            <i class="fas fa-search"></i>
-                                        </button>
-                                        <button class="btn btn-outline-primary" onclick="viewDomainDetails('{{ rec.domain }}')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                <div class="tab-content" id="domainsTabContent">
+                    <!-- All Domains Tab -->
+                    <div class="tab-pane fade show active" id="all-domains" role="tabpanel">
+                        {% if analysis.all_domains %}
+                        <div class="mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" id="domainSearch" placeholder="Search domains..." onkeyup="filterDomains()">
+                                </div>
+                                <div class="col-md-6">
+                                    <select class="form-select" id="statusFilter" onchange="filterDomains()">
+                                        <option value="">All Statuses</option>
+                                        <option value="Whitelisted">Whitelisted</option>
+                                        <option value="Recommended">Recommended</option>
+                                        <option value="Potential BAU">Potential BAU</option>
+                                        <option value="Review Required">Review Required</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover" id="allDomainsTable">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAllDomains" onchange="toggleSelectAllDomains()">
+                                        </th>
+                                        <th>Domain</th>
+                                        <th>Communications</th>
+                                        <th>Trust Score</th>
+                                        <th>Risk Profile</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for domain in analysis.all_domains %}
+                                    <tr class="domain-row" data-domain="{{ domain.domain }}" data-status="{{ domain.status }}">
+                                        <td>
+                                            <input type="checkbox" class="domain-checkbox" value="{{ domain.domain }}" {% if domain.is_whitelisted %}disabled{% endif %}>
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ domain.domain }}</strong>
+                                                {% if domain.is_whitelisted %}
+                                                    <span class="badge bg-success ms-1">Whitelisted</span>
+                                                {% endif %}
+                                                <br><small class="text-muted">{{ domain.classification }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-center">
+                                                <span class="badge bg-info">{{ domain.communication_count }}</span>
+                                                <br><small class="text-muted">{{ domain.unique_senders }} senders</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="fw-bold text-{% if domain.trust_score >= 80 %}success{% elif domain.trust_score >= 60 %}warning{% else %}danger{% endif %}">
+                                                    {{ domain.trust_score }}
+                                                </span>
+                                                <div class="progress ms-2" style="width: 50px; height: 6px;">
+                                                    <div class="progress-bar bg-{% if domain.trust_score >= 80 %}success{% elif domain.trust_score >= 60 %}warning{% else %}danger{% endif %}" 
+                                                         style="width: {{ domain.trust_score }}%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-center">
+                                                <span class="fw-bold text-{% if domain.avg_risk_score <= 0.3 %}success{% elif domain.avg_risk_score <= 0.6 %}warning{% else %}danger{% endif %}">
+                                                    {{ "%.3f"|format(domain.avg_risk_score) }}
+                                                </span>
+                                                <br><small class="text-muted">{{ domain.high_risk_count }} high-risk</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if domain.status == 'Whitelisted' %}success{% elif domain.status == 'Recommended' %}primary{% elif domain.status == 'Potential BAU' %}info{% else %}secondary{% endif %}">
+                                                {{ domain.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                {% if not domain.is_whitelisted %}
+                                                <button class="btn btn-outline-success" onclick="addDomainToWhitelist('{{ domain.domain }}')">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                                {% endif %}
+                                                <button class="btn btn-outline-info" onclick="analyzeDomain('{{ domain.domain }}')">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                                <button class="btn btn-outline-primary" onclick="viewDomainDetails('{{ domain.domain }}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-globe fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Domain Data Available</h5>
+                            <p class="text-muted">Domain analysis will be available after processing completion.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- BAU Domains Tab -->
+                    <div class="tab-pane fade" id="bau-domains" role="tabpanel">
+                        {% if analysis.bau_patterns and analysis.bau_patterns.high_frequency_domains %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Business As Usual (BAU) Domains:</strong> These are corporate domains with high communication frequency and low risk scores. Free email providers are excluded.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAllBAU" onchange="toggleSelectAllBAU()">
+                                        </th>
+                                        <th>Domain</th>
+                                        <th>Frequency</th>
+                                        <th>Risk Score</th>
+                                        <th>BAU Likelihood</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for bau in analysis.bau_patterns.high_frequency_domains %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="bau-checkbox" value="{{ bau.domain }}">
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ bau.domain }}</strong>
+                                                <span class="badge bg-primary ms-1">Corporate</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ bau.frequency }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-{% if bau.avg_risk_score <= 0.3 %}success{% elif bau.avg_risk_score <= 0.6 %}warning{% else %}danger{% endif %}">
+                                                {{ "%.3f"|format(bau.avg_risk_score) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if bau.bau_likelihood == 'High' %}success{% elif bau.bau_likelihood == 'Medium' %}warning{% else %}secondary{% endif %}">
+                                                {{ bau.bau_likelihood }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button class="btn btn-outline-success" onclick="addDomainToWhitelist('{{ bau.domain }}')">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                                <button class="btn btn-outline-info" onclick="analyzeDomain('{{ bau.domain }}')">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                                <button class="btn btn-outline-primary" onclick="viewDomainDetails('{{ bau.domain }}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-building fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No BAU Domains Identified</h5>
+                            <p class="text-muted">BAU domain analysis will be available after processing completion.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Recommendations Tab -->
+                    <div class="tab-pane fade" id="recommendations" role="tabpanel">
+                        {% if analysis.whitelist_recommendations %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAllRecommendations" onchange="toggleSelectAllRecommendations()">
+                                        </th>
+                                        <th>Domain</th>
+                                        <th>Communications</th>
+                                        <th>Trust Score</th>
+                                        <th>Risk Profile</th>
+                                        <th>Confidence</th>
+                                        <th>Impact</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rec in analysis.whitelist_recommendations %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="recommendation-checkbox" value="{{ rec.domain }}">
+                                        </td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ rec.domain }}</strong>
+                                                <br><small class="text-muted">{{ rec.classification }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-center">
+                                                <span class="badge bg-info">{{ rec.communication_count }}</span>
+                                                <br><small class="text-muted">{{ rec.unique_senders }} senders</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="fw-bold text-{% if rec.trust_score >= 80 %}success{% elif rec.trust_score >= 60 %}warning{% else %}danger{% endif %}">
+                                                    {{ rec.trust_score }}
+                                                </span>
+                                                <div class="progress ms-2" style="width: 50px; height: 6px;">
+                                                    <div class="progress-bar bg-{% if rec.trust_score >= 80 %}success{% elif rec.trust_score >= 60 %}warning{% else %}danger{% endif %}" 
+                                                         style="width: {{ rec.trust_score }}%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-center">
+                                                <span class="fw-bold text-success">{{ "%.3f"|format(rec.avg_risk_score) }}</span>
+                                                <br><small class="text-muted">{{ rec.high_risk_count }} high-risk</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{% if rec.confidence_level == 'High' %}success{% elif rec.confidence_level == 'Medium' %}warning{% else %}secondary{% endif %}">
+                                                {{ rec.confidence_level }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ rec.potential_impact.records_affected }} records<br>
+                                                {{ rec.potential_impact.percentage_of_total }}% of total
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button class="btn btn-outline-success" onclick="addDomainToWhitelist('{{ rec.domain }}')">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                                <button class="btn btn-outline-info" onclick="analyzeDomain('{{ rec.domain }}')">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                                <button class="btn btn-outline-primary" onclick="viewDomainDetails('{{ rec.domain }}')">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No Recommendations Available</h5>
+                            <p class="text-muted">Whitelist recommendations will be generated after analysis completion.</p>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
-                {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No Recommendations Available</h5>
-                    <p class="text-muted">Whitelist recommendations will be generated after analysis completion.</p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -462,6 +663,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+function toggleSelectAllDomains() {
+    const selectAll = document.getElementById('selectAllDomains');
+    const checkboxes = document.querySelectorAll('.domain-checkbox:not([disabled])');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function toggleSelectAllBAU() {
+    const selectAll = document.getElementById('selectAllBAU');
+    const checkboxes = document.querySelectorAll('.bau-checkbox');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
 function toggleSelectAllRecommendations() {
     const selectAll = document.getElementById('selectAllRecommendations');
     const checkboxes = document.querySelectorAll('.recommendation-checkbox');
@@ -469,6 +688,98 @@ function toggleSelectAllRecommendations() {
     checkboxes.forEach(checkbox => {
         checkbox.checked = selectAll.checked;
     });
+}
+
+function filterDomains() {
+    const searchTerm = document.getElementById('domainSearch').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const rows = document.querySelectorAll('.domain-row');
+
+    rows.forEach(row => {
+        const domain = row.getAttribute('data-domain').toLowerCase();
+        const status = row.getAttribute('data-status');
+        
+        const matchesSearch = domain.includes(searchTerm);
+        const matchesStatus = !statusFilter || status === statusFilter;
+        
+        if (matchesSearch && matchesStatus) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function bulkAddSelected() {
+    // Get selected domains from active tab
+    const activeTab = document.querySelector('.nav-link.active').id;
+    let selectedDomains = [];
+    
+    if (activeTab === 'all-domains-tab') {
+        selectedDomains = Array.from(document.querySelectorAll('.domain-checkbox:checked')).map(cb => cb.value);
+    } else if (activeTab === 'bau-domains-tab') {
+        selectedDomains = Array.from(document.querySelectorAll('.bau-checkbox:checked')).map(cb => cb.value);
+    } else if (activeTab === 'recommendations-tab') {
+        selectedDomains = Array.from(document.querySelectorAll('.recommendation-checkbox:checked')).map(cb => cb.value);
+    }
+    
+    if (selectedDomains.length === 0) {
+        showError('Please select domains to add to the whitelist');
+        return;
+    }
+
+    bulkAddDomains(selectedDomains);
+}
+
+async function bulkAddDomains(domains) {
+    if (confirm(`Add ${domains.length} selected domains to the whitelist?`)) {
+        showLoading('Adding domains to whitelist...');
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        for (const domain of domains) {
+            try {
+                const response = await fetch('/api/whitelist-domains', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        domain: domain,
+                        domain_type: 'Corporate',
+                        added_by: 'Whitelist Analysis',
+                        notes: 'Added via domain analysis dashboard'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    errors.push(`${domain}: ${result.message}`);
+                }
+            } catch (error) {
+                errorCount++;
+                errors.push(`${domain}: Network error - ${error.message}`);
+            }
+        }
+
+        hideLoading();
+
+        if (successCount > 0) {
+            showSuccess(`Successfully added ${successCount} domains to the whitelist`);
+        }
+
+        if (errorCount > 0) {
+            showError(`Failed to add ${errorCount} domains. ${errors.slice(0, 3).join('; ')}`);
+        }
+
+        setTimeout(() => location.reload(), 2000);
+    }
 }
 
 async function addDomainToWhitelist(domain) {
@@ -556,73 +867,120 @@ function viewDomainDetails(domain) {
     }, 1500);
 }
 
-async function bulkAddRecommendations() {
-    const selectedDomains = Array.from(document.querySelectorAll('.recommendation-checkbox:checked')).map(cb => cb.value);
+function exportDomainsData() {
+    showLoading('Preparing domains data export...');
 
-    if (selectedDomains.length === 0) {
-        showError('Please select domains to add to the whitelist');
-        return;
+    // Get active tab data
+    const activeTab = document.querySelector('.nav-link.active').id;
+    let exportData = [];
+    let filename = 'domains_export.csv';
+    
+    if (activeTab === 'all-domains-tab') {
+        filename = 'all_domains_analysis.csv';
+        exportData = getAllDomainsData();
+    } else if (activeTab === 'bau-domains-tab') {
+        filename = 'bau_domains_analysis.csv';
+        exportData = getBAUDomainsData();
+    } else if (activeTab === 'recommendations-tab') {
+        filename = 'whitelist_recommendations.csv';
+        exportData = getRecommendationsData();
     }
 
-    if (confirm(`Add ${selectedDomains.length} selected domains to the whitelist?`)) {
-        showLoading('Adding domains to whitelist...');
-
-        let successCount = 0;
-        let errorCount = 0;
-        const errors = [];
-
-        // Add each domain individually using the existing API
-        for (const domain of selectedDomains) {
-            try {
-                const response = await fetch('/api/whitelist-domains', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        domain: domain,
-                        domain_type: 'Corporate',
-                        added_by: 'Whitelist Analysis',
-                        notes: 'Added via whitelist analysis recommendations'
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    successCount++;
-                } else {
-                    errorCount++;
-                    errors.push(`${domain}: ${result.message}`);
-                }
-            } catch (error) {
-                errorCount++;
-                errors.push(`${domain}: Network error - ${error.message}`);
-            }
-        }
-
-        hideLoading();
-
-        if (successCount > 0) {
-            showSuccess(`Successfully added ${successCount} domains to the whitelist`);
-        }
-
-        if (errorCount > 0) {
-            showError(`Failed to add ${errorCount} domains. ${errors.slice(0, 3).join('; ')}`);
-        }
-
-        // Refresh page to update UI
-        setTimeout(() => location.reload(), 2000);
+    // Create CSV content
+    if (exportData.length > 0) {
+        const csvContent = convertToCSV(exportData);
+        downloadCSV(csvContent, filename);
     }
-}
-
-function exportRecommendations() {
-    showLoading('Preparing whitelist recommendations export...');
 
     setTimeout(() => {
         hideLoading();
-        showSuccess('Whitelist recommendations exported successfully');
+        showSuccess('Domains data exported successfully');
     }, 1500);
+}
+
+function getAllDomainsData() {
+    const rows = document.querySelectorAll('#allDomainsTable tbody tr');
+    const data = [];
+    
+    rows.forEach(row => {
+        if (row.style.display !== 'none') {
+            const cells = row.querySelectorAll('td');
+            data.push({
+                domain: cells[1].querySelector('strong').textContent,
+                classification: cells[1].querySelector('small').textContent,
+                communications: cells[2].querySelector('.badge').textContent,
+                senders: cells[2].querySelector('small').textContent.split(' ')[0],
+                trust_score: cells[3].querySelector('span').textContent,
+                risk_score: cells[4].querySelector('span').textContent,
+                high_risk_count: cells[4].querySelector('small').textContent.split(' ')[0],
+                status: cells[5].querySelector('.badge').textContent
+            });
+        }
+    });
+    
+    return data;
+}
+
+function getBAUDomainsData() {
+    const rows = document.querySelectorAll('#bau-domains tbody tr');
+    const data = [];
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        data.push({
+            domain: cells[1].querySelector('strong').textContent,
+            frequency: cells[2].querySelector('.badge').textContent,
+            risk_score: cells[3].textContent.trim(),
+            bau_likelihood: cells[4].querySelector('.badge').textContent
+        });
+    });
+    
+    return data;
+}
+
+function getRecommendationsData() {
+    const rows = document.querySelectorAll('#recommendations tbody tr');
+    const data = [];
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        data.push({
+            domain: cells[1].querySelector('strong').textContent,
+            classification: cells[1].querySelector('small').textContent,
+            communications: cells[2].querySelector('.badge').textContent,
+            senders: cells[2].querySelector('small').textContent.split(' ')[0],
+            trust_score: cells[3].querySelector('span').textContent,
+            risk_score: cells[4].querySelector('span').textContent,
+            confidence: cells[5].querySelector('.badge').textContent,
+            impact: cells[6].textContent.trim()
+        });
+    });
+    
+    return data;
+}
+
+function convertToCSV(data) {
+    if (data.length === 0) return '';
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+        headers.join(','),
+        ...data.map(row => headers.map(header => `"${row[header]}"`).join(','))
+    ].join('\n');
+    
+    return csvContent;
+}
+
+function downloadCSV(content, filename) {
+    const blob = new Blob([content], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
 }
 
 async function addTopRecommendations() {

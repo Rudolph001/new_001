@@ -207,9 +207,13 @@ class DomainManager:
             # BAU pattern analysis
             bau_patterns = self._analyze_bau_communication_patterns(records)
             
+            # Get all domains sorted by different criteria
+            all_domains = self._get_all_domains_analysis(domain_stats)
+            
             analysis = {
                 'total_unique_domains': len(domain_stats),
                 'domain_statistics': domain_stats,
+                'all_domains': all_domains,
                 'whitelist_recommendations': recommendations,
                 'whitelist_effectiveness': whitelist_effectiveness,
                 'bau_patterns': bau_patterns,
@@ -406,6 +410,65 @@ class DomainManager:
             logger.error(f"Error analyzing whitelist effectiveness: {str(e)}")
             return {'error': str(e)}
     
+    def _get_all_domains_analysis(self, domain_stats):
+        """Get analysis of all domains for comprehensive view"""
+        all_domains = []
+        
+        # Get currently whitelisted domains
+        current_whitelist = set(domain.domain.lower() for domain in 
+                              WhitelistDomain.query.filter_by(is_active=True).all())
+        
+        for domain, stats in domain_stats.items():
+            # Determine recommendation status
+            is_whitelisted = domain in current_whitelist
+            is_recommended = (
+                stats['communication_count'] >= 3 and
+                stats['avg_risk_score'] < 0.4 and
+                stats['high_risk_ratio'] < 0.2 and
+                stats['trust_score'] >= 60 and
+                not is_whitelisted
+            )
+            
+            # Determine if it's a potential BAU domain (not free email)
+            is_potential_bau = (
+                stats['communication_count'] >= 5 and
+                stats['avg_risk_score'] < 0.3 and
+                not self._is_free_email_domain(domain) and
+                stats['trust_score'] >= 70
+            )
+            
+            domain_analysis = {
+                'domain': domain,
+                'communication_count': stats['communication_count'],
+                'unique_senders': len(stats['unique_senders']),
+                'avg_risk_score': round(stats['avg_risk_score'], 3),
+                'high_risk_count': stats['high_risk_count'],
+                'high_risk_ratio': round(stats['high_risk_ratio'], 3),
+                'trust_score': stats['trust_score'],
+                'classification': stats['classification'],
+                'is_whitelisted': is_whitelisted,
+                'is_recommended': is_recommended,
+                'is_potential_bau': is_potential_bau,
+                'status': 'Whitelisted' if is_whitelisted else ('Recommended' if is_recommended else ('Potential BAU' if is_potential_bau else 'Review Required'))
+            }
+            
+            all_domains.append(domain_analysis)
+        
+        # Sort by communication count descending
+        all_domains.sort(key=lambda x: x['communication_count'], reverse=True)
+        
+        return all_domains
+
+    def _is_free_email_domain(self, domain):
+        """Check if domain is a free email provider"""
+        free_email_domains = {
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+            'icloud.com', 'live.com', 'msn.com', 'ymail.com', 'protonmail.com',
+            'mail.com', 'zoho.com', 'gmx.com', 'tutanota.com', 'fastmail.com',
+            'hushmail.com', 'rocketmail.com', 'rediffmail.com', 'inbox.com'
+        }
+        return domain.lower() in free_email_domains
+
     def _analyze_bau_communication_patterns(self, records):
         """Analyze Business As Usual communication patterns"""
         bau_patterns = {
@@ -415,32 +478,40 @@ class DomainManager:
             'low_risk_high_volume': []
         }
         
-        # Domain frequency analysis
+        # Domain frequency analysis - exclude free email domains
         domain_frequency = Counter(r.recipients_email_domain.lower() 
                                  for r in records if r.recipients_email_domain)
         
-        # High frequency domains (potential BAU)
-        for domain, count in domain_frequency.most_common(10):
-            if count >= 5:  # Threshold for high frequency
+        # High frequency domains (potential BAU) - exclude free email domains
+        for domain, count in domain_frequency.most_common(20):
+            if count >= 5 and not self._is_free_email_domain(domain):  # Threshold for high frequency and not free email
                 domain_records = [r for r in records 
                                 if r.recipients_email_domain and r.recipients_email_domain.lower() == domain]
                 avg_risk = sum(r.ml_risk_score for r in domain_records if r.ml_risk_score) / len(domain_records)
+                
+                bau_likelihood = 'High'
+                if avg_risk > 0.3 or count < 10:
+                    bau_likelihood = 'Medium'
+                if avg_risk > 0.5:
+                    bau_likelihood = 'Low'
                 
                 bau_patterns['high_frequency_domains'].append({
                     'domain': domain,
                     'frequency': count,
                     'avg_risk_score': round(avg_risk, 3) if avg_risk else 0,
-                    'bau_likelihood': 'High' if avg_risk < 0.3 and count > 10 else 'Medium'
+                    'bau_likelihood': bau_likelihood,
+                    'is_corporate': not self._is_free_email_domain(domain)
                 })
         
-        # Regular communication pairs (sender -> domain)
+        # Regular communication pairs (sender -> domain) - exclude free email domains
         sender_domain_pairs = defaultdict(int)
         for record in records:
             if record.sender and record.recipients_email_domain:
                 sender_domain = self._extract_domain_from_email(record.sender)
                 recipient_domain = record.recipients_email_domain.lower()
-                pair = f"{sender_domain} -> {recipient_domain}"
-                sender_domain_pairs[pair] += 1
+                if not self._is_free_email_domain(recipient_domain):
+                    pair = f"{sender_domain} -> {recipient_domain}"
+                    sender_domain_pairs[pair] += 1
         
         for pair, count in sender_domain_pairs.items():
             if count >= 3:  # Regular communication threshold
