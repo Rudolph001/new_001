@@ -2306,6 +2306,29 @@ def populate_default_risk_factors():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/config-last-modified')
+def config_last_modified():
+    """Get the last modification time of configurations"""
+    try:
+        from datetime import datetime
+        import os
+        
+        # Check modification times of configuration tables
+        last_rule_update = db.session.query(db.func.max(Rule.updated_at)).scalar() or datetime.min
+        last_whitelist_update = db.session.query(db.func.max(WhitelistDomain.added_at)).scalar() or datetime.min
+        last_keyword_update = db.session.query(db.func.max(AttachmentKeyword.created_at)).scalar() or datetime.min
+        
+        # Get the most recent update
+        last_modified = max(last_rule_update, last_whitelist_update, last_keyword_update)
+        
+        return jsonify({
+            'last_modified': last_modified.isoformat() if last_modified != datetime.min else None
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking config modification time: {str(e)}")
+        return jsonify({'last_modified': None}), 500
+
 @app.route('/api/reprocess-session/<session_id>', methods=['POST'])
 def reprocess_session_data(session_id):
     """Re-process existing session data with current rules, whitelist, and ML keywords"""
