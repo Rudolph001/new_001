@@ -297,7 +297,7 @@ def cases(session_id):
 
     # Build query with filters - exclude whitelisted records from cases
     query = EmailRecord.query.filter_by(session_id=session_id).filter(
-        db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False, EmailRecord.whitelisted.is_(False))
+        db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
     )
 
     if risk_level:
@@ -344,14 +344,14 @@ def escalations(session_id):
         session_id=session_id,
         risk_level='Critical'
     ).filter(
-        EmailRecord.whitelisted != True
+        db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
     ).order_by(EmailRecord.ml_risk_score.desc()).all()
 
     escalated_cases = EmailRecord.query.filter_by(
         session_id=session_id,
         case_status='Escalated'
     ).filter(
-        EmailRecord.whitelisted != True
+        db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
     ).order_by(EmailRecord.escalated_at.desc()).all()
 
     return render_template('escalations.html',
@@ -659,7 +659,7 @@ def api_sender_risk_analytics(session_id):
     try:
         # Get all email records for this session that aren't whitelisted
         records = EmailRecord.query.filter_by(session_id=session_id).filter(
-            EmailRecord.whitelisted != True
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
         ).all()
 
         if not records:
@@ -1464,7 +1464,7 @@ def api_sender_details(session_id, sender_email):
             session_id=session_id,
             sender=sender_email
         ).filter(
-            EmailRecord.whitelisted != True
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
         ).order_by(EmailRecord.id.desc()).limit(5).all()
 
         recent_activity = []
@@ -2494,7 +2494,9 @@ def api_network_data(session_id):
             query = query.filter_by(risk_level=risk_filter)
 
         # Exclude whitelisted records
-        query = query.filter_by(whitelisted=False)
+        query = query.filter(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        )
 
         emails = query.all()
 
