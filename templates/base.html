@@ -70,6 +70,10 @@
                             <li><a class="dropdown-item disabled" href="#" onclick="return false;">
                                 <i class="fas fa-brain"></i> Advanced ML (Coming Soon)
                             </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('network_dashboard', session_id=session_id) if session_id else '#' }}">
+                                <i class="fas fa-project-diagram"></i> Network Analysis
+                            </a></li>
                         </ul>
                     </li>
                     {% endif %}

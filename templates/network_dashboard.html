@@ -1,0 +1,611 @@
+{% extends "base.html" %}
+
+{% block title %}Network Analysis Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Controls Panel -->
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Network Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Field Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Source Field</label>
+                        <select class="form-select" id="sourceField">
+                            <option value="sender">Sender</option>
+                            <option value="recipients_email_domain">Recipient Domain</option>
+                            <option value="department">Department</option>
+                            <option value="bunit">Business Unit</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Target Field</label>
+                        <select class="form-select" id="targetField">
+                            <option value="recipients_email_domain">Recipient Domain</option>
+                            <option value="sender">Sender</option>
+                            <option value="department">Department</option>
+                            <option value="bunit">Business Unit</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Risk Level Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Risk Level Filter</label>
+                        <select class="form-select" id="riskFilter">
+                            <option value="all">All Risk Levels</option>
+                            <option value="Critical">Critical Only</option>
+                            <option value="High">High Only</option>
+                            <option value="Medium">Medium Only</option>
+                            <option value="Low">Low Only</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Min Connection Count -->
+                    <div class="mb-3">
+                        <label class="form-label">Min Connections</label>
+                        <input type="number" class="form-control" id="minConnections" value="1" min="1">
+                    </div>
+                    
+                    <!-- Network Settings -->
+                    <div class="mb-3">
+                        <label class="form-label">Node Size Based On</label>
+                        <select class="form-select" id="nodeSizeMetric">
+                            <option value="connections">Connection Count</option>
+                            <option value="risk_score">Risk Score</option>
+                            <option value="email_count">Email Count</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showDirections" checked>
+                            <label class="form-check-label" for="showDirections">
+                                Show Direction Arrows
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showLabels" checked>
+                            <label class="form-check-label" for="showLabels">
+                                Show Node Labels
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100" onclick="updateNetwork()">Update Network</button>
+                    <button class="btn btn-secondary w-100 mt-2" onclick="resetNetwork()">Reset View</button>
+                </div>
+            </div>
+            
+            <!-- Selected Node Info -->
+            <div class="card mt-3" id="nodeInfoCard" style="display: none;">
+                <div class="card-header">
+                    <h6 class="card-title">Selected Node</h6>
+                </div>
+                <div class="card-body" id="nodeInfoContent">
+                    <!-- Node details will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Network Stats -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title">Network Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h4 text-primary mb-0" id="nodeCount">0</div>
+                            <small class="text-muted">Nodes</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h4 text-success mb-0" id="linkCount">0</div>
+                            <small class="text-muted">Links</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="h6 text-warning mb-0" id="maxConnections">0</div>
+                            <small class="text-muted">Max Connections</small>
+                        </div>
+                        <div class="col-6">
+                            <div class="h6 text-info mb-0" id="avgConnections">0</div>
+                            <small class="text-muted">Avg Connections</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Network Visualization -->
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Network Visualization</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="zoomIn()">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="zoomOut()">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="centerNetwork()">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="networkContainer" style="height: 700px; background: #f8f9fa;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="mt-3">Building network visualization...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include D3.js for network visualization -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<script>
+// Global variables for network visualization
+let svg, simulation, nodes, links, nodeElements, linkElements, labelElements;
+let currentData = { nodes: [], links: [] };
+let selectedNode = null;
+let transform = d3.zoomIdentity;
+
+// Initialize the network visualization
+function initializeNetwork() {
+    const container = d3.select("#networkContainer");
+    const containerRect = container.node().getBoundingClientRect();
+    const width = containerRect.width;
+    const height = containerRect.height;
+    
+    // Clear existing svg
+    container.select("svg").remove();
+    
+    // Create SVG
+    svg = container.append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .style("background", "#ffffff");
+    
+    // Create groups for different elements
+    const g = svg.append("g");
+    
+    // Define arrow markers for directed links
+    svg.append("defs").append("marker")
+        .attr("id", "arrowhead")
+        .attr("viewBox", "0 -5 10 10")
+        .attr("refX", 25)
+        .attr("refY", 0)
+        .attr("markerWidth", 6)
+        .attr("markerHeight", 6)
+        .attr("orient", "auto")
+        .append("path")
+        .attr("d", "M0,-5L10,0L0,5")
+        .attr("fill", "#666");
+    
+    // Create zoom behavior
+    const zoom = d3.zoom()
+        .scaleExtent([0.1, 4])
+        .on("zoom", function(event) {
+            transform = event.transform;
+            g.attr("transform", transform);
+        });
+    
+    svg.call(zoom);
+    
+    // Store references
+    window.networkSvg = svg;
+    window.networkG = g;
+    window.networkZoom = zoom;
+    window.networkWidth = width;
+    window.networkHeight = height;
+}
+
+// Load and update network data
+function updateNetwork() {
+    const sessionId = "{{ session.id if session else 'demo' }}";
+    const sourceField = document.getElementById("sourceField").value;
+    const targetField = document.getElementById("targetField").value;
+    const riskFilter = document.getElementById("riskFilter").value;
+    const minConnections = document.getElementById("minConnections").value;
+    const nodeSizeMetric = document.getElementById("nodeSizeMetric").value;
+    
+    // Show loading modal
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    loadingModal.show();
+    
+    // Fetch network data
+    fetch(`/api/network-data/${sessionId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            source_field: sourceField,
+            target_field: targetField,
+            risk_filter: riskFilter,
+            min_connections: parseInt(minConnections),
+            node_size_metric: nodeSizeMetric
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingModal.hide();
+        if (data.error) {
+            alert("Error loading network data: " + data.error);
+            return;
+        }
+        
+        currentData = data;
+        renderNetwork(data);
+        updateNetworkStats(data);
+    })
+    .catch(error => {
+        loadingModal.hide();
+        console.error('Error:', error);
+        alert("Error loading network data");
+    });
+}
+
+// Render the network visualization
+function renderNetwork(data) {
+    const g = window.networkG;
+    const width = window.networkWidth;
+    const height = window.networkHeight;
+    
+    // Clear existing elements
+    g.selectAll("*").remove();
+    
+    // Create simulation
+    simulation = d3.forceSimulation(data.nodes)
+        .force("link", d3.forceLink(data.links).id(d => d.id).distance(100))
+        .force("charge", d3.forceManyBody().strength(-300))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collision", d3.forceCollide().radius(d => d.size + 5));
+    
+    // Create links
+    linkElements = g.selectAll(".link")
+        .data(data.links)
+        .enter()
+        .append("line")
+        .attr("class", "link")
+        .attr("stroke", "#999")
+        .attr("stroke-opacity", 0.6)
+        .attr("stroke-width", d => Math.sqrt(d.weight))
+        .attr("marker-end", document.getElementById("showDirections").checked ? "url(#arrowhead)" : "");
+    
+    // Create nodes
+    nodeElements = g.selectAll(".node")
+        .data(data.nodes)
+        .enter()
+        .append("circle")
+        .attr("class", "node")
+        .attr("r", d => d.size)
+        .attr("fill", d => getNodeColor(d))
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 2)
+        .style("cursor", "pointer")
+        .call(d3.drag()
+            .on("start", dragstarted)
+            .on("drag", dragged)
+            .on("end", dragended))
+        .on("click", function(event, d) {
+            selectNode(d);
+        })
+        .on("mouseover", function(event, d) {
+            d3.select(this).attr("stroke-width", 4);
+            showTooltip(event, d);
+        })
+        .on("mouseout", function(event, d) {
+            d3.select(this).attr("stroke-width", selectedNode && selectedNode.id === d.id ? 4 : 2);
+            hideTooltip();
+        });
+    
+    // Create labels
+    if (document.getElementById("showLabels").checked) {
+        labelElements = g.selectAll(".label")
+            .data(data.nodes)
+            .enter()
+            .append("text")
+            .attr("class", "label")
+            .attr("text-anchor", "middle")
+            .attr("dy", d => d.size + 15)
+            .style("font-size", "12px")
+            .style("font-weight", "bold")
+            .style("fill", "#333")
+            .text(d => d.label.length > 15 ? d.label.substring(0, 15) + "..." : d.label);
+    }
+    
+    // Update simulation
+    simulation.on("tick", ticked);
+}
+
+// Get node color based on risk level
+function getNodeColor(node) {
+    const riskColors = {
+        "Critical": "#dc3545",
+        "High": "#fd7e14", 
+        "Medium": "#ffc107",
+        "Low": "#198754",
+        "default": "#6c757d"
+    };
+    return riskColors[node.risk_level] || riskColors.default;
+}
+
+// Simulation tick function
+function ticked() {
+    linkElements
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+    
+    nodeElements
+        .attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+    
+    if (labelElements) {
+        labelElements
+            .attr("x", d => d.x)
+            .attr("y", d => d.y);
+    }
+}
+
+// Node selection and highlighting
+function selectNode(node) {
+    selectedNode = node;
+    
+    // Reset all nodes and links
+    nodeElements.attr("stroke-width", 2).attr("opacity", 0.3);
+    linkElements.attr("opacity", 0.1);
+    if (labelElements) labelElements.attr("opacity", 0.3);
+    
+    // Highlight selected node
+    nodeElements
+        .filter(d => d.id === node.id)
+        .attr("stroke-width", 4)
+        .attr("opacity", 1);
+    
+    // Highlight connected nodes and links
+    const connectedNodeIds = new Set();
+    connectedNodeIds.add(node.id);
+    
+    linkElements
+        .filter(d => d.source.id === node.id || d.target.id === node.id)
+        .attr("opacity", 0.8)
+        .each(d => {
+            connectedNodeIds.add(d.source.id);
+            connectedNodeIds.add(d.target.id);
+        });
+    
+    nodeElements
+        .filter(d => connectedNodeIds.has(d.id))
+        .attr("opacity", 1);
+    
+    if (labelElements) {
+        labelElements
+            .filter(d => connectedNodeIds.has(d.id))
+            .attr("opacity", 1);
+    }
+    
+    // Show node information
+    showNodeInfo(node);
+}
+
+// Show node information panel
+function showNodeInfo(node) {
+    const nodeInfoCard = document.getElementById("nodeInfoCard");
+    const nodeInfoContent = document.getElementById("nodeInfoContent");
+    
+    // Get connected nodes
+    const connections = currentData.links
+        .filter(link => link.source.id === node.id || link.target.id === node.id)
+        .map(link => link.source.id === node.id ? link.target : link.source);
+    
+    nodeInfoContent.innerHTML = `
+        <h6>${node.label}</h6>
+        <div class="mb-2">
+            <small class="text-muted">Risk Level:</small><br>
+            <span class="badge bg-${getRiskBadgeColor(node.risk_level)}">${node.risk_level}</span>
+        </div>
+        <div class="mb-2">
+            <small class="text-muted">Connections:</small><br>
+            <strong>${connections.length}</strong>
+        </div>
+        <div class="mb-2">
+            <small class="text-muted">Email Count:</small><br>
+            <strong>${node.email_count || 0}</strong>
+        </div>
+        <div class="mb-2">
+            <small class="text-muted">Risk Score:</small><br>
+            <strong>${node.risk_score ? node.risk_score.toFixed(2) : 'N/A'}</strong>
+        </div>
+        <hr>
+        <div>
+            <small class="text-muted">Connected to:</small><br>
+            ${connections.slice(0, 5).map(conn => `<small class="badge bg-light text-dark me-1">${conn.label.length > 10 ? conn.label.substring(0, 10) + "..." : conn.label}</small>`).join('')}
+            ${connections.length > 5 ? `<small class="text-muted">...and ${connections.length - 5} more</small>` : ''}
+        </div>
+    `;
+    
+    nodeInfoCard.style.display = "block";
+}
+
+// Get badge color for risk level
+function getRiskBadgeColor(riskLevel) {
+    const colors = {
+        "Critical": "danger",
+        "High": "warning", 
+        "Medium": "primary",
+        "Low": "success"
+    };
+    return colors[riskLevel] || "secondary";
+}
+
+// Update network statistics
+function updateNetworkStats(data) {
+    document.getElementById("nodeCount").textContent = data.nodes.length;
+    document.getElementById("linkCount").textContent = data.links.length;
+    
+    if (data.nodes.length > 0) {
+        const connections = data.nodes.map(n => n.connections || 0);
+        const maxConnections = Math.max(...connections);
+        const avgConnections = (connections.reduce((a, b) => a + b, 0) / connections.length).toFixed(1);
+        
+        document.getElementById("maxConnections").textContent = maxConnections;
+        document.getElementById("avgConnections").textContent = avgConnections;
+    }
+}
+
+// Drag functions
+function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+}
+
+function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+}
+
+function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+}
+
+// Zoom and pan functions
+function zoomIn() {
+    window.networkSvg.transition().duration(300).call(
+        window.networkZoom.scaleBy, 1.5
+    );
+}
+
+function zoomOut() {
+    window.networkSvg.transition().duration(300).call(
+        window.networkZoom.scaleBy, 1 / 1.5
+    );
+}
+
+function centerNetwork() {
+    window.networkSvg.transition().duration(750).call(
+        window.networkZoom.transform,
+        d3.zoomIdentity.translate(window.networkWidth / 2, window.networkHeight / 2).scale(1)
+    );
+}
+
+// Reset network view
+function resetNetwork() {
+    selectedNode = null;
+    document.getElementById("nodeInfoCard").style.display = "none";
+    
+    if (nodeElements) {
+        nodeElements.attr("stroke-width", 2).attr("opacity", 1);
+    }
+    if (linkElements) {
+        linkElements.attr("opacity", 0.6);
+    }
+    if (labelElements) {
+        labelElements.attr("opacity", 1);
+    }
+    
+    centerNetwork();
+}
+
+// Tooltip functions
+function showTooltip(event, d) {
+    // Simple tooltip implementation
+    const tooltip = d3.select("body").append("div")
+        .attr("id", "network-tooltip")
+        .style("position", "absolute")
+        .style("background", "rgba(0,0,0,0.8)")
+        .style("color", "white")
+        .style("padding", "8px")
+        .style("border-radius", "4px")
+        .style("font-size", "12px")
+        .style("pointer-events", "none")
+        .style("z-index", "1000")
+        .html(`<strong>${d.label}</strong><br>Connections: ${d.connections || 0}<br>Risk: ${d.risk_level}`)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY - 10) + "px");
+}
+
+function hideTooltip() {
+    d3.select("#network-tooltip").remove();
+}
+
+// Initialize on page load
+document.addEventListener("DOMContentLoaded", function() {
+    initializeNetwork();
+    // Load initial network with default settings
+    updateNetwork();
+});
+
+// Handle window resize
+window.addEventListener("resize", function() {
+    setTimeout(function() {
+        initializeNetwork();
+        if (currentData.nodes.length > 0) {
+            renderNetwork(currentData);
+        }
+    }, 100);
+});
+</script>
+
+<style>
+.node {
+    transition: all 0.2s ease;
+}
+
+.node:hover {
+    filter: brightness(1.1);
+}
+
+.link {
+    transition: all 0.2s ease;
+}
+
+#networkContainer {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+#nodeInfoCard {
+    max-height: 400px;
+    overflow-y: auto;
+}
+</style>
+{% endblock %}

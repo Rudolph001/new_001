@@ -2306,3 +2306,163 @@ def populate_default_risk_factors():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/network/<session_id>')
+def network_dashboard(session_id):
+    """Network analysis dashboard for a specific session"""
+    session = ProcessingSession.query.get_or_404(session_id)
+    return render_template('network_dashboard.html', session=session)
+
+@app.route('/api/network-data/<session_id>', methods=['POST'])
+def api_network_data(session_id):
+    """Generate network visualization data for a specific session"""
+    try:
+        session = ProcessingSession.query.get_or_404(session_id)
+        data = request.get_json()
+        
+        source_field = data.get('source_field', 'sender')
+        target_field = data.get('target_field', 'recipients_email_domain')
+        risk_filter = data.get('risk_filter', 'all')
+        min_connections = data.get('min_connections', 1)
+        node_size_metric = data.get('node_size_metric', 'connections')
+        
+        # Get emails for this session
+        query = EmailRecord.query.filter_by(session_id=session_id)
+        
+        # Apply risk filter
+        if risk_filter != 'all':
+            query = query.filter_by(risk_level=risk_filter)
+        
+        # Exclude whitelisted records
+        query = query.filter_by(whitelisted=False)
+        
+        emails = query.all()
+        
+        if not emails:
+            return jsonify({
+                'nodes': [],
+                'links': [],
+                'message': 'No data available for network visualization'
+            })
+        
+        # Build network graph
+        nodes_dict = {}
+        links_dict = {}
+        
+        for email in emails:
+            # Get source and target values
+            source_value = getattr(email, source_field, '') or 'Unknown'
+            target_value = getattr(email, target_field, '') or 'Unknown'
+            
+            if not source_value or not target_value or source_value == target_value:
+                continue
+                
+            # Clean and normalize values
+            source_value = str(source_value).strip()
+            target_value = str(target_value).strip()
+            
+            if len(source_value) == 0 or len(target_value) == 0:
+                continue
+            
+            # Create nodes
+            if source_value not in nodes_dict:
+                nodes_dict[source_value] = {
+                    'id': source_value,
+                    'label': source_value,
+                    'type': source_field,
+                    'connections': 0,
+                    'email_count': 0,
+                    'risk_score': 0,
+                    'risk_level': 'Low',
+                    'size': 10
+                }
+            
+            if target_value not in nodes_dict:
+                nodes_dict[target_value] = {
+                    'id': target_value,
+                    'label': target_value,
+                    'type': target_field,
+                    'connections': 0,
+                    'email_count': 0,
+                    'risk_score': 0,
+                    'risk_level': 'Low',
+                    'size': 10
+                }
+            
+            # Update node metrics
+            nodes_dict[source_value]['email_count'] += 1
+            nodes_dict[target_value]['email_count'] += 1
+            
+            # Update risk information
+            if email.ml_risk_score:
+                current_risk = nodes_dict[source_value]['risk_score']
+                nodes_dict[source_value]['risk_score'] = max(current_risk, email.ml_risk_score)
+                
+                if email.risk_level and email.risk_level != 'Low':
+                    nodes_dict[source_value]['risk_level'] = email.risk_level
+            
+            # Create link
+            link_key = f"{source_value}->{target_value}"
+            if link_key not in links_dict:
+                links_dict[link_key] = {
+                    'source': source_value,
+                    'target': target_value,
+                    'weight': 0
+                }
+            
+            links_dict[link_key]['weight'] += 1
+        
+        # Calculate node connections
+        for link in links_dict.values():
+            nodes_dict[link['source']]['connections'] += 1
+            nodes_dict[link['target']]['connections'] += 1
+        
+        # Filter nodes by minimum connections
+        filtered_nodes = {k: v for k, v in nodes_dict.items() if v['connections'] >= min_connections}
+        
+        # Filter links to only include nodes that passed the filter
+        filtered_links = [link for link in links_dict.values() 
+                         if link['source'] in filtered_nodes and link['target'] in filtered_nodes]
+        
+        # Calculate node sizes based on selected metric
+        if filtered_nodes:
+            metric_values = []
+            for node in filtered_nodes.values():
+                if node_size_metric == 'connections':
+                    metric_values.append(node['connections'])
+                elif node_size_metric == 'risk_score':
+                    metric_values.append(node['risk_score'] or 0)
+                elif node_size_metric == 'email_count':
+                    metric_values.append(node['email_count'])
+                else:
+                    metric_values.append(node['connections'])
+            
+            min_metric = min(metric_values) if metric_values else 0
+            max_metric = max(metric_values) if metric_values else 1
+            metric_range = max_metric - min_metric if max_metric > min_metric else 1
+            
+            # Scale node sizes between 8 and 30
+            for node in filtered_nodes.values():
+                if node_size_metric == 'connections':
+                    metric_val = node['connections']
+                elif node_size_metric == 'risk_score':
+                    metric_val = node['risk_score'] or 0
+                elif node_size_metric == 'email_count':
+                    metric_val = node['email_count']
+                else:
+                    metric_val = node['connections']
+                
+                normalized = (metric_val - min_metric) / metric_range if metric_range > 0 else 0
+                node['size'] = 8 + (normalized * 22)  # Scale between 8 and 30
+        
+        # Convert to lists
+        nodes_list = list(filtered_nodes.values())
+        
+        return jsonify({
+            'nodes': nodes_list,
+            'links': filtered_links
+        })
+        
+    except Exception as e:
+        logger.error(f"Error generating network data: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
