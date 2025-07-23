@@ -85,6 +85,16 @@
                             <small class="text-muted">Chunk Progress</small>
                         </div>
                     </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="text-center">
+                            {% if session.status == 'completed' %}
+                            <button class="btn btn-outline-primary btn-sm" onclick="reprocessSessionData()" id="reprocessBtn">
+                                <i class="fas fa-sync-alt me-1"></i> Re-process Data
+                            </button>
+                            <small class="d-block text-muted mt-1">Apply new rules/whitelist</small>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Chunk Progress Bar -->
@@ -615,6 +625,48 @@
 <script>
 // Set session ID for JavaScript functions
 window.currentSessionId = '{{ session.id }}';
+
+// Re-process session data with current configurations
+function reprocessSessionData() {
+    const sessionId = "{{ session.id if session else '' }}";
+    if (!sessionId) {
+        alert('No session selected');
+        return;
+    }
+    
+    if (!confirm('This will re-process your data with the current rules, whitelist domains, and ML keywords. This may take several minutes. Continue?')) {
+        return;
+    }
+    
+    const btn = document.getElementById('reprocessBtn');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Re-processing...';
+    
+    fetch(`/api/reprocess-session/${sessionId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Success! ${data.processed_records} records re-processed with current configurations.`);
+            location.reload(); // Refresh to show updated results
+        } else {
+            alert(`Error: ${data.error || 'Re-processing failed'}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Network error occurred during re-processing');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    });
+}
 
 // Auto-refresh for processing sessions
 {% if session.status == 'processing' %}

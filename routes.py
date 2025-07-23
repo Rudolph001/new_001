@@ -2306,6 +2306,72 @@ def populate_default_risk_factors():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/reprocess-session/<session_id>', methods=['POST'])
+def reprocess_session_data(session_id):
+    """Re-process existing session data with current rules, whitelist, and ML keywords"""
+    try:
+        session = ProcessingSession.query.get_or_404(session_id)
+        
+        if not session.data_path or session.status == 'processing':
+            return jsonify({
+                'error': 'Session data not available for re-processing or already processing'
+            }), 400
+        
+        # Update session status
+        session.status = 'processing'
+        session.processed_records = 0
+        session.error_message = None
+        db.session.commit()
+        
+        # Get the original CSV file path
+        import os
+        csv_path = session.data_path
+        if session.is_compressed:
+            # Handle compressed data - decompress first
+            from session_manager import SessionManager
+            session_manager = SessionManager()
+            csv_path = session_manager.decompress_session_data(session_id)
+        
+        # Check if file exists
+        if not os.path.exists(csv_path):
+            session.status = 'error'
+            session.error_message = 'Original CSV file not found'
+            db.session.commit()
+            return jsonify({'error': 'Original CSV file not found'}), 404
+        
+        # Clear existing processed data for this session
+        EmailRecord.query.filter_by(session_id=session_id).delete()
+        db.session.commit()
+        
+        # Re-process with current configurations
+        from data_processor import DataProcessor
+        processor = DataProcessor()
+        result = processor.process_csv(session_id, csv_path)
+        
+        if result['success']:
+            session.status = 'completed'
+            session.processing_completed_at = datetime.utcnow()
+        else:
+            session.status = 'error'
+            session.error_message = result.get('error', 'Re-processing failed')
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': result['success'],
+            'message': 'Data re-processed successfully with current configurations' if result['success'] else result.get('error'),
+            'processed_records': result.get('processed_records', 0)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error re-processing session {session_id}: {str(e)}")
+        session = ProcessingSession.query.get(session_id)
+        if session:
+            session.status = 'error'
+            session.error_message = str(e)
+            db.session.commit()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/network/<session_id>')
 def network_dashboard(session_id):
     """Network analysis dashboard for a specific session"""
