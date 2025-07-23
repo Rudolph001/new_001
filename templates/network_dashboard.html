@@ -192,7 +192,7 @@
 
 <script>
 // Global variables for network visualization
-let svg, simulation, nodes, links, nodeElements, linkElements, labelElements;
+let svg, simulation, nodes, links, nodeElements, linkElements, linkLabelElements, labelElements;
 let currentData = { nodes: [], links: [] };
 let selectedNode = null;
 let transform = d3.zoomIdentity;
@@ -219,15 +219,16 @@ function initializeNetwork() {
     // Define arrow markers for directed links
     svg.append("defs").append("marker")
         .attr("id", "arrowhead")
-        .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 25)
+        .attr("viewBox", "0 -3 6 6")
+        .attr("refX", 18)
         .attr("refY", 0)
-        .attr("markerWidth", 6)
-        .attr("markerHeight", 6)
+        .attr("markerWidth", 4)
+        .attr("markerHeight", 4)
         .attr("orient", "auto")
         .append("path")
-        .attr("d", "M0,-5L10,0L0,5")
-        .attr("fill", "#666");
+        .attr("d", "M0,-3L6,0L0,3")
+        .attr("fill", "#999")
+        .attr("stroke", "none");
     
     // Create zoom behavior
     const zoom = d3.zoom()
@@ -345,8 +346,21 @@ function renderNetwork(data) {
         .attr("class", "link")
         .attr("stroke", "#999")
         .attr("stroke-opacity", 0.6)
-        .attr("stroke-width", d => Math.sqrt(d.weight))
+        .attr("stroke-width", d => Math.max(1, Math.min(4, Math.sqrt(d.weight))))
         .attr("marker-end", document.getElementById("showDirections").checked ? "url(#arrowhead)" : "");
+    
+    // Create link labels for email counts
+    linkLabelElements = g.selectAll(".link-label")
+        .data(data.links)
+        .enter()
+        .append("text")
+        .attr("class", "link-label")
+        .attr("font-size", "10px")
+        .attr("fill", "#666")
+        .attr("text-anchor", "middle")
+        .attr("dy", -2)
+        .style("pointer-events", "none")
+        .text(d => d.weight > 1 ? d.weight : "");
     
     // Create nodes
     nodeElements = g.selectAll(".node")
@@ -418,6 +432,13 @@ function ticked() {
         .attr("x2", d => d.target.x)
         .attr("y2", d => d.target.y);
     
+    // Position link labels at the midpoint of each link
+    if (linkLabelElements) {
+        linkLabelElements
+            .attr("x", d => (d.source.x + d.target.x) / 2)
+            .attr("y", d => (d.source.y + d.target.y) / 2);
+    }
+    
     nodeElements
         .attr("cx", d => d.x)
         .attr("cy", d => d.y);
@@ -436,6 +457,7 @@ function selectNode(node) {
     // Reset all nodes and links
     nodeElements.attr("stroke-width", 2).attr("opacity", 0.3);
     linkElements.attr("opacity", 0.1);
+    if (linkLabelElements) linkLabelElements.attr("opacity", 0.3);
     if (labelElements) labelElements.attr("opacity", 0.3);
     
     // Highlight selected node
@@ -455,6 +477,13 @@ function selectNode(node) {
             connectedNodeIds.add(d.source.id);
             connectedNodeIds.add(d.target.id);
         });
+    
+    // Highlight connected link labels
+    if (linkLabelElements) {
+        linkLabelElements
+            .filter(d => d.source.id === node.id || d.target.id === node.id)
+            .attr("opacity", 1);
+    }
     
     nodeElements
         .filter(d => connectedNodeIds.has(d.id))
@@ -583,6 +612,9 @@ function resetNetwork() {
     }
     if (linkElements) {
         linkElements.attr("opacity", 0.6);
+    }
+    if (linkLabelElements) {
+        linkLabelElements.attr("opacity", 1);
     }
     if (labelElements) {
         labelElements.attr("opacity", 1);
