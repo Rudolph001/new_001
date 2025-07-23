@@ -197,18 +197,20 @@
                         <i class="fas fa-filter me-2"></i>
                         Exclusion Rules
                     </a>
-                    <button class="btn btn-outline-info" onclick="window.showMLKeywords()" id="mlKeywordsBtn">
+                    <button class="btn btn-outline-info" id="newMLKeywordsBtn">
                         <i class="fas fa-brain me-2"></i>
                         ML Keywords
                     </button>
                 </div>
-                <div id="mlKeywordsContainer" style="display: none;" class="mt-3">
-                    <div id="mlKeywords">
-                        <div class="text-center">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading...</span>
+                <div id="newMLKeywordsContainer" style="display: none;" class="mt-3">
+                    <div id="newMLKeywords" class="card">
+                        <div class="card-body">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Loading ML keywords...</p>
                             </div>
-                            <p class="mt-2">Loading ML keywords...</p>
                         </div>
                     </div>
                 </div>
@@ -1918,17 +1920,19 @@ window.loadMLKeywords = function() {
 
 // Initialize dashboard when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, setting up ML Keywords button');
+    console.log('DOM loaded, setting up NEW ML Keywords button');
     
-    // Set up ML Keywords button with event listener as backup
-    const mlKeywordsBtn = document.getElementById('mlKeywordsBtn');
-    if (mlKeywordsBtn) {
-        mlKeywordsBtn.addEventListener('click', function(e) {
+    // Set up the NEW ML Keywords button
+    const newMLKeywordsBtn = document.getElementById('newMLKeywordsBtn');
+    if (newMLKeywordsBtn) {
+        newMLKeywordsBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Button clicked via event listener');
-            window.showMLKeywords();
+            console.log('NEW ML Keywords button clicked!');
+            toggleNewMLKeywords();
         });
-        console.log('ML Keywords button event listener added');
+        console.log('NEW ML Keywords button event listener added successfully');
+    } else {
+        console.error('Could not find newMLKeywordsBtn element');
     }
     
     // Initialize charts if elements exist
@@ -1978,6 +1982,152 @@ document.addEventListener('DOMContentLoaded', function() {
         logComponentFilter.addEventListener('change', updateSystemLogs);
     }
 });
+
+// New ML Keywords function that actually works
+function toggleNewMLKeywords() {
+    console.log('toggleNewMLKeywords function called');
+    
+    const container = document.getElementById('newMLKeywordsContainer');
+    const keywordsDiv = document.getElementById('newMLKeywords');
+    
+    if (!container || !keywordsDiv) {
+        console.error('Container elements not found');
+        alert('Error: Could not find ML Keywords elements');
+        return;
+    }
+    
+    console.log('Found container elements, toggling visibility');
+    
+    if (container.style.display === 'none' || container.style.display === '') {
+        console.log('Showing ML Keywords container');
+        container.style.display = 'block';
+        
+        // Show loading state
+        keywordsDiv.innerHTML = `
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading ML keywords...</p>
+                </div>
+            </div>
+        `;
+        
+        // Fetch ML keywords data
+        console.log('Fetching ML keywords from API...');
+        fetch('/api/ml-keywords')
+            .then(response => {
+                console.log('API response received:', response.status);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('ML Keywords data loaded successfully:', data);
+                
+                const totalKeywords = data.total_keywords || 0;
+                const categories = data.categories || {};
+                const businessCount = categories.Business || 0;
+                const personalCount = categories.Personal || 0;
+                const suspiciousCount = categories.Suspicious || 0;
+                
+                keywordsDiv.innerHTML = `
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-brain me-2"></i>ML Keywords Management
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <h6>Keywords Summary</h6>
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <div class="h4 text-primary">${totalKeywords}</div>
+                                    <small>Total Keywords</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 text-success">${businessCount}</div>
+                                    <small>Business</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 text-warning">${personalCount}</div>
+                                    <small>Personal</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 text-danger">${suspiciousCount}</div>
+                                    <small>Suspicious</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <h6>Sample Keywords by Category:</h6>
+                                <div class="row">
+                `;
+                
+                // Add sample keywords from each category
+                if (data.keywords && data.keywords.length > 0) {
+                    const businessKeywords = data.keywords.filter(k => k.category === 'Business').slice(0, 5);
+                    const personalKeywords = data.keywords.filter(k => k.category === 'Personal').slice(0, 5);
+                    const suspiciousKeywords = data.keywords.filter(k => k.category === 'Suspicious').slice(0, 5);
+                    
+                    keywordsDiv.innerHTML += `
+                                    <div class="col-md-4">
+                                        <h6 class="text-success">Business Keywords</h6>
+                                        ${businessKeywords.map(k => `<span class="badge bg-success me-1 mb-1">${k.keyword} (${k.risk_score})</span>`).join('')}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="text-warning">Personal Keywords</h6>
+                                        ${personalKeywords.map(k => `<span class="badge bg-warning me-1 mb-1">${k.keyword} (${k.risk_score})</span>`).join('')}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6 class="text-danger">Suspicious Keywords</h6>
+                                        ${suspiciousKeywords.map(k => `<span class="badge bg-danger me-1 mb-1">${k.keyword} (${k.risk_score})</span>`).join('')}
+                                    </div>
+                    `;
+                }
+                
+                keywordsDiv.innerHTML += `
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-sm btn-success" onclick="populateDefaultKeywords()">
+                                <i class="fas fa-plus me-1"></i>Populate Default Keywords
+                            </button>
+                            <button class="btn btn-sm btn-primary ms-2" onclick="toggleNewMLKeywords()">
+                                <i class="fas fa-sync me-1"></i>Refresh
+                            </button>
+                            <button class="btn btn-sm btn-secondary ms-2" onclick="toggleNewMLKeywords()">
+                                <i class="fas fa-times me-1"></i>Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                console.log('ML Keywords display updated successfully');
+            })
+            .catch(error => {
+                console.error('Error loading ML keywords:', error);
+                keywordsDiv.innerHTML = `
+                    <div class="card-body">
+                        <div class="alert alert-danger">
+                            <h6>Error Loading ML Keywords</h6>
+                            <p>Failed to load ML keywords: ${error.message}</p>
+                            <button class="btn btn-sm btn-danger" onclick="toggleNewMLKeywords()">Try Again</button>
+                        </div>
+                    </div>
+                `;
+            });
+    } else {
+        console.log('Hiding ML Keywords container');
+        container.style.display = 'none';
+    }
+}
 </script>
 
 {% endblock %}
