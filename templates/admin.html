@@ -378,7 +378,14 @@ suspicious activity"></textarea>
                                 {% for factor in risk_scoring_info.algorithm_components.rule_based_factors.factors %}
                                 <div class="d-flex justify-content-between py-3 border-bottom risk-factor-item" 
                                      style="cursor: pointer; border-radius: 4px; transition: all 0.2s; min-height: 120px;"
-                                     onclick="viewRiskFactorDetails({{ factor.id if factor.id else 'null' }}, '{{ factor.name }}', '{{ factor.description }}', {{ factor.max_score }}, '{{ factor.category if factor.category else 'General' }}', {{ factor.weight_percentage if factor.weight_percentage else 0.0 }}, {{ factor.calculation_config|tojson if factor.calculation_config else '{}' }})"
+                                     data-factor-id="{{ factor.id if factor.id else '' }}"
+                                     data-factor-name="{{ factor.name }}"
+                                     data-factor-description="{{ factor.description }}"
+                                     data-factor-max-score="{{ factor.max_score }}"
+                                     data-factor-category="{{ factor.category if factor.category else 'General' }}"
+                                     data-factor-weight="{{ factor.weight_percentage if factor.weight_percentage else 0.0 }}"
+                                     data-factor-config="{{ factor.calculation_config|tojson if factor.calculation_config else '{}' }}"
+                                     onclick="viewRiskFactorFromElement(this)"
                                      onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.transform='translateX(5px)'"
                                      onmouseout="this.style.backgroundColor='transparent'; this.style.transform='translateX(0)'">
                                     <div style="flex: 1;">
@@ -2679,6 +2686,25 @@ function showAlert(message, type) {
 }
 
 // Risk Factor Management Functions
+function viewRiskFactorFromElement(element) {
+    const id = element.getAttribute('data-factor-id');
+    const name = element.getAttribute('data-factor-name');
+    const description = element.getAttribute('data-factor-description');
+    const maxScore = parseFloat(element.getAttribute('data-factor-max-score'));
+    const category = element.getAttribute('data-factor-category');
+    const weightPercentage = parseFloat(element.getAttribute('data-factor-weight'));
+    const configJson = element.getAttribute('data-factor-config');
+    
+    let calculationConfig = {};
+    try {
+        calculationConfig = JSON.parse(configJson);
+    } catch (error) {
+        console.warn('Could not parse calculation config:', error);
+    }
+    
+    viewRiskFactorDetails(id, name, description, maxScore, category, weightPercentage, calculationConfig);
+}
+
 function viewRiskFactorDetails(id, name, description, maxScore, category, weightPercentage, calculationConfig) {
     document.getElementById('riskFactorId').value = id || '';
     document.getElementById('riskFactorName').value = name;
