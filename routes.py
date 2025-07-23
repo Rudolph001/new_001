@@ -109,7 +109,7 @@ def upload_file():
 def processing_status(session_id):
     """Get processing status for session"""
     session = ProcessingSession.query.get_or_404(session_id)
-    
+
     # Get workflow statistics
     workflow_stats = {}
     if session.status in ['processing', 'completed']:
@@ -119,25 +119,25 @@ def processing_status(session_id):
                 EmailRecord.session_id == session_id,
                 EmailRecord.excluded_by_rule.isnot(None)
             ).count()
-            
+
             # Count whitelisted records  
             whitelisted_count = EmailRecord.query.filter_by(
                 session_id=session_id,
                 whitelisted=True
             ).count()
-            
+
             # Count records with rule matches
             rules_matched_count = EmailRecord.query.filter(
                 EmailRecord.session_id == session_id,
                 EmailRecord.rule_matches.isnot(None)
             ).count()
-            
+
             # Count critical cases
             critical_cases_count = EmailRecord.query.filter_by(
                 session_id=session_id,
                 risk_level='Critical'
             ).count()
-            
+
             workflow_stats = {
                 'excluded_count': excluded_count,
                 'whitelisted_count': whitelisted_count,
@@ -146,7 +146,7 @@ def processing_status(session_id):
             }
         except Exception as e:
             logger.warning(f"Could not get workflow stats: {str(e)}")
-    
+
     return jsonify({
         'status': session.status,
         'total_records': session.total_records or 0,
@@ -166,19 +166,19 @@ def dashboard_stats(session_id):
         # Get basic stats
         stats = session_manager.get_processing_stats(session_id)
         ml_insights = ml_engine.get_insights(session_id)
-        
+
         # Get real-time counts
         total_records = EmailRecord.query.filter_by(session_id=session_id).count()
         critical_cases = EmailRecord.query.filter_by(
             session_id=session_id, 
             risk_level='Critical'
         ).filter(EmailRecord.whitelisted != True).count()
-        
+
         whitelisted_records = EmailRecord.query.filter_by(
             session_id=session_id,
             whitelisted=True
         ).count()
-        
+
         return jsonify({
             'total_records': total_records,
             'critical_cases': critical_cases,
@@ -190,7 +190,7 @@ def dashboard_stats(session_id):
             'chunk_progress': int((session.current_chunk or 0) / max(session.total_chunks or 1, 1) * 100),
             'timestamp': datetime.utcnow().isoformat()
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting dashboard stats: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -248,25 +248,25 @@ def dashboard(session_id):
             EmailRecord.session_id == session_id,
             EmailRecord.excluded_by_rule.isnot(None)
         ).count()
-        
+
         # Count whitelisted records  
         whitelisted_count = EmailRecord.query.filter_by(
             session_id=session_id,
             whitelisted=True
         ).count()
-        
+
         # Count records with rule matches
         rules_matched_count = EmailRecord.query.filter(
             EmailRecord.session_id == session_id,
             EmailRecord.rule_matches.isnot(None)
         ).count()
-        
+
         # Count critical cases
         critical_cases_count = EmailRecord.query.filter_by(
             session_id=session_id,
             risk_level='Critical'
         ).count()
-        
+
         workflow_stats = {
             'excluded_count': excluded_count,
             'whitelisted_count': whitelisted_count,
@@ -322,7 +322,7 @@ def cases(session_id):
     total_whitelisted = EmailRecord.query.filter_by(session_id=session_id).filter(
         EmailRecord.whitelisted == True
     ).count()
-    
+
     active_whitelist_domains = WhitelistDomain.query.filter_by(is_active=True).count()
 
     return render_template('cases.html', 
@@ -363,7 +363,7 @@ def escalations(session_id):
 def sender_analysis(session_id):
     """Sender behavior analysis dashboard"""
     session = ProcessingSession.query.get_or_404(session_id)
-    
+
     try:
         analysis = advanced_ml_engine.analyze_sender_behavior(session_id)
         if not analysis or 'error' in analysis:
@@ -435,10 +435,10 @@ def admin():
         'completed_sessions': ProcessingSession.query.filter_by(status='completed').count(),
         'failed_sessions': ProcessingSession.query.filter_by(status='failed').count()
     }
-    
+
     # Recent sessions for the admin panel
     recent_sessions = ProcessingSession.query.order_by(ProcessingSession.upload_time.desc()).limit(5).all()
-    
+
     # Legacy data for backward compatibility (if needed)
     sessions = ProcessingSession.query.order_by(ProcessingSession.upload_time.desc()).all()
     whitelist_domains = WhitelistDomain.query.filter_by(is_active=True).all()
@@ -446,7 +446,7 @@ def admin():
 
     # Get risk factors from database, fallback to default if empty
     db_risk_factors = RiskFactor.query.filter_by(is_active=True).order_by(RiskFactor.sort_order, RiskFactor.name).all()
-    
+
     if db_risk_factors:
         # Use database risk factors
         factors_list = []
@@ -528,7 +528,7 @@ def rules():
     # Get all rules with counts for display
     security_rules = Rule.query.filter_by(rule_type='security', is_active=True).all()
     exclusion_rules = Rule.query.filter_by(rule_type='exclusion', is_active=True).all()
-    
+
     # Get rule counts for statistics
     rule_counts = {
         'security_active': len(security_rules),
@@ -547,13 +547,13 @@ def create_rule():
     """Create a new rule with complex AND/OR conditions"""
     try:
         data = request.get_json()
-        
+
         # Validate required fields
         required_fields = ['name', 'rule_type', 'conditions']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({'success': False, 'message': f'Missing required field: {field}'}), 400
-        
+
         # Create new rule
         rule = Rule(
             name=data['name'],
@@ -564,18 +564,18 @@ def create_rule():
             actions=data.get('actions', 'flag'),
             is_active=data.get('is_active', True)
         )
-        
+
         db.session.add(rule)
         db.session.commit()
-        
+
         logger.info(f"Created new rule: {rule.name} (ID: {rule.id})")
-        
+
         return jsonify({
             'success': True,
             'message': 'Rule created successfully',
             'rule_id': rule.id
         })
-        
+
     except Exception as e:
         logger.error(f"Error creating rule: {str(e)}")
         db.session.rollback()
@@ -587,7 +587,7 @@ def update_rule(rule_id):
     try:
         rule = Rule.query.get_or_404(rule_id)
         data = request.get_json()
-        
+
         # Handle toggle functionality
         if 'is_active' in data and data['is_active'] is None:
             rule.is_active = not rule.is_active
@@ -596,15 +596,15 @@ def update_rule(rule_id):
             for field in ['name', 'rule_type', 'description', 'priority', 'conditions', 'actions', 'is_active']:
                 if field in data and data[field] is not None:
                     setattr(rule, field, data[field])
-        
+
         rule.updated_at = datetime.utcnow()
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': 'Rule updated successfully'
         })
-        
+
     except Exception as e:
         logger.error(f"Error updating rule {rule_id}: {str(e)}")
         db.session.rollback()
@@ -617,12 +617,12 @@ def delete_rule(rule_id):
         rule = Rule.query.get_or_404(rule_id)
         db.session.delete(rule)
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': 'Rule deleted successfully'
         })
-        
+
     except Exception as e:
         logger.error(f"Error deleting rule {rule_id}: {str(e)}")
         db.session.rollback()
@@ -661,7 +661,7 @@ def api_sender_risk_analytics(session_id):
         records = EmailRecord.query.filter_by(session_id=session_id).filter(
             EmailRecord.whitelisted != True
         ).all()
-        
+
         if not records:
             return jsonify({
                 'data': [],
@@ -670,7 +670,7 @@ def api_sender_risk_analytics(session_id):
                 'max_risk': 0,
                 'message': 'No sender data available for this session'
             })
-        
+
         # Aggregate data by sender
         sender_stats = {}
         for record in records:
@@ -683,7 +683,7 @@ def api_sender_risk_analytics(session_id):
                     'has_attachments': False,
                     'high_risk_count': 0
                 }
-            
+
             sender_stats[sender]['email_count'] += 1
             if record.ml_risk_score is not None:
                 sender_stats[sender]['risk_scores'].append(record.ml_risk_score)
@@ -691,12 +691,12 @@ def api_sender_risk_analytics(session_id):
                 sender_stats[sender]['has_attachments'] = True
             if record.risk_level in ['High', 'Critical']:
                 sender_stats[sender]['high_risk_count'] += 1
-        
+
         # Format data for scatter plot
         scatter_data = []
         for sender, stats in sender_stats.items():
             avg_risk_score = sum(stats['risk_scores']) / len(stats['risk_scores']) if stats['risk_scores'] else 0
-            
+
             scatter_data.append({
                 'x': stats['email_count'],  # Communication volume
                 'y': round(avg_risk_score, 3),  # Average risk score
@@ -707,17 +707,17 @@ def api_sender_risk_analytics(session_id):
                 'high_risk_count': stats['high_risk_count'],
                 'domain': sender.split('@')[-1] if '@' in sender else sender
             })
-        
+
         # Sort by risk score descending for better visualization
         scatter_data.sort(key=lambda x: x['y'], reverse=True)
-        
+
         return jsonify({
             'data': scatter_data,
             'total_senders': len(scatter_data),
             'max_volume': max([d['x'] for d in scatter_data]) if scatter_data else 0,
             'max_risk': max([d['y'] for d in scatter_data]) if scatter_data else 0
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting sender risk analytics for session {session_id}: {str(e)}")
         return jsonify({
@@ -844,28 +844,28 @@ def api_whitelist_domains():
         try:
             data = request.get_json()
             domain = data.get('domain', '').strip().lower()
-            
+
             if not domain:
                 return jsonify({'success': False, 'message': 'Domain is required'}), 400
-            
+
             # Check if domain already exists
             existing = WhitelistDomain.query.filter_by(domain=domain).first()
             if existing:
                 return jsonify({'success': False, 'message': f'Domain {domain} already exists'}), 400
-            
+
             whitelist_domain = WhitelistDomain(
                 domain=domain,
                 domain_type=data.get('domain_type', 'Corporate'),
                 added_by=data.get('added_by', 'Admin'),
                 notes=data.get('notes', '')
             )
-            
+
             db.session.add(whitelist_domain)
             db.session.commit()
-            
+
             logger.info(f"Added whitelist domain: {domain}")
             return jsonify({'success': True, 'message': f'Domain {domain} added successfully', 'id': whitelist_domain.id})
-            
+
         except Exception as e:
             logger.error(f"Error adding whitelist domain: {str(e)}")
             db.session.rollback()
@@ -890,19 +890,27 @@ def api_whitelist_domain(domain_id):
     elif request.method == 'PUT':
         try:
             data = request.get_json()
-            
+
             domain.domain_type = data.get('domain_type', domain.domain_type)
             domain.notes = data.get('notes', domain.notes)
-            
+
             db.session.commit()
-            
+
             logger.info(f"Updated whitelist domain: {domain.domain}")
             return jsonify({'success': True, 'message': 'Domain updated successfully'})
-            
+
         except Exception as e:
             logger.error(f"Error updating whitelist domain {domain_id}: {str(e)}")
             db.session.rollback()
             return jsonify({'success': False, 'message': str(e)}), 500
+
+    elif request.method == 'DELETE':
+        domain_name = domain.domain
+        db.session.delete(domain)
+        db.session.commit()
+
+        logger.info(f"Domain {domain_name} removed from whitelist")
+        return jsonify({'success': True, 'message': f'Domain {domain_name} deleted successfully'})
 
 # Admin Dashboard API Endpoints
 @app.route('/admin/api/performance-metrics')
@@ -911,20 +919,20 @@ def admin_performance_metrics():
     try:
         import psutil
         import threading
-        
+
         # Get system metrics
         cpu_usage = round(psutil.cpu_percent(), 1)
         memory = psutil.virtual_memory()
         memory_usage = round(memory.percent, 1)
-        
+
         # Get thread count
         active_threads = threading.active_count()
         processing_threads = max(0, active_threads - 3)  # Subtract main threads
-        
+
         # Simulate response time and slow requests for now
         avg_response_time = 150  # Could be calculated from actual request logs
         slow_requests = 0
-        
+
         return jsonify({
             'cpu_usage': cpu_usage,
             'memory_usage': memory_usage,
@@ -953,15 +961,15 @@ def admin_security_metrics():
     try:
         # Count critical threats
         critical_threats = EmailRecord.query.filter_by(risk_level='Critical').count()
-        
+
         # Count suspicious activities (high and medium risk)
         suspicious_activities = EmailRecord.query.filter(
             EmailRecord.risk_level.in_(['High', 'Medium'])
         ).count()
-        
+
         # Count blocked domains
         blocked_domains = WhitelistDomain.query.filter_by(is_active=False).count()
-        
+
         # Get threat distribution
         threat_distribution = {
             'critical': EmailRecord.query.filter_by(risk_level='Critical').count(),
@@ -969,15 +977,15 @@ def admin_security_metrics():
             'medium': EmailRecord.query.filter_by(risk_level='Medium').count(),
             'low': EmailRecord.query.filter_by(risk_level='Low').count()
         }
-        
+
         # Generate recent security events
         recent_events = []
-        
+
         # Get latest critical cases
         critical_cases = EmailRecord.query.filter_by(risk_level='Critical').order_by(
             EmailRecord.id.desc()
         ).limit(5).all()
-        
+
         for case in critical_cases:
             recent_events.append({
                 'title': 'Critical Risk Detected',
@@ -985,12 +993,12 @@ def admin_security_metrics():
                 'severity': 'critical',
                 'timestamp': datetime.utcnow().isoformat()
             })
-        
+
         # Get recent rule matches
         rule_matches = EmailRecord.query.filter(
             EmailRecord.rule_matches.isnot(None)
         ).order_by(EmailRecord.id.desc()).limit(3).all()
-        
+
         for match in rule_matches:
             recent_events.append({
                 'title': 'Security Rule Triggered',
@@ -998,7 +1006,7 @@ def admin_security_metrics():
                 'severity': 'warning',
                 'timestamp': datetime.utcnow().isoformat()
             })
-        
+
         return jsonify({
             'critical_threats': critical_threats,
             'suspicious_activities': suspicious_activities,
@@ -1006,7 +1014,7 @@ def admin_security_metrics():
             'threat_distribution': threat_distribution,
             'recent_events': recent_events[:10]  # Limit to 10 most recent
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting security metrics: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1022,35 +1030,35 @@ def admin_data_analytics():
             EmailRecord.risk_level.in_(['Medium', 'High'])
         ).count()
         high_risk_emails = EmailRecord.query.filter_by(risk_level='Critical').count()
-        
+
         # Get unique domains count
         unique_domains = db.session.query(EmailRecord.sender).distinct().count()
-        
+
         # Calculate average processing time from sessions (simulate for now)
         sessions = ProcessingSession.query.all()
-        
+
         if sessions:
             # Simulate processing times based on record counts
             avg_processing_time = 2.5  # Average seconds per session
         else:
             avg_processing_time = 0
-        
+
         # Generate volume trends (last 7 days)
         from datetime import timedelta
         volume_trends = {
             'labels': [],
             'data': []
         }
-        
+
         for i in range(7):
             date = datetime.utcnow() - timedelta(days=6-i)
             date_str = date.strftime('%m/%d')
             volume_trends['labels'].append(date_str)
-            
+
             # Count emails processed on this date (simulate daily distribution)
             day_count = EmailRecord.query.count() // 7  # Distribute total over 7 days
             volume_trends['data'].append(day_count)
-        
+
         return jsonify({
             'total_emails': total_emails,
             'clean_emails': clean_emails,
@@ -1060,7 +1068,7 @@ def admin_data_analytics():
             'avg_processing_time': avg_processing_time,
             'volume_trends': volume_trends
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting data analytics: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1071,10 +1079,10 @@ def admin_system_logs():
     try:
         level_filter = request.args.get('level', 'all')
         component_filter = request.args.get('component', 'all')
-        
+
         # Generate sample logs (in a real system, these would come from log files)
         logs = []
-        
+
         # Add some sample recent logs
         sample_logs = [
             {'timestamp': '2025-07-22 23:05:00', 'level': 'INFO', 'component': 'ml_engine', 'message': 'ML analysis completed for session'},
@@ -1086,7 +1094,7 @@ def admin_system_logs():
             {'timestamp': '2025-07-22 23:03:30', 'level': 'INFO', 'component': 'rule_engine', 'message': 'Exclusion rules applied: 15 records excluded'},
             {'timestamp': '2025-07-22 23:03:15', 'level': 'INFO', 'component': 'domain_manager', 'message': 'Domain classification updated'},
         ]
-        
+
         # Apply filters
         for log in sample_logs:
             if level_filter != 'all' and log['level'].lower() != level_filter:
@@ -1094,9 +1102,9 @@ def admin_system_logs():
             if component_filter != 'all' and log['component'] != component_filter:
                 continue
             logs.append(log)
-        
+
         return jsonify({'logs': logs})
-        
+
     except Exception as e:
         logger.error(f"Error getting system logs: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1109,7 +1117,7 @@ def admin_optimize_database():
         db.session.execute(db.text("VACUUM"))
         db.session.execute(db.text("ANALYZE"))
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Database optimized successfully'})
     except Exception as e:
         logger.error(f"Error optimizing database: {str(e)}")
@@ -1122,7 +1130,7 @@ def admin_rebuild_indexes():
         # Drop and recreate indexes (SQLite handles this automatically on REINDEX)
         db.session.execute(db.text("REINDEX"))
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Database indexes rebuilt successfully'})
     except Exception as e:
         logger.error(f"Error rebuilding indexes: {str(e)}")
@@ -1134,20 +1142,20 @@ def admin_backup_database():
     try:
         import shutil
         from datetime import datetime
-        
+
         # Create backup filename with timestamp
         timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
         backup_filename = f'backup_email_guardian_{timestamp}.db'
-        
+
         # Copy database file
         db_path = 'instance/email_guardian.db'
         backup_path = f'backups/{backup_filename}'
-        
+
         # Create backups directory if it doesn't exist
         os.makedirs('backups', exist_ok=True)
-        
+
         shutil.copy2(db_path, backup_path)
-        
+
         return jsonify({
             'success': True, 
             'message': 'Database backup created successfully',
@@ -1216,21 +1224,21 @@ def admin_delete_session(session_id):
     """Delete a processing session and all associated data"""
     try:
         session = ProcessingSession.query.get_or_404(session_id)
-        
+
         # Delete associated records
         EmailRecord.query.filter_by(session_id=session_id).delete()
         ProcessingError.query.filter_by(session_id=session_id).delete()
-        
+
         # Delete session files
         session_manager.cleanup_session(session_id)
-        
+
         # Delete session record
         db.session.delete(session)
         db.session.commit()
-        
+
         logger.info(f"Deleted session {session_id}")
         return jsonify({'status': 'deleted', 'message': 'Session deleted successfully'})
-        
+
     except Exception as e:
         logger.error(f"Error deleting session {session_id}: {str(e)}")
         db.session.rollback()
@@ -1245,16 +1253,16 @@ def api_toggle_whitelist_domain(domain_id):
         domain = WhitelistDomain.query.get_or_404(domain_id)
         domain.is_active = not domain.is_active
         db.session.commit()
-        
+
         status = 'activated' if domain.is_active else 'deactivated'
         logger.info(f"Domain {domain.domain} {status}")
-        
+
         return jsonify({
             'success': True, 
             'message': f'Domain {domain.domain} {status} successfully',
             'is_active': domain.is_active
         })
-        
+
     except Exception as e:
         logger.error(f"Error toggling whitelist domain {domain_id}: {str(e)}")
         db.session.rollback()
@@ -1309,16 +1317,16 @@ def generate_escalation_email(session_id, record_id):
     """Generate escalation email for a case"""
     try:
         case = EmailRecord.query.filter_by(session_id=session_id, record_id=record_id).first_or_404()
-        
+
         # Generate email content based on case details
         risk_level = case.risk_level or 'Medium'
         ml_score = case.ml_risk_score or 0.0
-        
+
         # Use the sender email address from the case as the recipient
         to_email = case.sender
-        
+
         subject = f'URGENT: {risk_level} Risk Email Alert - {case.sender}'
-        
+
         # Generate email body
         body = f"""SECURITY ALERT - Immediate Action Required
 
@@ -1338,7 +1346,7 @@ Risk Assessment:
 
 Recommended Actions:
 """
-        
+
         if risk_level == 'Critical':
             body += """
 1. Block sender immediately
@@ -1362,7 +1370,7 @@ Recommended Actions:
 3. Monitor for patterns
 4. Update security policies if needed
 """
-        
+
         body += f"""
 Justification Provided: {case.justification or 'None provided'}
 
@@ -1374,7 +1382,7 @@ Please review and take appropriate action immediately.
 
 Email Guardian Security Team
 """
-        
+
         email_data = {
             'to': to_email,
             'cc': 'audit@company.com',
@@ -1382,10 +1390,10 @@ Email Guardian Security Team
             'body': body,
             'priority': 'high' if risk_level in ['Critical', 'High'] else 'normal'
         }
-        
+
         logger.info(f"Generated escalation email for case {record_id} in session {session_id}")
         return jsonify(email_data)
-        
+
     except Exception as e:
         logger.error(f"Error generating escalation email for case {record_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1407,7 +1415,7 @@ def api_sender_analysis(session_id):
     """Get sender analysis for dashboard"""
     try:
         analysis = advanced_ml_engine.analyze_sender_behavior(session_id)
-        
+
         if not analysis:
             return jsonify({
                 'total_senders': 0,
@@ -1419,9 +1427,9 @@ def api_sender_analysis(session_id):
                     'avg_emails_per_sender': 0
                 }
             })
-        
+
         return jsonify(analysis)
-        
+
     except Exception as e:
         logger.error(f"Error getting sender analysis for session {session_id}: {str(e)}")
         return jsonify({
@@ -1442,15 +1450,15 @@ def api_sender_details(session_id, sender_email):
     try:
         # Get sender analysis
         analysis = advanced_ml_engine.analyze_sender_behavior(session_id)
-        
+
         if not analysis or 'sender_profiles' not in analysis:
             return jsonify({'error': 'No sender analysis available'}), 404
-            
+
         sender_data = analysis['sender_profiles'].get(sender_email)
-        
+
         if not sender_data:
             return jsonify({'error': 'Sender not found in analysis'}), 404
-            
+
         # Get recent communications for this sender - exclude whitelisted records
         recent_records = EmailRecord.query.filter_by(
             session_id=session_id,
@@ -1458,7 +1466,7 @@ def api_sender_details(session_id, sender_email):
         ).filter(
             EmailRecord.whitelisted != True
         ).order_by(EmailRecord.id.desc()).limit(5).all()
-        
+
         recent_activity = []
         for record in recent_records:
             recent_activity.append({
@@ -1470,16 +1478,16 @@ def api_sender_details(session_id, sender_email):
                 'has_attachments': bool(record.attachments),
                 'time': record.time
             })
-        
+
         sender_details = {
             'sender_email': sender_email,
             'profile': sender_data,
             'recent_activity': recent_activity,
             'analysis_timestamp': datetime.utcnow().isoformat()
         }
-        
+
         return jsonify(sender_details)
-        
+
     except Exception as e:
         logger.error(f"Error getting sender details for {sender_email} in session {session_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1489,17 +1497,17 @@ def delete_session(session_id):
     """Delete a processing session and all associated data"""
     try:
         session = ProcessingSession.query.get_or_404(session_id)
-        
+
         # Delete associated email records
         EmailRecord.query.filter_by(session_id=session_id).delete()
-        
+
         # Delete processing errors
         ProcessingError.query.filter_by(session_id=session_id).delete()
-        
+
         # Delete uploaded file if it exists
         if session.data_path and os.path.exists(session.data_path):
             os.remove(session.data_path)
-        
+
         # Check for upload file
         upload_files = [f for f in os.listdir(app.config.get('UPLOAD_FOLDER', 'uploads')) 
                        if f.startswith(session_id)]
@@ -1507,14 +1515,14 @@ def delete_session(session_id):
             file_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), file)
             if os.path.exists(file_path):
                 os.remove(file_path)
-        
+
         # Delete session record
         db.session.delete(session)
         db.session.commit()
-        
+
         logger.info(f"Session {session_id} deleted successfully")
         return jsonify({'status': 'deleted'})
-        
+
     except Exception as e:
         logger.error(f"Error deleting session {session_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1525,40 +1533,40 @@ def cleanup_old_sessions():
     try:
         from datetime import timedelta
         cutoff_date = datetime.utcnow() - timedelta(days=30)
-        
+
         old_sessions = ProcessingSession.query.filter(
             ProcessingSession.upload_time < cutoff_date
         ).all()
-        
+
         deleted_count = 0
         for session in old_sessions:
             try:
                 # Delete associated records
                 EmailRecord.query.filter_by(session_id=session.id).delete()
                 ProcessingError.query.filter_by(session_id=session.id).delete()
-                
+
                 # Delete files
                 if session.data_path and os.path.exists(session.data_path):
                     os.remove(session.data_path)
-                
+
                 upload_files = [f for f in os.listdir(app.config.get('UPLOAD_FOLDER', 'uploads')) 
                                if f.startswith(session.id)]
                 for file in upload_files:
                     file_path = os.path.join(app.config.get('UPLOAD_FOLDER', 'uploads'), file)
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                
+
                 db.session.delete(session)
                 deleted_count += 1
-                
+
             except Exception as e:
                 logger.warning(f"Could not delete session {session.id}: {str(e)}")
                 continue
-        
+
         db.session.commit()
         logger.info(f"Cleaned up {deleted_count} old sessions")
         return jsonify({'status': 'completed', 'deleted_count': deleted_count})
-        
+
     except Exception as e:
         logger.error(f"Error during cleanup: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1571,7 +1579,7 @@ def populate_default_keywords():
         existing_count = AttachmentKeyword.query.count()
         if existing_count > 0:
             return jsonify({'status': 'info', 'message': f'Keywords already exist ({existing_count} total)', 'count': existing_count})
-        
+
         default_keywords = [
             # Suspicious keywords
             {'keyword': 'urgent', 'category': 'Suspicious', 'risk_score': 8},
@@ -1594,7 +1602,7 @@ def populate_default_keywords():
             {'keyword': 'security alert', 'category': 'Suspicious', 'risk_score': 8},
             {'keyword': 'unusual activity', 'category': 'Suspicious', 'risk_score': 7},
             {'keyword': 'bitcoin', 'category': 'Suspicious', 'risk_score': 7},
-            
+
             # Business keywords
             {'keyword': 'meeting', 'category': 'Business', 'risk_score': 2},
             {'keyword': 'project', 'category': 'Business', 'risk_score': 2},
@@ -1616,7 +1624,7 @@ def populate_default_keywords():
             {'keyword': 'deliverable', 'category': 'Business', 'risk_score': 2},
             {'keyword': 'stakeholder', 'category': 'Business', 'risk_score': 2},
             {'keyword': 'compliance', 'category': 'Business', 'risk_score': 3},
-            
+
             # Personal keywords
             {'keyword': 'birthday', 'category': 'Personal', 'risk_score': 1},
             {'keyword': 'vacation', 'category': 'Personal', 'risk_score': 2},
@@ -1639,7 +1647,7 @@ def populate_default_keywords():
             {'keyword': 'quit', 'category': 'Personal', 'risk_score': 6},
             {'keyword': 'leave company', 'category': 'Personal', 'risk_score': 7}
         ]
-        
+
         for keyword_data in default_keywords:
             keyword = AttachmentKeyword(
                 keyword=keyword_data['keyword'],
@@ -1648,16 +1656,16 @@ def populate_default_keywords():
                 is_active=True
             )
             db.session.add(keyword)
-        
+
         db.session.commit()
-        
+
         logger.info(f"Added {len(default_keywords)} default keywords to database")
         return jsonify({
             'status': 'success', 
             'message': f'Added {len(default_keywords)} keywords',
             'count': len(default_keywords)
         })
-        
+
     except Exception as e:
         logger.error(f"Error populating keywords: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -1668,7 +1676,7 @@ def api_ml_keywords():
     try:
         # Get attachment keywords from database
         keywords = AttachmentKeyword.query.filter_by(is_active=True).all()
-        
+
         # If no keywords exist, provide default response
         if not keywords:
             return jsonify({
@@ -1678,29 +1686,29 @@ def api_ml_keywords():
                 'last_updated': datetime.utcnow().isoformat(),
                 'message': 'No ML keywords found. You can populate default keywords from the admin panel.'
             })
-        
+
         # Count by category
         categories = {'Business': 0, 'Personal': 0, 'Suspicious': 0}
         keyword_list = []
-        
+
         for keyword in keywords:
             category = keyword.category or 'Business'
             if category in categories:
                 categories[category] += 1
-            
+
             keyword_list.append({
                 'keyword': keyword.keyword,
                 'category': category,
                 'risk_score': keyword.risk_score
             })
-        
+
         return jsonify({
             'total_keywords': len(keywords),
             'categories': categories,
             'keywords': keyword_list[:50],  # Limit to 50 for display
             'last_updated': datetime.utcnow().isoformat()
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting ML keywords: {str(e)}")
         return jsonify({
@@ -1718,14 +1726,14 @@ def delete_all_ml_keywords():
         count = AttachmentKeyword.query.count()
         AttachmentKeyword.query.delete()
         db.session.commit()
-        
+
         logger.info(f"Deleted {count} ML keywords from database")
         return jsonify({
             'success': True,
             'message': f'Successfully deleted {count} ML keywords',
             'deleted_count': count
         })
-        
+
     except Exception as e:
         logger.error(f"Error deleting ML keywords: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -1739,37 +1747,37 @@ def api_ml_config():
             'success': True,
             'config': ml_config.get_config_dict()
         })
-    
+
     elif request.method == 'PUT':
         try:
             data = request.get_json()
-            
+
             # Update specific configuration values
             if 'risk_thresholds' in data:
                 ml_config.RISK_THRESHOLDS.update(data['risk_thresholds'])
-            
+
             if 'rule_based_factors' in data:
                 ml_config.RULE_BASED_FACTORS.update(data['rule_based_factors'])
-            
+
             if 'high_risk_extensions' in data:
                 ml_config.HIGH_RISK_EXTENSIONS = data['high_risk_extensions']
-            
+
             if 'medium_risk_extensions' in data:
                 ml_config.MEDIUM_RISK_EXTENSIONS = data['medium_risk_extensions']
-            
+
             if 'public_domains' in data:
                 ml_config.PUBLIC_DOMAINS = data['public_domains']
-            
+
             if 'suspicious_justification_terms' in data:
                 ml_config.SUSPICIOUS_JUSTIFICATION_TERMS = data['suspicious_justification_terms']
-            
+
             logger.info("ML configuration updated successfully")
             return jsonify({
                 'success': True,
                 'message': 'ML configuration updated successfully',
                 'config': ml_config.get_config_dict()
             })
-            
+
         except Exception as e:
             logger.error(f"Error updating ML configuration: {str(e)}")
             return jsonify({'success': False, 'message': str(e)}), 500
@@ -1792,21 +1800,21 @@ def add_ml_keyword():
         keyword = data.get('keyword', '').strip()
         category = data.get('category', 'Business')
         risk_score = int(data.get('risk_score', 5))
-        
+
         if not keyword:
             return jsonify({'error': 'Keyword is required'}), 400
-        
+
         if category not in ['Business', 'Personal', 'Suspicious']:
             return jsonify({'error': 'Invalid category'}), 400
-        
+
         if not (1 <= risk_score <= 10):
             return jsonify({'error': 'Risk score must be between 1 and 10'}), 400
-        
+
         # Check if keyword already exists
         existing = AttachmentKeyword.query.filter_by(keyword=keyword).first()
         if existing:
             return jsonify({'error': f'Keyword "{keyword}" already exists'}), 400
-        
+
         # Add keyword to database
         new_keyword = AttachmentKeyword(
             keyword=keyword,
@@ -1814,10 +1822,10 @@ def add_ml_keyword():
             risk_score=risk_score,
             is_active=True
         )
-        
+
         db.session.add(new_keyword)
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': f'Keyword "{keyword}" added successfully',
@@ -1828,7 +1836,7 @@ def add_ml_keyword():
                 'risk_score': risk_score
             }
         })
-        
+
     except Exception as e:
         logger.error(f"Error adding ML keyword: {str(e)}")
         db.session.rollback()
@@ -1840,28 +1848,28 @@ def update_ml_keyword(keyword_id):
     try:
         keyword_obj = AttachmentKeyword.query.get_or_404(keyword_id)
         data = request.get_json()
-        
+
         keyword_obj.keyword = data.get('keyword', keyword_obj.keyword).strip()
         keyword_obj.category = data.get('category', keyword_obj.category)
         keyword_obj.risk_score = int(data.get('risk_score', keyword_obj.risk_score))
         keyword_obj.is_active = data.get('is_active', keyword_obj.is_active)
-        
+
         if not keyword_obj.keyword:
             return jsonify({'error': 'Keyword is required'}), 400
-        
+
         if keyword_obj.category not in ['Business', 'Personal', 'Suspicious']:
             return jsonify({'error': 'Invalid category'}), 400
-        
+
         if not (1 <= keyword_obj.risk_score <= 10):
             return jsonify({'error': 'Risk score must be between 1 and 10'}), 400
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': f'Keyword "{keyword_obj.keyword}" updated successfully'
         })
-        
+
     except Exception as e:
         logger.error(f"Error updating ML keyword: {str(e)}")
         db.session.rollback()
@@ -1873,15 +1881,15 @@ def delete_ml_keyword(keyword_id):
     try:
         keyword_obj = AttachmentKeyword.query.get_or_404(keyword_id)
         keyword_name = keyword_obj.keyword
-        
+
         db.session.delete(keyword_obj)
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': f'Keyword "{keyword_name}" deleted successfully'
         })
-        
+
     except Exception as e:
         logger.error(f"Error deleting ML keyword: {str(e)}")
         db.session.rollback()
@@ -1895,46 +1903,46 @@ def bulk_add_ml_keywords():
         keywords_list = data.get('keywords', [])
         category = data.get('category', 'Business')
         risk_score = int(data.get('risk_score', 5))
-        
+
         logger.info(f"Bulk add request: {len(keywords_list)} keywords, category: {category}, risk_score: {risk_score}")
-        
+
         if not keywords_list:
             return jsonify({'success': False, 'error': 'Keywords list is required'}), 400
-        
+
         if category not in ['Business', 'Personal', 'Suspicious']:
             return jsonify({'success': False, 'error': 'Invalid category'}), 400
-        
+
         if not (1 <= risk_score <= 10):
             return jsonify({'success': False, 'error': 'Risk score must be between 1 and 10'}), 400
-        
+
         if len(keywords_list) > 100:
             return jsonify({'success': False, 'error': 'Maximum 100 keywords allowed per bulk import'}), 400
-        
+
         added_count = 0
         skipped_count = 0
         errors = []
-        
+
         # Process each keyword
         for keyword in keywords_list:
             keyword = keyword.strip()
-            
+
             if not keyword:
                 continue
-                
+
             if len(keyword) > 100:  # Reasonable length limit
                 errors.append(f'Keyword too long: "{keyword[:20]}..."')
                 continue
-            
+
             # Check if keyword already exists (case-insensitive)
             existing = AttachmentKeyword.query.filter(
                 db.func.lower(AttachmentKeyword.keyword) == keyword.lower()
             ).first()
-            
+
             if existing:
                 logger.info(f"Keyword '{keyword}' already exists, skipping")
                 skipped_count += 1
                 continue
-            
+
             try:
                 # Add keyword to database
                 new_keyword = AttachmentKeyword(
@@ -1943,17 +1951,17 @@ def bulk_add_ml_keywords():
                     risk_score=risk_score,
                     is_active=True
                 )
-                
+
                 db.session.add(new_keyword)
                 added_count += 1
                 logger.info(f"Added keyword: '{keyword}' (category: {category}, risk: {risk_score})")
-                
+
             except Exception as e:
                 error_msg = f'Error adding "{keyword}": {str(e)}'
                 errors.append(error_msg)
                 logger.error(error_msg)
                 continue
-        
+
         # Commit all successful additions
         if added_count > 0:
             try:
@@ -1966,16 +1974,16 @@ def bulk_add_ml_keywords():
                 return jsonify({'success': False, 'error': error_msg}), 500
         else:
             logger.info("No new keywords to commit")
-        
+
         # Create success message
         message = f'Bulk import completed: {added_count} keywords added'
         if skipped_count > 0:
             message += f', {skipped_count} duplicates skipped'
         if errors:
             message += f', {len(errors)} errors occurred'
-        
+
         logger.info(message)
-        
+
         return jsonify({
             'success': True,
             'message': message,
@@ -1983,7 +1991,7 @@ def bulk_add_ml_keywords():
             'skipped_count': skipped_count,
             'errors': errors[:10]  # Limit error messages
         })
-        
+
     except Exception as e:
         error_msg = f"Error in bulk keyword import: {str(e)}"
         logger.error(error_msg)
@@ -1996,7 +2004,7 @@ def get_all_ml_keywords_detailed():
     try:
         keywords = AttachmentKeyword.query.filter_by(is_active=True).order_by(AttachmentKeyword.category, AttachmentKeyword.keyword).all()
         keywords_list = []
-        
+
         for kw in keywords:
             keywords_list.append({
                 'id': kw.id,
@@ -2005,12 +2013,12 @@ def get_all_ml_keywords_detailed():
                 'risk_score': kw.risk_score,
                 'is_active': kw.is_active
             })
-        
+
         return jsonify({
             'keywords': keywords_list,
             'total': len(keywords_list)
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting detailed ML keywords: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -2022,7 +2030,7 @@ def get_risk_factors():
     try:
         factors = RiskFactor.query.filter_by(is_active=True).order_by(RiskFactor.sort_order, RiskFactor.name).all()
         factors_list = []
-        
+
         for factor in factors:
             factors_list.append({
                 'id': factor.id,
@@ -2034,12 +2042,12 @@ def get_risk_factors():
                 'calculation_config': factor.calculation_config or {},
                 'sort_order': factor.sort_order
             })
-        
+
         return jsonify({
             'factors': factors_list,
             'total': len(factors_list)
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting risk factors: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -2049,7 +2057,7 @@ def get_risk_factor_details(factor_id):
     """Get detailed information about a specific risk factor"""
     try:
         factor = RiskFactor.query.get_or_404(factor_id)
-        
+
         return jsonify({
             'id': factor.id,
             'name': factor.name,
@@ -2063,7 +2071,7 @@ def get_risk_factor_details(factor_id):
             'created_at': factor.created_at.isoformat() if factor.created_at else None,
             'updated_at': factor.updated_at.isoformat() if factor.updated_at else None
         })
-        
+
     except Exception as e:
         logger.error(f"Error getting risk factor details: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -2073,31 +2081,31 @@ def add_risk_factor():
     """Add a new risk factor"""
     try:
         data = request.get_json()
-        
+
         name = data.get('name', '').strip()
         description = data.get('description', '').strip()
         max_score = float(data.get('max_score', 0.1))
         category = data.get('category', 'General').strip()
         weight_percentage = float(data.get('weight_percentage', 0.0))
         calculation_config = data.get('calculation_config', {})
-        
+
         if not name:
             return jsonify({'error': 'Name is required'}), 400
-        
+
         if not description:
             return jsonify({'error': 'Description is required'}), 400
-        
+
         if not (0.0 <= max_score <= 1.0):
             return jsonify({'error': 'Max score must be between 0.0 and 1.0'}), 400
-        
+
         if not (0.0 <= weight_percentage <= 100.0):
             return jsonify({'error': 'Weight percentage must be between 0.0 and 100.0'}), 400
-        
+
         # Check if factor name already exists
         existing = RiskFactor.query.filter_by(name=name).first()
         if existing:
             return jsonify({'error': f'Risk factor "{name}" already exists'}), 400
-        
+
         # Create new risk factor
         new_factor = RiskFactor(
             name=name,
@@ -2109,10 +2117,10 @@ def add_risk_factor():
             sort_order=data.get('sort_order', 0),
             is_active=True
         )
-        
+
         db.session.add(new_factor)
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': f'Risk factor "{name}" added successfully',
@@ -2125,7 +2133,7 @@ def add_risk_factor():
                 'weight_percentage': weight_percentage
             }
         })
-        
+
     except Exception as e:
         logger.error(f"Error adding risk factor: {str(e)}")
         db.session.rollback()
@@ -2137,7 +2145,7 @@ def update_risk_factor(factor_id):
     try:
         factor = RiskFactor.query.get_or_404(factor_id)
         data = request.get_json()
-        
+
         factor.name = data.get('name', factor.name).strip()
         factor.description = data.get('description', factor.description).strip()
         factor.max_score = float(data.get('max_score', factor.max_score))
@@ -2146,26 +2154,26 @@ def update_risk_factor(factor_id):
         factor.calculation_config = data.get('calculation_config', factor.calculation_config)
         factor.sort_order = int(data.get('sort_order', factor.sort_order))
         factor.is_active = data.get('is_active', factor.is_active)
-        
+
         if not factor.name:
             return jsonify({'error': 'Name is required'}), 400
-        
+
         if not factor.description:
             return jsonify({'error': 'Description is required'}), 400
-        
+
         if not (0.0 <= factor.max_score <= 1.0):
             return jsonify({'error': 'Max score must be between 0.0 and 1.0'}), 400
-        
+
         if not (0.0 <= factor.weight_percentage <= 100.0):
             return jsonify({'error': 'Weight percentage must be between 0.0 and 100.0'}), 400
-        
+
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': f'Risk factor "{factor.name}" updated successfully'
         })
-        
+
     except Exception as e:
         logger.error(f"Error updating risk factor: {str(e)}")
         db.session.rollback()
@@ -2177,15 +2185,15 @@ def delete_risk_factor(factor_id):
     try:
         factor = RiskFactor.query.get_or_404(factor_id)
         factor_name = factor.name
-        
+
         db.session.delete(factor)
         db.session.commit()
-        
+
         return jsonify({
             'success': True,
             'message': f'Risk factor "{factor_name}" deleted successfully'
         })
-        
+
     except Exception as e:
         logger.error(f"Error deleting risk factor: {str(e)}")
         db.session.rollback()
@@ -2202,7 +2210,7 @@ def populate_default_risk_factors():
                 'success': False,
                 'message': f'Risk factors already exist ({existing_count} found). Delete existing factors first if you want to reset.'
             }), 400
-        
+
         # Default risk factors based on current hardcoded values
         default_factors = [
             {
@@ -2284,23 +2292,23 @@ def populate_default_risk_factors():
                 }
             }
         ]
-        
+
         added_count = 0
         for factor_data in default_factors:
             new_factor = RiskFactor(**factor_data)
             db.session.add(new_factor)
             added_count += 1
             logger.info(f"Added risk factor: {factor_data['name']}")
-        
+
         db.session.commit()
         logger.info(f"Successfully added {added_count} default risk factors")
-        
+
         return jsonify({
             'success': True,
             'message': f'Successfully added {added_count} default risk factors',
             'added_count': added_count
         })
-        
+
     except Exception as e:
         logger.error(f"Error populating default risk factors: {str(e)}")
         db.session.rollback()
@@ -2312,19 +2320,19 @@ def config_last_modified():
     try:
         from datetime import datetime
         import os
-        
+
         # Check modification times of configuration tables
         last_rule_update = db.session.query(db.func.max(Rule.updated_at)).scalar() or datetime.min
         last_whitelist_update = db.session.query(db.func.max(WhitelistDomain.added_at)).scalar() or datetime.min
         last_keyword_update = db.session.query(db.func.max(AttachmentKeyword.created_at)).scalar() or datetime.min
-        
+
         # Get the most recent update
         last_modified = max(last_rule_update, last_whitelist_update, last_keyword_update)
-        
+
         return jsonify({
             'last_modified': last_modified.isoformat() if last_modified != datetime.min else None
         })
-        
+
     except Exception as e:
         logger.error(f"Error checking config modification time: {str(e)}")
         return jsonify({'last_modified': None}), 500
@@ -2334,33 +2342,33 @@ def reprocess_session_data(session_id):
     """Re-process existing session data with current rules, whitelist, and ML keywords"""
     try:
         session = ProcessingSession.query.get_or_404(session_id)
-        
+
         if session.status == 'processing':
             return jsonify({
                 'error': 'Session is already processing'
             }), 400
-        
+
         # Look for the original uploaded CSV file
         import os
         upload_folder = app.config.get('UPLOAD_FOLDER', 'uploads')
         csv_path = None
-        
+
         # Check for uploaded file with session ID prefix
         if os.path.exists(upload_folder):
             for filename in os.listdir(upload_folder):
                 if filename.startswith(session_id):
                     csv_path = os.path.join(upload_folder, filename)
                     break
-        
+
         # If no uploaded file found, check session.data_path
         if not csv_path and session.data_path and os.path.exists(session.data_path):
             csv_path = session.data_path
-        
+
         if not csv_path:
             return jsonify({
                 'error': 'Original CSV file not found for re-processing'
             }), 404
-        
+
         # Update session status
         session.status = 'processing'
         session.processed_records = 0
@@ -2368,12 +2376,12 @@ def reprocess_session_data(session_id):
         session.current_chunk = 0
         session.total_chunks = 0
         db.session.commit()
-        
+
         # Clear existing processed data for this session
         EmailRecord.query.filter_by(session_id=session_id).delete()
         ProcessingError.query.filter_by(session_id=session_id).delete()
         db.session.commit()
-        
+
         # Re-process with current configurations in background thread
         def background_reprocessing():
             with app.app_context():
@@ -2387,19 +2395,19 @@ def reprocess_session_data(session_id):
                         session.status = 'error'
                         session.error_message = str(e)
                         db.session.commit()
-        
+
         # Start background thread
         import threading
         thread = threading.Thread(target=background_reprocessing)
         thread.daemon = True
         thread.start()
-        
+
         return jsonify({
             'success': True,
             'message': 'Re-processing started with current configurations',
             'session_id': session_id
         })
-        
+
     except Exception as e:
         logger.error(f"Error starting re-processing for session {session_id}: {str(e)}")
         session = ProcessingSession.query.get(session_id)
@@ -2421,91 +2429,91 @@ def api_network_data(session_id):
     try:
         session = ProcessingSession.query.get_or_404(session_id)
         data = request.get_json()
-        
+
         link_configs = data.get('link_configs', [{'source_field': 'sender', 'target_field': 'recipients_email_domain', 'color': '#007bff', 'style': 'solid'}])
         risk_filter = data.get('risk_filter', 'all')
         min_connections = data.get('min_connections', 1)
         node_size_metric = data.get('node_size_metric', 'connections')
-        
+
         # Get emails for this session
         query = EmailRecord.query.filter_by(session_id=session_id)
-        
+
         # Apply risk filter
         if risk_filter != 'all':
             query = query.filter_by(risk_level=risk_filter)
-        
+
         # Exclude whitelisted records
         query = query.filter_by(whitelisted=False)
-        
+
         emails = query.all()
-        
+
         if not emails:
             return jsonify({
                 'nodes': [],
                 'links': [],
                 'message': 'No data available for network visualization'
             })
-        
+
         # Build network graph for multiple link types
         nodes_dict = {}
         links_list = []
-        
+
         # Process each link configuration
         for link_idx, link_config in enumerate(link_configs):
             source_field = link_config.get('source_field', 'sender')
             target_field = link_config.get('target_field', 'recipients_email_domain')
             link_color = link_config.get('color', '#007bff')
             link_style = link_config.get('style', 'solid')
-            
+
             link_dict = {}  # For this specific link type
-            
+
             for email in emails:
                 # Get source and target values with proper handling
                 source_value = getattr(email, source_field, '') or 'Unknown'
                 target_value = getattr(email, target_field, '') or 'Unknown'
-            
+
                 # Handle special fields that might need processing
                 if source_field == 'recipients' and source_value != 'Unknown':
                     # Extract first recipient email or domain
                     recipients_list = str(source_value).split(',')
                     if recipients_list:
                         source_value = recipients_list[0].strip()
-                
+
                 if target_field == 'recipients' and target_value != 'Unknown':
                     # Extract first recipient email or domain
                     recipients_list = str(target_value).split(',')
                     if recipients_list:
                         target_value = recipients_list[0].strip()
-                
+
                 # Truncate long text fields for readability
                 text_fields = ['subject', 'attachments', 'user_response', 'justification', 'wordlist_attachment', 'wordlist_subject']
                 if source_field in text_fields and source_value != 'Unknown':
                     source_value = str(source_value)[:50] + "..." if len(str(source_value)) > 50 else str(source_value)
-                    
+
                 if target_field in text_fields and target_value != 'Unknown':
                     target_value = str(target_value)[:50] + "..." if len(str(target_value)) > 50 else str(target_value)
-                
+
                 # Handle date fields
                 if source_field == 'time' and source_value != 'Unknown':
                     # Extract just the date part if it's a full datetime
                     if ' ' in str(source_value):
                         source_value = str(source_value).split(' ')[0]
-                        
+
                 if target_field == 'time' and target_value != 'Unknown':
                     # Extract just the date part if it's a full datetime
                     if ' ' in str(target_value):
                         target_value = str(target_value).split(' ')[0]
-                
+
                 if not source_value or not target_value or source_value == target_value:
                     continue
-                    
+
                 # Clean and normalize values
                 source_value = str(source_value).strip()
                 target_value = str(target_value).strip()
-                
+
                 if len(source_value) == 0 or len(target_value) == 0:
                     continue
-                
+
                 # Create nodes
                 if source_value not in nodes_dict:
                     nodes_dict[source_value] = {
@@ -2518,7 +2526,7 @@ def api_network_data(session_id):
                         'risk_level': 'Low',
                         'size': 10
                     }
-                
+
                 if target_value not in nodes_dict:
                     nodes_dict[target_value] = {
                         'id': target_value,
@@ -2530,19 +2538,19 @@ def api_network_data(session_id):
                         'risk_level': 'Low',
                         'size': 10
                     }
-                
+
                 # Update node metrics
                 nodes_dict[source_value]['email_count'] += 1
                 nodes_dict[target_value]['email_count'] += 1
-                
+
                 # Update risk information
                 if email.ml_risk_score:
                     current_risk = nodes_dict[source_value]['risk_score']
                     nodes_dict[source_value]['risk_score'] = max(current_risk, email.ml_risk_score)
-                    
+
                     if email.risk_level and email.risk_level != 'Low':
                         nodes_dict[source_value]['risk_level'] = email.risk_level
-                
+
                 # Create link for this specific link type
                 link_key = f"{source_value}->{target_value}"
                 if link_key not in link_dict:
@@ -2554,24 +2562,24 @@ def api_network_data(session_id):
                         'style': link_style,
                         'type': f"{source_field}-{target_field}"
                     }
-                
+
                 link_dict[link_key]['weight'] += 1
-            
+
             # Add this link type's links to the main list
             links_list.extend(link_dict.values())
-        
+
         # Calculate node connections from all link types
         for link in links_list:
             nodes_dict[link['source']]['connections'] += 1
             nodes_dict[link['target']]['connections'] += 1
-        
+
         # Filter nodes by minimum connections
         filtered_nodes = {k: v for k, v in nodes_dict.items() if v['connections'] >= min_connections}
-        
+
         # Filter links to only include nodes that passed the filter
         filtered_links = [link for link in links_list 
                          if link['source'] in filtered_nodes and link['target'] in filtered_nodes]
-        
+
         # Calculate node sizes based on selected metric
         if filtered_nodes:
             metric_values = []
@@ -2584,11 +2592,11 @@ def api_network_data(session_id):
                     metric_values.append(node['email_count'])
                 else:
                     metric_values.append(node['connections'])
-            
+
             min_metric = min(metric_values) if metric_values else 0
             max_metric = max(metric_values) if metric_values else 1
             metric_range = max_metric - min_metric if max_metric > min_metric else 1
-            
+
             # Scale node sizes between 6 and 25
             for node in filtered_nodes.values():
                 if node_size_metric == 'connections':
@@ -2599,19 +2607,18 @@ def api_network_data(session_id):
                     metric_val = node['email_count']
                 else:
                     metric_val = node['connections']
-                
+
                 normalized = (metric_val - min_metric) / metric_range if metric_range > 0 else 0
                 node['size'] = 6 + (normalized * 19)  # Scale between 6 and 25
-        
+
         # Convert to lists
         nodes_list = list(filtered_nodes.values())
-        
+
         return jsonify({
             'nodes': nodes_list,
             'links': filtered_links
         })
-        
+
     except Exception as e:
         logger.error(f"Error generating network data: {str(e)}")
         return jsonify({'error': str(e)}), 500
-

@@ -471,15 +471,39 @@ function toggleSelectAllRecommendations() {
     });
 }
 
-function addDomainToWhitelist(domain) {
+async function addDomainToWhitelist(domain) {
     if (confirm(`Add "${domain}" to the whitelist?`)) {
         showLoading('Adding domain to whitelist...');
         
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const response = await fetch('/api/whitelist-domains', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    domain: domain,
+                    domain_type: 'Corporate',
+                    added_by: 'Whitelist Analysis',
+                    notes: 'Added via whitelist analysis recommendations'
+                })
+            });
+            
+            const result = await response.json();
+            
             hideLoading();
-            showSuccess(`Domain "${domain}" added to whitelist successfully`);
-        }, 1000);
+            
+            if (result.success) {
+                showSuccess(`Domain "${domain}" added to whitelist successfully`);
+                // Refresh page to update UI
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                showError(`Failed to add domain: ${result.message}`);
+            }
+        } catch (error) {
+            hideLoading();
+            showError(`Network error: ${error.message}`);
+        }
     }
 }
 
@@ -532,7 +556,7 @@ function viewDomainDetails(domain) {
     }, 1500);
 }
 
-function bulkAddRecommendations() {
+async function bulkAddRecommendations() {
     const selectedDomains = Array.from(document.querySelectorAll('.recommendation-checkbox:checked')).map(cb => cb.value);
     
     if (selectedDomains.length === 0) {
@@ -543,12 +567,52 @@ function bulkAddRecommendations() {
     if (confirm(`Add ${selectedDomains.length} selected domains to the whitelist?`)) {
         showLoading('Adding domains to whitelist...');
         
-        setTimeout(() => {
-            hideLoading();
-            showSuccess(`Successfully added ${selectedDomains.length} domains to the whitelist`);
-            // Refresh page to update UI
-            setTimeout(() => location.reload(), 1500);
-        }, 2000);
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+        
+        // Add each domain individually using the existing API
+        for (const domain of selectedDomains) {
+            try {
+                const response = await fetch('/api/whitelist-domains', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        domain: domain,
+                        domain_type: 'Corporate',
+                        added_by: 'Whitelist Analysis',
+                        notes: 'Added via whitelist analysis recommendations'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                    errors.push(`${domain}: ${result.message}`);
+                }
+            } catch (error) {
+                errorCount++;
+                errors.push(`${domain}: Network error - ${error.message}`);
+            }
+        }
+        
+        hideLoading();
+        
+        if (successCount > 0) {
+            showSuccess(`Successfully added ${successCount} domains to the whitelist`);
+        }
+        
+        if (errorCount > 0) {
+            showError(`Failed to add ${errorCount} domains. ${errors.slice(0, 3).join('; ')}`);
+        }
+        
+        // Refresh page to update UI
+        setTimeout(() => location.reload(), 2000);
     }
 }
 
@@ -561,15 +625,56 @@ function exportRecommendations() {
     }, 1500);
 }
 
-function addTopRecommendations() {
+async function addTopRecommendations() {
     if (confirm('Add the top 5 recommended domains to the whitelist?')) {
         showLoading('Adding top recommendations...');
         
-        setTimeout(() => {
-            hideLoading();
-            showSuccess('Top 5 recommendations added to whitelist');
-            setTimeout(() => location.reload(), 1500);
-        }, 2000);
+        // Get the top 5 domains from the recommendations table
+        const topDomains = Array.from(document.querySelectorAll('#recommendationsTable tbody tr'))
+            .slice(0, 5)
+            .map(row => row.cells[0].textContent.trim());
+        
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const domain of topDomains) {
+            try {
+                const response = await fetch('/api/whitelist-domains', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        domain: domain,
+                        domain_type: 'Corporate',
+                        added_by: 'Whitelist Analysis',
+                        notes: 'Added as top recommendation via whitelist analysis'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    successCount++;
+                } else {
+                    errorCount++;
+                }
+            } catch (error) {
+                errorCount++;
+            }
+        }
+        
+        hideLoading();
+        
+        if (successCount > 0) {
+            showSuccess(`Successfully added ${successCount} top recommendations to whitelist`);
+        }
+        
+        if (errorCount > 0 && successCount === 0) {
+            showError(`Failed to add recommendations. Please try again.`);
+        }
+        
+        setTimeout(() => location.reload(), 1500);
     }
 }
 
@@ -598,11 +703,11 @@ function optimizeWhitelist() {
     }
 }
 
-function addCurrentDomainToWhitelist() {
+async function addCurrentDomainToWhitelist() {
     if (currentDomain) {
-        addDomainToWhitelist(currentDomain);
         const modal = bootstrap.Modal.getInstance(document.getElementById('domainDetailsModal'));
         modal.hide();
+        await addDomainToWhitelist(currentDomain);
     }
 }
 </script>
