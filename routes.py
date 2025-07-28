@@ -297,9 +297,12 @@ def reports_dashboard(session_id):
     try:
         session = ProcessingSession.query.get_or_404(session_id)
         
-        # Get cases from database with comprehensive filtering
+        # Get cases from database with comprehensive filtering (exclude whitelisted and excluded by rules)
         cases_query = EmailRecord.query.filter_by(session_id=session_id).filter(
-            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+            db.and_(
+                db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False),
+                EmailRecord.excluded_by_rule.is_(None)
+            )
         )
         
         cases = cases_query.order_by(EmailRecord.ml_risk_score.desc()).limit(500).all()
@@ -369,9 +372,12 @@ def cases(session_id):
     
     # Handle "show all" functionality
     if per_page_param == 'all':
-        # Get total count of records that match the filter criteria
+        # Get total count of records that match the filter criteria (exclude whitelisted and excluded by rules)
         count_query = EmailRecord.query.filter_by(session_id=session_id).filter(
-            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+            db.and_(
+                db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False),
+                EmailRecord.excluded_by_rule.is_(None)
+            )
         )
         if risk_level:
             count_query = count_query.filter(EmailRecord.risk_level == risk_level)
@@ -400,9 +406,12 @@ def cases(session_id):
     else:
         per_page = int(per_page_param) if per_page_param.isdigit() else 200
 
-    # Build query with filters - exclude whitelisted, cleared, and escalated records from cases
+    # Build query with filters - exclude whitelisted, excluded by rules, cleared, and escalated records from cases
     query = EmailRecord.query.filter_by(session_id=session_id).filter(
-        db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        db.and_(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False),
+            EmailRecord.excluded_by_rule.is_(None)
+        )
     ).filter(
         db.or_(
             EmailRecord.case_status.is_(None),
@@ -849,9 +858,12 @@ def api_attachment_risk_analytics(session_id):
 def api_cases_data(session_id):
     """Get cases data with analytics for reports dashboard"""
     try:
-        # Get cases from database
+        # Get cases from database (exclude whitelisted and excluded by rules)
         cases_query = EmailRecord.query.filter_by(session_id=session_id).filter(
-            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+            db.and_(
+                db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False),
+                EmailRecord.excluded_by_rule.is_(None)
+            )
         )
         
         cases = cases_query.order_by(EmailRecord.ml_risk_score.desc()).all()
@@ -2801,19 +2813,27 @@ def api_case_management_counts(session_id):
             whitelisted=True
         ).count()
 
-        # Get all non-whitelisted records
-        non_whitelisted_query = EmailRecord.query.filter_by(session_id=session_id).filter(
-            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        # Count excluded emails (by exclusion rules)
+        excluded_emails = EmailRecord.query.filter_by(session_id=session_id).filter(
+            EmailRecord.excluded_by_rule.isnot(None)
+        ).count()
+
+        # Get all non-whitelisted and non-excluded records for case management
+        manageable_query = EmailRecord.query.filter_by(session_id=session_id).filter(
+            db.and_(
+                db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False),
+                EmailRecord.excluded_by_rule.is_(None)
+            )
         )
         
-        total_non_whitelisted = non_whitelisted_query.count()
+        total_manageable = manageable_query.count()
 
         # Count by case status - for records without explicit status, consider them Active
-        cleared_cases = non_whitelisted_query.filter(EmailRecord.case_status == 'Cleared').count()
-        escalated_cases = non_whitelisted_query.filter(EmailRecord.case_status == 'Escalated').count()
+        cleared_cases = manageable_query.filter(EmailRecord.case_status == 'Cleared').count()
+        escalated_cases = manageable_query.filter(EmailRecord.case_status == 'Escalated').count()
         
-        # Active cases are all non-whitelisted records that are not cleared or escalated
-        active_cases = non_whitelisted_query.filter(
+        # Active cases are all manageable records that are not cleared or escalated
+        active_cases = manageable_query.filter(
             db.or_(
                 EmailRecord.case_status.is_(None),
                 EmailRecord.case_status == 'Active',
@@ -2822,9 +2842,9 @@ def api_case_management_counts(session_id):
         ).count()
 
         # Ensure active cases calculation is correct
-        if active_cases == 0 and total_non_whitelisted > (cleared_cases + escalated_cases):
+        if active_cases == 0 and total_manageable > (cleared_cases + escalated_cases):
             # If no explicit active cases but we have unaccounted records, they should be active
-            active_cases = total_non_whitelisted - cleared_cases - escalated_cases
+            active_cases = total_manageable - cleared_cases - escalated_cases
 
         # Calculate metrics
         total_cases = active_cases + cleared_cases + escalated_cases
@@ -2833,13 +2853,14 @@ def api_case_management_counts(session_id):
         resolution_rate = (resolved_cases / total_cases * 100) if total_cases > 0 else 0
         escalation_rate = (escalated_cases / total_cases * 100) if total_cases > 0 else 0
 
-        logger.info(f"Case counts for session {session_id}: Active={active_cases}, Cleared={cleared_cases}, Escalated={escalated_cases}, Whitelisted={whitelisted_emails}, Total={total_records}")
+        logger.info(f"Case counts for session {session_id}: Active={active_cases}, Cleared={cleared_cases}, Escalated={escalated_cases}, Whitelisted={whitelisted_emails}, Excluded={excluded_emails}, Total={total_records}")
 
         return jsonify({
             'active_cases': active_cases,
             'cleared_cases': cleared_cases,
             'escalated_cases': escalated_cases,
             'whitelisted_emails': whitelisted_emails,
+            'excluded_emails': excluded_emails,
             'resolution_rate': resolution_rate,
             'escalation_rate': escalation_rate,
             'pending_review': active_cases,  # Active cases are pending review
@@ -3447,9 +3468,12 @@ def api_network_data(session_id):
         if risk_filter != 'all':
             query = query.filter_by(risk_level=risk_filter)
 
-        # Exclude whitelisted records
+        # Exclude whitelisted and excluded by rules records
         query = query.filter(
-            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+            db.and_(
+                db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False),
+                EmailRecord.excluded_by_rule.is_(None)
+            )
         )
 
         emails = query.all()

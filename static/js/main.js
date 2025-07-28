@@ -159,7 +159,7 @@ function initializeAnimatedCounters() {
     
     animatedNumbers.forEach((element, index) => {
         // Skip case management count elements as they are updated via API
-        const skipElements = ['activeCasesCount', 'clearedCasesCount', 'escalatedCasesCount', 'whitelistedEmailsCount'];
+        const skipElements = ['activeCasesCount', 'clearedCasesCount', 'escalatedCasesCount', 'whitelistedEmailsCount', 'excludedEmailsCount'];
         if (skipElements.includes(element.id)) {
             return;
         }
