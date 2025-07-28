@@ -301,7 +301,34 @@ def cases(session_id):
     
     # Handle "show all" functionality
     if per_page_param == 'all':
-        per_page = 10000  # Large number to show all records
+        # Get total count of records that match the filter criteria
+        count_query = EmailRecord.query.filter_by(session_id=session_id).filter(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        )
+        if risk_level:
+            count_query = count_query.filter(EmailRecord.risk_level == risk_level)
+        if case_status:
+            count_query = count_query.filter(EmailRecord.case_status == case_status)
+        if search:
+            search_term = f"%{search}%"
+            count_query = count_query.filter(
+                db.or_(
+                    EmailRecord.sender.ilike(search_term),
+                    EmailRecord.subject.ilike(search_term),
+                    EmailRecord.recipients_email_domain.ilike(search_term),
+                    EmailRecord.recipients.ilike(search_term),
+                    EmailRecord.attachments.ilike(search_term),
+                    EmailRecord.justification.ilike(search_term),
+                    EmailRecord.user_response.ilike(search_term),
+                    EmailRecord.record_id.ilike(search_term),
+                    EmailRecord.department.ilike(search_term),
+                    EmailRecord.bunit.ilike(search_term)
+                )
+            )
+        
+        total_records = count_query.count()
+        per_page = max(total_records, 1)  # Set per_page to actual total count
+        page = 1  # Reset to first page when showing all
     else:
         per_page = int(per_page_param) if per_page_param.isdigit() else 200
 
