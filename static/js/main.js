@@ -877,7 +877,38 @@ function displayCaseDetailsModal(caseData) {
 
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('caseDetailsModal'));
+    
+    // Add cleanup event listeners
+    const modalElement = document.getElementById('caseDetailsModal');
+    modalElement.addEventListener('hidden.bs.modal', function() {
+        // Clean up modal
+        cleanupModal('caseDetailsModal');
+    });
+    
     modal.show();
+}
+
+// Modal cleanup function to prevent page freezing
+function cleanupModal(modalId) {
+    // Remove the modal element
+    const modalElement = document.getElementById(modalId);
+    if (modalElement) {
+        modalElement.remove();
+    }
+    
+    // Remove any remaining modal backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    
+    // Remove modal-open class from body
+    document.body.classList.remove('modal-open');
+    
+    // Reset body styles that might be set by Bootstrap modal
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    
+    // Remove any other modal-related classes
+    document.documentElement.classList.remove('modal-open');
 }
 
 function displayEmailDraftModal(emailData) {
@@ -944,8 +975,34 @@ function displayEmailDraftModal(emailData) {
 
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('emailDraftModal'));
+    
+    // Add cleanup event listeners
+    const modalElement = document.getElementById('emailDraftModal');
+    modalElement.addEventListener('hidden.bs.modal', function() {
+        // Clean up modal
+        cleanupModal('emailDraftModal');
+    });
+    
     modal.show();
 }
+
+// Add global event listener for modal cleanup
+document.addEventListener('DOMContentLoaded', function() {
+    // Listen for all Bootstrap modal hidden events
+    document.addEventListener('hidden.bs.modal', function(e) {
+        // Ensure proper cleanup for any modal
+        setTimeout(function() {
+            // Remove any remaining modal backdrops
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => backdrop.remove());
+            
+            // Ensure body can scroll
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }, 100);
+    });
+});
 
 function getEmailFormData() {
     const form = document.getElementById('emailDraftForm');
