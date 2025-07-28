@@ -46,7 +46,7 @@
                         <a class="nav-link dropdown-toggle" href="#" id="dashboardDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-chart-line"></i> Dashboards
                         </a>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu" aria-labelledby="dashboardDropdown">
                             <li><a class="dropdown-item" href="{{ url_for('index') }}">
                                 <i class="fas fa-tachometer-alt"></i> Session List
                             </a></li>
@@ -80,6 +80,15 @@
                             {% else %}
                             <li><a class="dropdown-item disabled" href="#" onclick="return false;">
                                 <i class="fas fa-info-circle"></i> Upload a CSV file to access dashboards
+                            </a></li>
+                            {% endif %}
+                            {% if session and session.id %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('escalations', session_id=session.id) }}">
+                                <i class="fas fa-exclamation-triangle text-danger me-2"></i>Escalated Cases
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('cleared_cases', session_id=session.id) }}">
+                                <i class="fas fa-check-circle text-success me-2"></i>Cleared Cases
                             </a></li>
                             {% endif %}
                         </ul>
