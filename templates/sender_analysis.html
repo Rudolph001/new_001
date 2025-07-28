@@ -91,16 +91,93 @@
     </div>
 </div>
 
+<!-- Enhanced Analysis Overview -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="card stats-card bg-gradient-warning text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <h3 class="mb-0">{{ analysis.summary_statistics.critical_risk_senders or 0 }}</h3>
+                        <p class="mb-0">Critical Risk Senders</p>
+                    </div>
+                    <div class="ms-auto">
+                        <i class="fas fa-exclamation-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card stats-card bg-gradient-info text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <h3 class="mb-0">{{ "%.0f"|format(analysis.summary_statistics.avg_trust_score or 0) }}</h3>
+                        <p class="mb-0">Avg Trust Score</p>
+                    </div>
+                    <div class="ms-auto">
+                        <i class="fas fa-shield-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card stats-card bg-gradient-secondary text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <h3 class="mb-0">{{ analysis.summary_statistics.total_anomalies or 0 }}</h3>
+                        <p class="mb-0">Anomalies Detected</p>
+                    </div>
+                    <div class="ms-auto">
+                        <i class="fas fa-search fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+        <div class="card stats-card bg-gradient-dark text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <h3 class="mb-0">{{ analysis.summary_statistics.multi_domain_senders or 0 }}</h3>
+                        <p class="mb-0">Multi-Domain Senders</p>
+                    </div>
+                    <div class="ms-auto">
+                        <i class="fas fa-network-wired fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Main Analysis Content -->
 <div class="row">
-    <!-- Sender Behavior Chart -->
+    <!-- Enhanced Sender Behavior Chart -->
     <div class="col-lg-8 mb-4">
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-chart-scatter text-primary"></i>
-                    Sender Risk vs Communication Volume
-                </h5>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-scatter text-primary"></i>
+                        Sender Behavioral Analysis
+                    </h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="chartMode" id="riskVsVolume" autocomplete="off" checked>
+                        <label class="btn btn-outline-primary" for="riskVsVolume">Risk vs Volume</label>
+                        <input type="radio" class="btn-check" name="chartMode" id="trustVsBehavior" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="trustVsBehavior">Trust vs Behavior</label>
+                        <input type="radio" class="btn-check" name="chartMode" id="velocityVsSpread" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="velocityVsSpread">Velocity vs Spread</label>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <div class="chart-container">
@@ -109,40 +186,157 @@
                 <div class="mt-3">
                     <small class="text-muted">
                         <i class="fas fa-info-circle"></i>
-                        Each point represents a sender. X-axis shows total emails sent, Y-axis shows average risk score.
-                        Hover over points to see sender details.
+                        <span id="chartDescription">Each point represents a sender. Click mode buttons to switch views. Hover over points for detailed information.</span>
                     </small>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- Risk Distribution -->
+    <!-- Enhanced Metrics Panel -->
     <div class="col-lg-4 mb-4">
         <div class="card h-100">
             <div class="card-header">
                 <h5 class="card-title mb-0">
-                    <i class="fas fa-pie-chart text-primary"></i>
-                    Sender Risk Distribution
+                    <i class="fas fa-tachometer-alt text-primary"></i>
+                    Behavioral Insights
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if analysis.behavioral_insights %}
+                <div class="mb-3">
+                    <h6>Communication Patterns</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">External Heavy:</small><br>
+                            <span class="fw-bold text-warning">{{ analysis.behavioral_insights.communication_patterns.external_heavy or 0 }}</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Internal Heavy:</small><br>
+                            <span class="fw-bold text-success">{{ analysis.behavioral_insights.communication_patterns.internal_heavy or 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Risk Profiles</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Consistently Risky:</small><br>
+                            <span class="fw-bold text-danger">{{ analysis.behavioral_insights.risk_profiles.consistently_risky or 0 }}</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Low Risk Stable:</small><br>
+                            <span class="fw-bold text-success">{{ analysis.behavioral_insights.risk_profiles.low_risk_stable or 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Trust Distribution</h6>
+                    <div class="progress mb-2">
+                        {% set total_trust = (analysis.behavioral_insights.trust_distribution.high_trust or 0) + (analysis.behavioral_insights.trust_distribution.medium_trust or 0) + (analysis.behavioral_insights.trust_distribution.low_trust or 0) %}
+                        {% if total_trust > 0 %}
+                        <div class="progress-bar bg-success" style="width: {{ ((analysis.behavioral_insights.trust_distribution.high_trust or 0) / total_trust * 100)|int }}%"></div>
+                        <div class="progress-bar bg-warning" style="width: {{ ((analysis.behavioral_insights.trust_distribution.medium_trust or 0) / total_trust * 100)|int }}%"></div>
+                        <div class="progress-bar bg-danger" style="width: {{ ((analysis.behavioral_insights.trust_distribution.low_trust or 0) / total_trust * 100)|int }}%"></div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <small class="text-success">High: {{ analysis.behavioral_insights.trust_distribution.high_trust or 0 }}</small>
+                        <small class="text-warning">Med: {{ analysis.behavioral_insights.trust_distribution.medium_trust or 0 }}</small>
+                        <small class="text-danger">Low: {{ analysis.behavioral_insights.trust_distribution.low_trust or 0 }}</small>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <h6>Top Anomalies</h6>
+                    {% if analysis.anomaly_summary and analysis.anomaly_summary.top_anomalies %}
+                        {% for anomaly, count in (analysis.anomaly_summary.top_anomalies.items() | list)[:3] %}
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">{{ anomaly[:25] }}{% if anomaly|length > 25 %}...{% endif %}</small>
+                            <span class="badge bg-warning">{{ count }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <small class="text-muted">No significant anomalies detected</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Analytics Row -->
+<div class="row mb-4">
+    <!-- Risk Patterns Analysis -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar text-primary"></i>
+                    Risk Pattern Correlations
                 </h5>
             </div>
             <div class="card-body">
                 <div class="chart-container chart-small">
-                    <canvas id="senderRiskDistributionChart"></canvas>
+                    <canvas id="riskPatternsChart"></canvas>
                 </div>
                 <div class="mt-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>High Risk Senders:</span>
-                        <span class="fw-bold text-danger">{{ analysis.summary_statistics.high_risk_senders or 0 }}</span>
+                    {% if analysis.risk_patterns %}
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">High Risk + External:</small><br>
+                            <span class="fw-bold text-danger">{{ analysis.risk_patterns.high_risk_external or 0 }}</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">High Risk + Attachments:</small><br>
+                            <span class="fw-bold text-warning">{{ analysis.risk_patterns.high_risk_attachments or 0 }}</span>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>External Focused:</span>
-                        <span class="fw-bold text-warning">{{ analysis.summary_statistics.external_focused_senders or 0 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Temporal Behavior Analysis -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock text-primary"></i>
+                    Temporal Behavior Patterns
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container chart-small">
+                    <canvas id="temporalPatternsChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    {% if analysis.behavioral_insights and analysis.behavioral_insights.temporal_patterns %}
+                    <div class="row">
+                        <div class="col-4 text-center">
+                            <div class="border rounded p-2">
+                                <strong class="text-success">{{ analysis.behavioral_insights.temporal_patterns.business_hours_only or 0 }}</strong><br>
+                                <small class="text-muted">Business Hours Only</small>
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="border rounded p-2">
+                                <strong class="text-warning">{{ analysis.behavioral_insights.temporal_patterns.after_hours_active or 0 }}</strong><br>
+                                <small class="text-muted">After Hours Active</small>
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="border rounded p-2">
+                                <strong class="text-info">{{ analysis.behavioral_insights.temporal_patterns.weekend_active or 0 }}</strong><br>
+                                <small class="text-muted">Weekend Active</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span>Attachment Senders:</span>
-                        <span class="fw-bold text-info">{{ analysis.summary_statistics.attachment_senders or 0 }}</span>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -169,65 +363,131 @@
                 <thead>
                     <tr>
                         <th>Sender</th>
-                        <th>Total Emails</th>
-                        <th>Risk Score</th>
-                        <th>External Ratio</th>
-                        <th>Domains Contacted</th>
-                        <th>Behavior Flags</th>
+                        <th>Volume</th>
+                        <th>Risk Analysis</th>
+                        <th>Trust Score</th>
+                        <th>Communication Pattern</th>
+                        <th>Behavioral Flags</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for sender, profile in (analysis.sender_profiles.items() | list)[:20] %}
-                    <tr>
+                    {% for sender, profile in (analysis.sender_profiles.items() | list)[:25] %}
+                    <tr class="{% if profile.critical_risk_emails > 0 %}table-danger{% elif profile.risk_score_avg > 0.6 %}table-warning{% endif %}">
                         <td>
-                            <strong>{{ sender[:30] }}{% if sender|length > 30 %}...{% endif %}</strong>
+                            <div>
+                                <strong>{{ sender[:25] }}{% if sender|length > 25 %}...{% endif %}</strong>
+                                {% if profile.leaver_emails > 0 %}
+                                <span class="badge bg-danger ms-1">LEAVER</span>
+                                {% endif %}
+                                {% if profile.risk_trend == 'increasing' %}
+                                <i class="fas fa-arrow-up text-danger ms-1" title="Risk Increasing"></i>
+                                {% elif profile.risk_trend == 'decreasing' %}
+                                <i class="fas fa-arrow-down text-success ms-1" title="Risk Decreasing"></i>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">
+                                {{ "%.1f"|format(profile.communication_velocity) }} emails/day
+                            </small>
                         </td>
                         <td>
-                            <span class="badge bg-info">{{ profile.total_emails }}</span>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-info">{{ profile.total_emails }}</span>
+                                <div class="ms-2">
+                                    {% if profile.attachments_sent > 0 %}
+                                    <i class="fas fa-paperclip text-secondary" title="{{ profile.attachments_sent }} attachments"></i>
+                                    {% endif %}
+                                    {% if profile.recipient_spread > 10 %}
+                                    <i class="fas fa-network-wired text-warning" title="{{ profile.recipient_spread }} domains"></i>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                {{ profile.recipient_spread }} domains
+                            </small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
                                 <span class="fw-bold {% if profile.risk_score_avg > 0.7 %}text-danger{% elif profile.risk_score_avg > 0.4 %}text-warning{% else %}text-success{% endif %}">
                                     {{ "%.3f"|format(profile.risk_score_avg) }}
                                 </span>
-                                <div class="progress ms-2" style="width: 60px; height: 6px;">
+                                <div class="progress ms-2" style="width: 50px; height: 6px;">
                                     <div class="progress-bar bg-{% if profile.risk_score_avg > 0.7 %}danger{% elif profile.risk_score_avg > 0.4 %}warning{% else %}success{% endif %}" 
                                          style="width: {{ (profile.risk_score_avg * 100)|int }}%"></div>
                                 </div>
                             </div>
+                            <small class="text-muted">
+                                {% if profile.critical_risk_emails > 0 %}
+                                <span class="text-danger">{{ profile.critical_risk_emails }} critical</span>
+                                {% elif profile.high_risk_emails > 0 %}
+                                <span class="text-warning">{{ profile.high_risk_emails }} high risk</span>
+                                {% else %}
+                                <span class="text-success">Low risk</span>
+                                {% endif %}
+                            </small>
                         </td>
                         <td>
-                            <span class="{% if profile.external_ratio > 0.8 %}text-danger{% elif profile.external_ratio > 0.5 %}text-warning{% else %}text-success{% endif %}">
-                                {{ "%.1f"|format(profile.external_ratio * 100) }}%
-                            </span>
+                            <div class="d-flex align-items-center">
+                                <span class="fw-bold {% if profile.trust_score >= 80 %}text-success{% elif profile.trust_score >= 50 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ "%.0f"|format(profile.trust_score) }}
+                                </span>
+                                <div class="progress ms-2" style="width: 50px; height: 6px;">
+                                    <div class="progress-bar bg-{% if profile.trust_score >= 80 %}success{% elif profile.trust_score >= 50 %}warning{% else %}danger{% endif %}" 
+                                         style="width: {{ profile.trust_score|int }}%"></div>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                Behavioral: {{ "%.0f"|format(profile.behavioral_score) }}
+                            </small>
                         </td>
                         <td>
-                            <span class="badge bg-secondary">{{ profile.domains_contacted|length if profile.domains_contacted else 0 }}</span>
+                            <div class="d-flex align-items-center">
+                                <span class="{% if profile.external_ratio > 0.8 %}text-danger{% elif profile.external_ratio > 0.5 %}text-warning{% else %}text-success{% endif %}">
+                                    {{ "%.0f"|format(profile.external_ratio * 100) }}% ext
+                                </span>
+                            </div>
+                            <small class="text-muted">
+                                {% if profile.after_hours_emails > 0 %}
+                                <i class="fas fa-moon text-warning" title="After hours activity"></i>
+                                {% endif %}
+                                {% if profile.weekend_emails > 0 %}
+                                <i class="fas fa-calendar text-info" title="Weekend activity"></i>
+                                {% endif %}
+                                {% if profile.risk_variance > 0.3 %}
+                                <i class="fas fa-exclamation-triangle text-warning" title="Inconsistent risk"></i>
+                                {% endif %}
+                            </small>
                         </td>
                         <td>
                             {% if profile.behavior_flags %}
                                 {% for flag in profile.behavior_flags[:2] %}
-                                    <span class="badge bg-warning">{{ flag }}</span><br>
+                                    <div class="badge bg-{% if '🔴' in flag %}danger{% elif '⚠️' in flag or '🟡' in flag %}warning{% elif '✅' in flag %}success{% else %}secondary{% endif %} mb-1" style="font-size: 0.7em;">
+                                        {{ flag[:35] }}{% if flag|length > 35 %}...{% endif %}
+                                    </div><br>
                                 {% endfor %}
                                 {% if profile.behavior_flags|length > 2 %}
                                     <small class="text-muted">+{{ profile.behavior_flags|length - 2 }} more</small>
                                 {% endif %}
                             {% else %}
-                                <span class="text-muted">None</span>
+                                <span class="text-muted">Normal behavior</span>
                             {% endif %}
                         </td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
-                                <button class="btn btn-outline-primary" onclick="viewSenderDetails('{{ sender }}')">
+                                <button class="btn btn-outline-primary" onclick="viewSenderDetails('{{ sender }}')" title="View Details">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="btn btn-outline-info" onclick="analyzeSenderCommunications('{{ sender }}')">
+                                <button class="btn btn-outline-info" onclick="analyzeSenderCommunications('{{ sender }}')" title="Analyze Communications">
                                     <i class="fas fa-search"></i>
                                 </button>
-                                {% if profile.risk_score_avg > 0.6 %}
-                                <button class="btn btn-outline-danger" onclick="flagSender('{{ sender }}')">
+                                {% if profile.risk_score_avg > 0.6 or profile.trust_score < 50 %}
+                                <button class="btn btn-outline-danger" onclick="flagSender('{{ sender }}')" title="Flag for Review">
                                     <i class="fas fa-flag"></i>
+                                </button>
+                                {% endif %}
+                                {% if profile.anomaly_indicators %}
+                                <button class="btn btn-outline-warning" onclick="viewAnomalies('{{ sender }}')" title="View Anomalies">
+                                    <i class="fas fa-exclamation-triangle"></i>
                                 </button>
                                 {% endif %}
                             </div>
@@ -406,109 +666,274 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Create sender behavior scatter plot
+    // Enhanced sender behavior scatter plot with multiple modes
     const behaviorCtx = document.getElementById('senderBehaviorChart');
+    let senderChart = null;
+    let senderAnalysisData = null;
+    
     if (behaviorCtx) {
-        // Load sender risk analytics data from API
-        fetch(`/api/sender_risk_analytics/{{ session.id }}`)
+        // Load enhanced sender analysis data
+        fetch(`/api/sender-analysis/{{ session.id }}`)
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    console.error('Error loading sender analytics:', data.error);
+                    console.error('Error loading sender analysis:', data.error);
                     return;
                 }
                 
-                new Chart(behaviorCtx, {
-                    type: 'scatter',
-                    data: {
-                        datasets: [{
-                            label: 'Senders',
-                            data: data.data || [],
-                            backgroundColor: function(context) {
-                                const point = context.parsed;
-                                // Color code by risk level
-                                if (point.y > 0.7) return '#dc3545'; // High risk - red
-                                if (point.y > 0.4) return '#ffc107'; // Medium risk - yellow
-                                return '#198754'; // Low risk - green
-                            },
-                            borderColor: function(context) {
-                                const point = context.parsed;
-                                if (point.y > 0.7) return '#dc3545';
-                                if (point.y > 0.4) return '#ffc107';
-                                return '#198754';
-                            },
-                            pointRadius: function(context) {
-                                const point = context.raw;
-                                // Size based on high risk count
-                                return Math.max(3, Math.min(12, point.high_risk_count + 3));
-                            },
-                            pointHoverRadius: function(context) {
-                                const point = context.raw;
-                                return Math.max(5, Math.min(15, point.high_risk_count + 5));
-                            }
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            x: {
-                                type: 'linear',
-                                position: 'bottom',
-                                title: {
-                                    display: true,
-                                    text: 'Communication Volume (Total Emails)'
-                                }
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Average Risk Score'
-                                },
-                                min: 0,
-                                max: 1
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    title: function(context) {
-                                        const point = context[0].raw;
-                                        return point.sender || 'Unknown Sender';
-                                    },
-                                    label: function(context) {
-                                        const point = context.raw;
-                                        return [
-                                            `Emails: ${point.email_count}`,
-                                            `Avg Risk: ${point.avg_risk_score}`,
-                                            `High Risk: ${point.high_risk_count}`,
-                                            `Domain: ${point.domain}`,
-                                            `Attachments: ${point.has_attachments ? 'Yes' : 'No'}`
-                                        ];
-                                    }
-                                }
-                            }
-                        },
-                        onClick: function(event, elements) {
-                            if (elements.length > 0) {
-                                const point = elements[0];
-                                const senderData = data.data[point.index];
-                                if (senderData && senderData.sender) {
-                                    viewSenderDetails(senderData.sender);
-                                }
-                            }
+                senderAnalysisData = data;
+                createSenderChart('riskVsVolume'); // Default mode
+                
+                // Add event listeners for chart mode switching
+                document.querySelectorAll('input[name="chartMode"]').forEach(radio => {
+                    radio.addEventListener('change', function() {
+                        if (this.checked) {
+                            createSenderChart(this.id);
                         }
-                    }
+                    });
                 });
             })
             .catch(error => {
-                console.error('Error loading sender risk analytics:', error);
-                // Show error message in the chart area
+                console.error('Error loading sender analysis:', error);
                 behaviorCtx.getContext('2d').fillText('Error loading chart data', 10, 50);
             });
+    }
+    
+    function createSenderChart(mode) {
+        if (!senderAnalysisData || !senderAnalysisData.sender_profiles) {
+            return;
+        }
+        
+        // Destroy existing chart
+        if (senderChart) {
+            senderChart.destroy();
+        }
+        
+        const senders = Object.entries(senderAnalysisData.sender_profiles).slice(0, 50); // Top 50 senders
+        let chartData, xAxisLabel, yAxisLabel, description;
+        
+        switch (mode) {
+            case 'trustVsBehavior':
+                chartData = senders.map(([sender, profile]) => ({
+                    x: profile.behavioral_score || 0,
+                    y: profile.trust_score || 0,
+                    sender: sender,
+                    profile: profile
+                }));
+                xAxisLabel = 'Behavioral Score';
+                yAxisLabel = 'Trust Score';
+                description = 'Trust score vs behavioral score. Higher values indicate better behavior and higher trust.';
+                break;
+                
+            case 'velocityVsSpread':
+                chartData = senders.map(([sender, profile]) => ({
+                    x: profile.communication_velocity || 0,
+                    y: profile.recipient_spread || 0,
+                    sender: sender,
+                    profile: profile
+                }));
+                xAxisLabel = 'Communication Velocity (emails/day)';
+                yAxisLabel = 'Recipient Spread (domains contacted)';
+                description = 'Communication velocity vs recipient spread. High values may indicate bulk or automated communications.';
+                break;
+                
+            default: // riskVsVolume
+                chartData = senders.map(([sender, profile]) => ({
+                    x: profile.total_emails || 0,
+                    y: profile.risk_score_avg || 0,
+                    sender: sender,
+                    profile: profile
+                }));
+                xAxisLabel = 'Communication Volume (Total Emails)';
+                yAxisLabel = 'Average Risk Score';
+                description = 'Risk score vs communication volume. Points in upper right quadrant need immediate attention.';
+                break;
+        }
+        
+        // Update description
+        document.getElementById('chartDescription').textContent = description;
+        
+        senderChart = new Chart(behaviorCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Senders',
+                    data: chartData,
+                    backgroundColor: function(context) {
+                        const profile = context.raw.profile;
+                        
+                        // Color coding based on different criteria for different modes
+                        if (mode === 'trustVsBehavior') {
+                            if (profile.trust_score >= 80) return '#198754'; // High trust - green
+                            if (profile.trust_score >= 50) return '#ffc107'; // Medium trust - yellow
+                            return '#dc3545'; // Low trust - red
+                        } else if (mode === 'velocityVsSpread') {
+                            if (profile.communication_velocity > 10 && profile.recipient_spread > 20) return '#dc3545'; // High velocity + spread - red
+                            if (profile.communication_velocity > 5 || profile.recipient_spread > 10) return '#ffc107'; // Medium - yellow
+                            return '#198754'; // Normal - green
+                        } else {
+                            // Default risk-based coloring
+                            if (profile.risk_score_avg > 0.7) return '#dc3545'; // High risk - red
+                            if (profile.risk_score_avg > 0.4) return '#ffc107'; // Medium risk - yellow
+                            return '#198754'; // Low risk - green
+                        }
+                    },
+                    borderColor: function(context) {
+                        return context.element.options.backgroundColor;
+                    },
+                    pointRadius: function(context) {
+                        const profile = context.raw.profile;
+                        
+                        // Size based on different criteria
+                        if (mode === 'trustVsBehavior') {
+                            return Math.max(4, Math.min(15, (100 - profile.trust_score) / 10 + 3));
+                        } else if (mode === 'velocityVsSpread') {
+                            return Math.max(4, Math.min(15, profile.total_emails / 10 + 3));
+                        } else {
+                            return Math.max(4, Math.min(15, (profile.critical_risk_emails || 0) + 4));
+                        }
+                    },
+                    pointHoverRadius: function(context) {
+                        return context.element.options.pointRadius + 3;
+                    }
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: {
+                            display: true,
+                            text: xAxisLabel
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: yAxisLabel
+                        },
+                        min: mode === 'riskVsVolume' ? 0 : undefined,
+                        max: mode === 'riskVsVolume' ? 1 : undefined
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: function(context) {
+                                return context[0].raw.sender;
+                            },
+                            label: function(context) {
+                                const profile = context.raw.profile;
+                                const labels = [
+                                    `Total Emails: ${profile.total_emails}`,
+                                    `Risk Score: ${(profile.risk_score_avg || 0).toFixed(3)}`,
+                                    `Trust Score: ${(profile.trust_score || 0).toFixed(0)}`,
+                                    `External Ratio: ${((profile.external_ratio || 0) * 100).toFixed(1)}%`,
+                                    `Domains: ${profile.recipient_spread || 0}`,
+                                    `Velocity: ${(profile.communication_velocity || 0).toFixed(1)} emails/day`
+                                ];
+                                
+                                if (profile.critical_risk_emails > 0) {
+                                    labels.push(`Critical Risk Emails: ${profile.critical_risk_emails}`);
+                                }
+                                
+                                if (profile.anomaly_indicators && profile.anomaly_indicators.length > 0) {
+                                    labels.push(`Anomalies: ${profile.anomaly_indicators.length}`);
+                                }
+                                
+                                return labels;
+                            }
+                        }
+                    }
+                },
+                onClick: function(event, elements) {
+                    if (elements.length > 0) {
+                        const point = elements[0];
+                        const senderData = chartData[point.index];
+                        if (senderData && senderData.sender) {
+                            viewSenderDetails(senderData.sender);
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Create risk patterns chart
+    const riskPatternsCtx = document.getElementById('riskPatternsChart');
+    if (riskPatternsCtx && senderAnalysisData && senderAnalysisData.risk_patterns) {
+        new Chart(riskPatternsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['High Risk +\nExternal', 'High Risk +\nAttachments', 'High Risk +\nVolume', 'High Risk +\nAfter Hours', 'Leaver Risk\nCorrelation'],
+                datasets: [{
+                    label: 'Sender Count',
+                    data: [
+                        senderAnalysisData.risk_patterns.high_risk_external || 0,
+                        senderAnalysisData.risk_patterns.high_risk_attachments || 0,
+                        senderAnalysisData.risk_patterns.high_risk_volume || 0,
+                        senderAnalysisData.risk_patterns.high_risk_after_hours || 0,
+                        senderAnalysisData.risk_patterns.leaver_risk_correlation || 0
+                    ],
+                    backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6f42c1', '#e83e8c'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+    
+    // Create temporal patterns chart
+    const temporalPatternsCtx = document.getElementById('temporalPatternsChart');
+    if (temporalPatternsCtx && senderAnalysisData && senderAnalysisData.behavioral_insights) {
+        const temporal = senderAnalysisData.behavioral_insights.temporal_patterns;
+        new Chart(temporalPatternsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Business Hours Only', 'After Hours Active', 'Weekend Active'],
+                datasets: [{
+                    data: [
+                        temporal.business_hours_only || 0,
+                        temporal.after_hours_active || 0,
+                        temporal.weekend_active || 0
+                    ],
+                    backgroundColor: ['#198754', '#ffc107', '#0dcaf0'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            fontSize: 10
+                        }
+                    }
+                }
+            }
+        });
     }
     
     // Create communication patterns chart
@@ -655,49 +1080,120 @@ function viewSenderDetails(senderEmail) {
         modalBody.innerHTML = `
             <div class="row">
                 <div class="col-md-6">
-                    <h6>Sender Information</h6>
+                    <h6><i class="fas fa-user text-primary"></i> Sender Profile</h6>
                     <p><strong>Email:</strong> ${senderEmail}</p>
                     <p><strong>Total Communications:</strong> <span class="badge bg-info">${senderData.total_emails}</span></p>
-                    <p><strong>Risk Assessment:</strong> 
-                        <span class="fw-bold ${senderData.risk_score_avg > 0.7 ? 'text-danger' : senderData.risk_score_avg > 0.4 ? 'text-warning' : 'text-success'}">
-                            ${senderData.risk_score_avg.toFixed(3)} (${senderData.risk_score_avg > 0.7 ? 'High Risk' : senderData.risk_score_avg > 0.4 ? 'Medium Risk' : 'Low Risk'})
-                        </span>
+                    <p><strong>Communication Velocity:</strong> <span class="badge bg-secondary">${(senderData.communication_velocity || 0).toFixed(1)} emails/day</span></p>
+                    <p><strong>Activity Period:</strong> 
+                        ${senderData.first_seen ? new Date(senderData.first_seen).toLocaleDateString() : 'Unknown'} - 
+                        ${senderData.last_seen ? new Date(senderData.last_seen).toLocaleDateString() : 'Unknown'}
                     </p>
-                    <p><strong>Attachments Sent:</strong> <span class="badge bg-secondary">${senderData.attachments_sent || 0}</span></p>
                 </div>
                 <div class="col-md-6">
-                    <h6>Communication Patterns</h6>
-                    <p><strong>External Ratio:</strong> 
-                        <span class="${senderData.external_ratio > 0.8 ? 'text-danger' : senderData.external_ratio > 0.5 ? 'text-warning' : 'text-success'}">
-                            ${(senderData.external_ratio * 100).toFixed(1)}%
+                    <h6><i class="fas fa-shield-alt text-success"></i> Trust & Risk Assessment</h6>
+                    <p><strong>Trust Score:</strong> 
+                        <span class="fw-bold ${senderData.trust_score >= 80 ? 'text-success' : senderData.trust_score >= 50 ? 'text-warning' : 'text-danger'}">
+                            ${(senderData.trust_score || 0).toFixed(0)}/100
                         </span>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-${senderData.trust_score >= 80 ? 'success' : senderData.trust_score >= 50 ? 'warning' : 'danger'}" 
+                                 style="width: ${senderData.trust_score || 0}%"></div>
+                        </div>
                     </p>
-                    <p><strong>Domains Contacted:</strong> <span class="badge bg-info">${senderData.domains_contacted ? senderData.domains_contacted.length : 0}</span></p>
-                    <p><strong>Behavior Flags:</strong> 
-                        ${senderData.behavior_flags && senderData.behavior_flags.length > 0 
-                            ? senderData.behavior_flags.map(flag => `<span class="badge bg-warning me-1">${flag}</span>`).join('') 
-                            : '<span class="text-muted">None detected</span>'}
+                    <p><strong>Behavioral Score:</strong> 
+                        <span class="fw-bold text-info">${(senderData.behavioral_score || 0).toFixed(0)}/100</span>
+                    </p>
+                    <p><strong>Risk Trend:</strong> 
+                        <span class="badge bg-${senderData.risk_trend === 'increasing' ? 'danger' : senderData.risk_trend === 'decreasing' ? 'success' : 'secondary'}">
+                            ${senderData.risk_trend || 'stable'}
+                            ${senderData.risk_trend === 'increasing' ? '📈' : senderData.risk_trend === 'decreasing' ? '📉' : '➡️'}
+                        </span>
                     </p>
                 </div>
             </div>
             <hr>
-            <h6>Recent Activity & Risk Breakdown</h6>
             <div class="row">
                 <div class="col-md-6">
-                    <p><strong>High Risk Communications:</strong> ${senderData.high_risk_emails || 0}</p>
-                    <p><strong>External Communications:</strong> ${senderData.external_emails || 0}</p>
+                    <h6><i class="fas fa-chart-line text-warning"></i> Risk Analysis</h6>
+                    <p><strong>Average Risk Score:</strong> 
+                        <span class="fw-bold ${senderData.risk_score_avg > 0.7 ? 'text-danger' : senderData.risk_score_avg > 0.4 ? 'text-warning' : 'text-success'}">
+                            ${(senderData.risk_score_avg || 0).toFixed(3)}
+                        </span>
+                    </p>
+                    <p><strong>Risk Distribution:</strong></p>
+                    <ul class="list-unstyled ms-3">
+                        <li><span class="text-danger">Critical:</span> ${senderData.critical_risk_emails || 0}</li>
+                        <li><span class="text-warning">High:</span> ${senderData.high_risk_emails || 0}</li>
+                        <li><span class="text-info">Medium:</span> ${senderData.medium_risk_emails || 0}</li>
+                        <li><span class="text-success">Low:</span> ${senderData.low_risk_emails || 0}</li>
+                    </ul>
+                    <p><strong>Risk Consistency:</strong> 
+                        <span class="badge bg-${(senderData.risk_consistency || 0) > 0.8 ? 'success' : (senderData.risk_consistency || 0) > 0.6 ? 'warning' : 'danger'}">
+                            ${((senderData.risk_consistency || 0) * 100).toFixed(0)}%
+                        </span>
+                    </p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Risk Score Range:</strong> ${senderData.risk_score_avg > 0.7 ? 'Critical' : senderData.risk_score_avg > 0.6 ? 'High' : senderData.risk_score_avg > 0.4 ? 'Medium' : 'Low'}</p>
-                    <p><strong>Activity Pattern:</strong> ${senderData.total_emails > 10 ? 'High Volume' : senderData.total_emails > 3 ? 'Medium Volume' : 'Low Volume'}</p>
+                    <h6><i class="fas fa-network-wired text-info"></i> Communication Patterns</h6>
+                    <p><strong>External vs Internal:</strong></p>
+                    <div class="progress mb-2" style="height: 20px;">
+                        <div class="progress-bar bg-danger" style="width: ${((senderData.external_ratio || 0) * 100).toFixed(0)}%">
+                            External ${((senderData.external_ratio || 0) * 100).toFixed(0)}%
+                        </div>
+                        <div class="progress-bar bg-success" style="width: ${((senderData.internal_ratio || 0) * 100).toFixed(0)}%">
+                            Internal ${((senderData.internal_ratio || 0) * 100).toFixed(0)}%
+                        </div>
+                    </div>
+                    <p><strong>Recipient Spread:</strong> <span class="badge bg-info">${senderData.recipient_spread || 0} domains</span></p>
+                    <p><strong>Attachments:</strong> <span class="badge bg-secondary">${senderData.attachments_sent || 0} (${((senderData.attachment_ratio || 0) * 100).toFixed(0)}%)</span></p>
+                </div>
+            </div>
+            <hr>
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-clock text-secondary"></i> Temporal Patterns</h6>
+                    <p><strong>Business Hours:</strong> ${senderData.business_hours_emails || 0}</p>
+                    <p><strong>After Hours:</strong> <span class="${senderData.after_hours_emails > 0 ? 'text-warning' : 'text-muted'}">${senderData.after_hours_emails || 0}</span></p>
+                    <p><strong>Weekend Activity:</strong> <span class="${senderData.weekend_emails > 0 ? 'text-info' : 'text-muted'}">${senderData.weekend_emails || 0}</span></p>
+                    ${senderData.leaver_emails > 0 ? `<p><strong>⚠️ Leaver Communications:</strong> <span class="text-danger fw-bold">${senderData.leaver_emails}</span></p>` : ''}
+                </div>
+                <div class="col-md-6">
+                    <h6><i class="fas fa-exclamation-triangle text-warning"></i> Anomalies & Flags</h6>
+                    ${senderData.anomaly_indicators && senderData.anomaly_indicators.length > 0 ? `
+                    <p><strong>Detected Anomalies:</strong></p>
+                    <ul class="list-unstyled">
+                        ${senderData.anomaly_indicators.slice(0, 3).map(anomaly => `<li><span class="badge bg-warning me-1">⚠️</span> ${anomaly}</li>`).join('')}
+                        ${senderData.anomaly_indicators.length > 3 ? `<li><small class="text-muted">+${senderData.anomaly_indicators.length - 3} more anomalies</small></li>` : ''}
+                    </ul>
+                    ` : '<p class="text-muted">No anomalies detected</p>'}
+                    
+                    ${senderData.behavior_flags && senderData.behavior_flags.length > 0 ? `
+                    <p><strong>Behavioral Flags:</strong></p>
+                    <div class="d-flex flex-wrap gap-1">
+                        ${senderData.behavior_flags.slice(0, 4).map(flag => `<span class="badge bg-secondary" style="font-size: 0.7em;">${flag}</span>`).join('')}
+                        ${senderData.behavior_flags.length > 4 ? `<span class="text-muted">+${senderData.behavior_flags.length - 4} more</span>` : ''}
+                    </div>
+                    ` : ''}
                 </div>
             </div>
             ${senderData.domains_contacted && senderData.domains_contacted.length > 0 ? `
             <hr>
-            <h6>External Domains Contacted</h6>
+            <h6><i class="fas fa-globe text-primary"></i> External Domains Contacted</h6>
             <div class="d-flex flex-wrap gap-1">
-                ${senderData.domains_contacted.slice(0, 10).map(domain => `<span class="badge bg-outline-secondary">${domain}</span>`).join('')}
-                ${senderData.domains_contacted.length > 10 ? `<span class="text-muted">+${senderData.domains_contacted.length - 10} more</span>` : ''}
+                ${senderData.domains_contacted.slice(0, 15).map(domain => `<span class="badge bg-outline-secondary">${domain}</span>`).join('')}
+                ${senderData.domains_contacted.length > 15 ? `<span class="text-muted">+${senderData.domains_contacted.length - 15} more domains</span>` : ''}
+            </div>
+            ` : ''}
+            ${senderData.attachment_types && Object.keys(senderData.attachment_types).length > 0 ? `
+            <hr>
+            <h6><i class="fas fa-paperclip text-info"></i> Attachment Types</h6>
+            <div class="row">
+                ${Object.entries(senderData.attachment_types).map(([type, count]) => `
+                <div class="col-3 text-center mb-2">
+                    <span class="badge bg-info">${type}</span><br>
+                    <small class="text-muted">${count} files</small>
+                </div>
+                `).join('')}
             </div>
             ` : ''}
         `;
@@ -812,6 +1308,31 @@ function exportSenderReport() {
         const modal = bootstrap.Modal.getInstance(document.getElementById('senderDetailsModal'));
         modal.hide();
     }, 1500);
+}
+
+function viewAnomalies(senderEmail) {
+    const senderData = findSenderData(senderEmail);
+    
+    if (senderData && senderData.anomaly_indicators && senderData.anomaly_indicators.length > 0) {
+        const anomalyHtml = `
+            <div class="alert alert-warning">
+                <h6><i class="fas fa-exclamation-triangle"></i> Behavioral Anomalies for ${senderEmail}</h6>
+                <ul class="mb-0">
+                    ${senderData.anomaly_indicators.map(anomaly => `<li>${anomaly}</li>`).join('')}
+                </ul>
+            </div>
+            <p><strong>Recommendation:</strong> Review this sender's communications for potential security risks or policy violations.</p>
+        `;
+        
+        const modal = document.getElementById('senderDetailsModal');
+        const modalBody = document.getElementById('senderDetailsBody');
+        modalBody.innerHTML = anomalyHtml;
+        
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+    } else {
+        showWarning('No anomalies detected for this sender');
+    }
 }
 </script>
 {% endblock %}
