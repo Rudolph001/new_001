@@ -817,27 +817,31 @@ function loadCaseManagementCounts() {
                 return;
             }
 
-            // Update animated numbers
+            // Update animated numbers with proper formatting
             const activeCasesElement = document.getElementById('activeCasesCount');
             const clearedCasesElement = document.getElementById('clearedCasesCount');
             const escalatedCasesElement = document.getElementById('escalatedCasesCount');
             const whitelistedEmailsElement = document.getElementById('whitelistedEmailsCount');
 
             if (activeCasesElement) {
-                activeCasesElement.dataset.target = data.active_cases || 0;
-                activeCasesElement.textContent = data.active_cases || 0;
+                const value = data.active_cases || 0;
+                activeCasesElement.dataset.target = value;
+                activeCasesElement.textContent = value.toLocaleString();
             }
             if (clearedCasesElement) {
-                clearedCasesElement.dataset.target = data.cleared_cases || 0;
-                clearedCasesElement.textContent = data.cleared_cases || 0;
+                const value = data.cleared_cases || 0;
+                clearedCasesElement.dataset.target = value;
+                clearedCasesElement.textContent = value.toLocaleString();
             }
             if (escalatedCasesElement) {
-                escalatedCasesElement.dataset.target = data.escalated_cases || 0;
-                escalatedCasesElement.textContent = data.escalated_cases || 0;
+                const value = data.escalated_cases || 0;
+                escalatedCasesElement.dataset.target = value;
+                escalatedCasesElement.textContent = value.toLocaleString();
             }
             if (whitelistedEmailsElement) {
-                whitelistedEmailsElement.dataset.target = data.whitelisted_emails || 0;
-                whitelistedEmailsElement.textContent = data.whitelisted_emails || 0;
+                const value = data.whitelisted_emails || 0;
+                whitelistedEmailsElement.dataset.target = value;
+                whitelistedEmailsElement.textContent = value.toLocaleString();
             }
 
             // Update metrics
@@ -859,10 +863,18 @@ function loadCaseManagementCounts() {
                 totalManagedElement.textContent = data.total_managed || 0;
             }
 
-            // Animate the numbers after updating them
-            setTimeout(() => {
+            // Force immediate display of numbers (skip animation delay)
+            console.log('Successfully updated case counts:', {
+                active: data.active_cases,
+                cleared: data.cleared_cases, 
+                escalated: data.escalated_cases,
+                whitelisted: data.whitelisted_emails
+            });
+            
+            // Try animating numbers without delay
+            if (typeof animateNumbers === 'function') {
                 animateNumbers();
-            }, 100);
+            }
 
             // Create case status chart
             createCaseStatusChart(data.case_status_distribution || {});
@@ -930,10 +942,14 @@ function createCaseStatusChart(statusData) {
 
 // Load case management counts on page load
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, starting to load case management counts...');
     loadCaseManagementCounts();
     
-    // Debug: Log session ID
-    console.log('Loading case management counts for session:', window.currentSessionId);
+    // Also try after a short delay to ensure all scripts are loaded
+    setTimeout(() => {
+        console.log('Backup load attempt for case management counts...');
+        loadCaseManagementCounts();
+    }, 1000);
 });
 
 // Auto-refresh for processing sessions
