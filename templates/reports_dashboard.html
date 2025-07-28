@@ -338,7 +338,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <small>{{ case.time.strftime('%Y-%m-%d %H:%M') if case.time and hasattr(case.time, 'strftime') else 'Unknown' }}</small>
+                                        <small>{{ case.time.strftime('%Y-%m-%d %H:%M') if case.time and case.time.__class__.__name__ != 'str' else 'Unknown' }}</small>
                                     </td>
                                     <td>
                                         {% if case.attachments %}

@@ -904,7 +904,7 @@ def api_cases_data(session_id):
                     'risk_level': case.risk_level,
                     'ml_score': float(case.ml_risk_score or 0),
                     'status': case.case_status or 'Active',
-                    'time': case.time.isoformat() if case.time and hasattr(case.time, 'isoformat') else datetime.now().isoformat(),
+                    'time': case.time.isoformat() if case.time and callable(getattr(case.time, 'isoformat', None)) else datetime.now().isoformat(),
                     'attachments': case.attachments
                 } for case in cases[:100]  # Limit for performance
             ],

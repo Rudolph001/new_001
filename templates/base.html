@@ -50,37 +50,31 @@
                             <li><a class="dropdown-item" href="{{ url_for('index') }}">
                                 <i class="fas fa-tachometer-alt"></i> Session List
                             </a></li>
-                            {% if session and session.id %}
-                            <li><a class="dropdown-item" href="{{ url_for('reports_dashboard', session_id=session.id) }}">
+                            {% if session_id %}
+                            <li><a class="dropdown-item" href="{{ url_for('reports_dashboard', session_id=session_id) }}">
                                 <i class="fas fa-chart-bar"></i> Reports Dashboard
                             </a></li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('monthly_report_dashboard') }}">
-                                <i class="fas fa-calendar-alt"></i>
-                                Monthly Report
-                            </a>
-                        </li>
-                            <li><a class="dropdown-item" href="{{ url_for('cases', session_id=session.id) }}">
+                            <li><a class="dropdown-item" href="{{ url_for('cases', session_id=session_id) }}">
                                 <i class="fas fa-folder-open"></i> Case Management
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('escalations', session_id=session.id) }}">
+                            <li><a class="dropdown-item" href="{{ url_for('escalations', session_id=session_id) }}">
                                 <i class="fas fa-exclamation-triangle"></i> Escalations
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('sender_analysis', session_id=session.id) }}">
+                            <li><a class="dropdown-item" href="{{ url_for('sender_analysis', session_id=session_id) }}">
                                 <i class="fas fa-user-friends"></i> Sender Analysis
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('time_analysis', session_id=session.id) }}">
+                            <li><a class="dropdown-item" href="{{ url_for('time_analysis', session_id=session_id) }}">
                                 <i class="fas fa-clock"></i> Time Analysis
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('whitelist_analysis', session_id=session.id) }}">
+                            <li><a class="dropdown-item" href="{{ url_for('whitelist_analysis', session_id=session_id) }}">
                                 <i class="fas fa-list-check"></i> Whitelist Analysis
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('advanced_ml_dashboard', session_id=session.id) }}">
+                            <li><a class="dropdown-item" href="{{ url_for('advanced_ml_dashboard', session_id=session_id) }}">
                                 <i class="fas fa-brain"></i> Advanced ML
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{{ url_for('network_dashboard', session_id=session.id) }}">
+                            <li><a class="dropdown-item" href="{{ url_for('network_dashboard', session_id=session_id) }}">
                                 <i class="fas fa-project-diagram"></i> Network Analysis
                             </a></li>
                             {% else %}
