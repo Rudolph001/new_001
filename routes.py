@@ -2,6 +2,7 @@ from flask import render_template, request, redirect, url_for, flash, jsonify, s
 from io import StringIO, BytesIO
 import csv
 import json
+from datetime import datetime
 from app import app, db
 from models import ProcessingSession, EmailRecord, Rule, WhitelistDomain, AttachmentKeyword, ProcessingError, RiskFactor
 from session_manager import SessionManager
@@ -314,6 +315,16 @@ def reports_dashboard(session_id):
         # Convert database records to display format
         case_records = []
         for case in cases:
+            # Handle time field properly - convert string to datetime if needed
+            case_time = case.time
+            if isinstance(case_time, str):
+                try:
+                    case_time = datetime.fromisoformat(case_time.replace('Z', '+00:00'))
+                except:
+                    case_time = datetime.now()
+            elif case_time is None:
+                case_time = datetime.now()
+            
             case_records.append({
                 'record_id': case.record_id or 'Unknown',
                 'sender_email': case.sender or 'Unknown',
@@ -323,7 +334,7 @@ def reports_dashboard(session_id):
                 'risk_level': case.risk_level or 'Low',
                 'ml_score': float(case.ml_risk_score or 0),
                 'status': case.case_status or 'Active',
-                'time': case.time or datetime.now(),
+                'time': case_time,
                 'attachments': case.attachments or '',
                 'policy_name': getattr(case, 'policy_name', 'Standard')
             })
@@ -864,8 +875,16 @@ def api_cases_data(session_id):
             
             # Timeline data (by date)
             if case.time:
-                date_key = case.time.strftime('%Y-%m-%d')
-                timeline_data[date_key] = timeline_data.get(date_key, 0) + 1
+                try:
+                    if isinstance(case.time, str):
+                        case_time = datetime.fromisoformat(case.time.replace('Z', '+00:00'))
+                    else:
+                        case_time = case.time
+                    date_key = case_time.strftime('%Y-%m-%d')
+                    timeline_data[date_key] = timeline_data.get(date_key, 0) + 1
+                except:
+                    # Skip invalid dates
+                    pass
         
         # Prepare top domains (top 10)
         top_domains = sorted(domain_counts.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -885,7 +904,7 @@ def api_cases_data(session_id):
                     'risk_level': case.risk_level,
                     'ml_score': float(case.ml_risk_score or 0),
                     'status': case.case_status or 'Active',
-                    'time': case.time.isoformat() if case.time else datetime.now().isoformat(),
+                    'time': case.time.isoformat() if case.time and hasattr(case.time, 'isoformat') else datetime.now().isoformat(),
                     'attachments': case.attachments
                 } for case in cases[:100]  # Limit for performance
             ],
@@ -934,6 +953,18 @@ def api_export_cases(session_id):
         
         # Write data
         for case in cases:
+            # Handle time formatting safely
+            time_str = ''
+            if case.time:
+                try:
+                    if isinstance(case.time, str):
+                        case_time = datetime.fromisoformat(case.time.replace('Z', '+00:00'))
+                    else:
+                        case_time = case.time
+                    time_str = case_time.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    time_str = str(case.time)
+            
             writer.writerow([
                 case.record_id,
                 case.sender,
@@ -943,7 +974,7 @@ def api_export_cases(session_id):
                 case.risk_level,
                 case.ml_risk_score,
                 case.case_status,
-                case.time.strftime('%Y-%m-%d %H:%M:%S') if case.time else '',
+                time_str,
                 case.attachments,
                 case.justification,
                 getattr(case, 'policy_name', 'Standard')
@@ -1020,6 +1051,18 @@ def api_generate_report(session_id):
         
         # Write all cases data
         for case in cases:
+            # Handle time formatting safely
+            time_str = ''
+            if case.time:
+                try:
+                    if isinstance(case.time, str):
+                        case_time = datetime.fromisoformat(case.time.replace('Z', '+00:00'))
+                    else:
+                        case_time = case.time
+                    time_str = case_time.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    time_str = str(case.time)
+            
             writer.writerow([
                 case.record_id,
                 case.sender,
@@ -1029,7 +1072,7 @@ def api_generate_report(session_id):
                 case.risk_level,
                 case.ml_risk_score,
                 case.case_status,
-                case.time.strftime('%Y-%m-%d %H:%M:%S') if case.time else '',
+                time_str,
                 case.attachments,
                 case.justification,
                 case.user_response,
