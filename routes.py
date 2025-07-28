@@ -612,6 +612,25 @@ def create_rule():
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@app.route('/api/rules/<int:rule_id>', methods=['GET'])
+def get_rule(rule_id):
+    """Get individual rule details"""
+    try:
+        rule = Rule.query.get_or_404(rule_id)
+        return jsonify({
+            'id': rule.id,
+            'name': rule.name,
+            'description': rule.description,
+            'rule_type': rule.rule_type,
+            'conditions': rule.conditions,
+            'actions': rule.actions,
+            'priority': rule.priority,
+            'is_active': rule.is_active
+        })
+    except Exception as e:
+        logger.error(f"Error getting rule {rule_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/rules/<int:rule_id>', methods=['PUT'])
 def update_rule(rule_id):
     """Update an existing rule"""
@@ -2512,6 +2531,14 @@ def reprocess_session_data(session_id):
         def background_reprocessing():
             with app.app_context():
                 try:
+                    logger.info(f"Starting re-processing for session {session_id}")
+                    
+                    # Log current rules
+                    active_rules = Rule.query.filter_by(is_active=True).all()
+                    logger.info(f"Found {len(active_rules)} active rules for re-processing")
+                    for rule in active_rules:
+                        logger.info(f"Rule: {rule.name} (Type: {rule.rule_type}, Conditions: {rule.conditions})")
+                    
                     data_processor.process_csv(session_id, csv_path)
                     logger.info(f"Background re-processing completed for session {session_id}")
                 except Exception as e:

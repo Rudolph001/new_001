@@ -159,10 +159,23 @@ class RuleEngine:
                     return result
             elif isinstance(conditions, list):
                 # List of conditions (default AND logic)
-                results = [self._evaluate_single_condition(record, cond) for cond in conditions]
-                result = all(results)
-                logger.debug(f"List conditions result for rule '{rule.name}': {results} -> {result}")
-                return result
+                if len(conditions) == 0:
+                    logger.debug(f"Empty conditions list for rule '{rule.name}'")
+                    return False
+                
+                results = []
+                for cond in conditions:
+                    try:
+                        result = self._evaluate_single_condition(record, cond)
+                        results.append(result)
+                        logger.debug(f"Condition {cond} evaluated to: {result}")
+                    except Exception as e:
+                        logger.error(f"Error evaluating condition {cond}: {str(e)}")
+                        results.append(False)
+                
+                final_result = all(results)
+                logger.debug(f"List conditions result for rule '{rule.name}': {results} -> {final_result}")
+                return final_result
             elif isinstance(conditions, str):
                 # Handle JSON string conditions
                 try:
