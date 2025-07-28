@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}Email Cases Reports Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">Email Cases Reports Dashboard</h2>
+                    <p class="text-muted mb-0">Comprehensive analysis and insights from email security cases</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportSelectedCases()">
+                        <i class="fas fa-download"></i> Export Selected
+                    </button>
+                    <button class="btn btn-primary" onclick="generateFullReport()">
+                        <i class="fas fa-file-pdf"></i> Generate Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                                <i class="fas fa-envelope text-primary fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total Cases</h6>
+                            <h3 class="mb-0 animated-number" data-target="{{ total_cases }}">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-danger bg-opacity-10 rounded-circle p-3">
+                                <i class="fas fa-exclamation-triangle text-danger fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">High Risk Cases</h6>
+                            <h3 class="mb-0 animated-number" data-target="{{ high_risk_cases }}">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                                <i class="fas fa-check-circle text-success fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Resolved Cases</h6>
+                            <h3 class="mb-0 animated-number" data-target="{{ resolved_cases }}">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                                <i class="fas fa-clock text-warning fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Pending Cases</h6>
+                            <h3 class="mb-0 animated-number" data-target="{{ pending_cases }}">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visualizations Row -->
+    <div class="row mb-4">
+        <!-- Case Status Distribution -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h5 class="card-title mb-0">Case Status Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusDistributionChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Level Distribution -->
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h5 class="card-title mb-0">Risk Level Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="riskLevelChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Series and Domain Analysis -->
+    <div class="row mb-4">
+        <!-- Cases Over Time -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h5 class="card-title mb-0">Cases Trend Over Time</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="casesTimelineChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Domains -->
+        <div class="col-lg-4 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pb-0">
+                    <h5 class="card-title mb-0">Top Domains by Cases</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="topDomainsChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cases Selection and Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h5 class="card-title mb-0">Email Cases Analysis</h5>
+                        </div>
+                        <div class="col-auto">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-primary" onclick="selectAllCases()">
+                                    <i class="fas fa-check-square"></i> Select All
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
+                                    <i class="fas fa-square"></i> Clear Selection
+                                </button>
+                                <button class="btn btn-sm btn-warning" onclick="bulkUpdateStatus()" id="bulkUpdateBtn" style="display: none;">
+                                    <i class="fas fa-edit"></i> Update Selected
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="statusFilter" onchange="applyFilters()">
+                                <option value="">All Statuses</option>
+                                <option value="Active">Active</option>
+                                <option value="Cleared">Cleared</option>
+                                <option value="Escalated">Escalated</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select form-select-sm" id="riskFilter" onchange="applyFilters()">
+                                <option value="">All Risk Levels</option>
+                                <option value="High">High Risk</option>
+                                <option value="Medium">Medium Risk</option>
+                                <option value="Low">Low Risk</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="date" class="form-control form-control-sm" id="dateFilter" onchange="applyFilters()">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" class="form-control form-control-sm" id="searchFilter" placeholder="Search cases..." onkeyup="applyFilters()">
+                        </div>
+                    </div>
+
+                    <!-- Selected Cases Summary -->
+                    <div id="selectionSummary" class="alert alert-info" style="display: none;">
+                        <strong><span id="selectedCount">0</span></strong> cases selected
+                        <span id="selectedSummary"></span>
+                    </div>
+
+                    <!-- Cases Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="casesReportTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="40">
+                                        <input type="checkbox" class="form-check-input" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                    </th>
+                                    <th>Sender</th>
+                                    <th>Subject</th>
+                                    <th>Domain</th>
+                                    <th>Risk Level</th>
+                                    <th>ML Score</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Policy</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for case in cases %}
+                                <tr data-case-id="{{ case.record_id }}" data-risk="{{ case.risk_level }}" data-status="{{ case.status }}">
+                                    <td>
+                                        <input type="checkbox" class="form-check-input case-checkbox" value="{{ case.record_id }}" onchange="updateSelection()">
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                <span class="text-white small">{{ case.sender_email[0].upper() }}</span>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ case.sender_email }}</div>
+                                                {% if case.sender_name %}
+                                                <small class="text-muted">{{ case.sender_name }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" style="max-width: 200px;" title="{{ case.subject }}">
+                                            {{ case.subject }}
+                                        </div>
+                                        {% if case.attachments and case.attachments != '-' %}
+                                        <small class="text-muted">
+                                            <i class="fas fa-paperclip"></i> Has attachments
+                                        </small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ case.recipient_domain or 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        {% if case.risk_level == 'High' %}
+                                        <span class="badge bg-danger">{{ case.risk_level }}</span>
+                                        {% elif case.risk_level == 'Medium' %}
+                                        <span class="badge bg-warning">{{ case.risk_level }}</span>
+                                        {% else %}
+                                        <span class="badge bg-success">{{ case.risk_level }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 50px; height: 8px;">
+                                                <div class="progress-bar 
+                                                    {% if case.ml_score > 0.7 %}bg-danger
+                                                    {% elif case.ml_score > 0.4 %}bg-warning
+                                                    {% else %}bg-success{% endif %}" 
+                                                    style="width: {{ (case.ml_score * 100)|round(0) }}%"></div>
+                                            </div>
+                                            <small class="text-muted">{{ '%.3f'|format(case.ml_score) }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if case.status == 'Active' %}
+                                        <span class="badge bg-info">{{ case.status }}</span>
+                                        {% elif case.status == 'Cleared' %}
+                                        <span class="badge bg-success">{{ case.status }}</span>
+                                        {% elif case.status == 'Escalated' %}
+                                        <span class="badge bg-danger">{{ case.status }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ case.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ case.time.strftime('%Y-%m-%d %H:%M') if case.time else 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        {% if case.policy_name %}
+                                        <small class="text-muted">{{ case.policy_name }}</small>
+                                        {% else %}
+                                        <small class="text-muted">Standard</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button class="btn btn-outline-primary btn-sm view-case-btn" 
+                                                    data-record-id="{{ case.record_id }}" 
+                                                    title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-outline-success btn-sm update-case-status-btn" 
+                                                    data-record-id="{{ case.record_id }}" 
+                                                    data-new-status="Cleared" 
+                                                    title="Clear Case">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-outline-danger btn-sm escalate-case-btn" 
+                                                    data-record-id="{{ case.record_id }}" 
+                                                    title="Escalate">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            Showing {{ cases|length }} of {{ total_cases }} cases
+                        </div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item"><a class="page-link" href="#">Previous</a></li>
+                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Case Details Modal will be dynamically created -->
+
+<script src="{{ url_for('static', filename='js/reports_dashboard.js') }}"></script>
+<script>
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    initializeReportsDashboard();
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.table-responsive {
+    border-radius: 0.375rem;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.animated-number {
+    font-weight: 600;
+    color: #495057;
+}
+
+.alert-info {
+    background-color: #e7f3ff;
+    border-color: #b8daff;
+    color: #055160;
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+</style>
+{% endblock %}

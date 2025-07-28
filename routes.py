@@ -1,4 +1,7 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify, send_file
+from io import StringIO, BytesIO
+import csv
+import json
 from app import app, db
 from models import ProcessingSession, EmailRecord, Rule, WhitelistDomain, AttachmentKeyword, ProcessingError, RiskFactor
 from session_manager import SessionManager
@@ -286,6 +289,60 @@ def dashboard(session_id):
                          bau_analysis=bau_analysis,
                          attachment_analytics=attachment_analytics,
                          workflow_stats=workflow_stats)
+
+@app.route('/reports/<session_id>')
+def reports_dashboard(session_id):
+    """Professional reporting dashboard for email cases"""
+    try:
+        session = ProcessingSession.query.get_or_404(session_id)
+        
+        # Get cases from database with comprehensive filtering
+        cases_query = EmailRecord.query.filter_by(session_id=session_id).filter(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        )
+        
+        cases = cases_query.order_by(EmailRecord.ml_risk_score.desc()).limit(500).all()
+        
+        # Calculate comprehensive statistics
+        total_cases = cases_query.count()
+        high_risk_cases = cases_query.filter(EmailRecord.risk_level == 'High').count()
+        resolved_cases = cases_query.filter(EmailRecord.case_status.in_(['Cleared', 'Escalated'])).count()
+        pending_cases = cases_query.filter(
+            db.or_(EmailRecord.case_status.is_(None), EmailRecord.case_status == 'Active')
+        ).count()
+        
+        # Convert database records to display format
+        case_records = []
+        for case in cases:
+            case_records.append({
+                'record_id': case.record_id or 'Unknown',
+                'sender_email': case.sender or 'Unknown',
+                'sender_name': '',  # Not available in current schema
+                'subject': case.subject or 'No Subject',
+                'recipient_domain': case.recipients_email_domain or '',
+                'risk_level': case.risk_level or 'Low',
+                'ml_score': float(case.ml_risk_score or 0),
+                'status': case.case_status or 'Active',
+                'time': case.time or datetime.now(),
+                'attachments': case.attachments or '',
+                'policy_name': getattr(case, 'policy_name', 'Standard')
+            })
+        
+        context = {
+            'session': session,
+            'cases': case_records,
+            'total_cases': total_cases,
+            'high_risk_cases': high_risk_cases,
+            'resolved_cases': resolved_cases,
+            'pending_cases': pending_cases
+        }
+        
+        return render_template('reports_dashboard.html', **context)
+        
+    except Exception as e:
+        logger.error(f"Reports dashboard error for session {session_id}: {str(e)}")
+        flash('Error loading reports dashboard', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/cases/<session_id>')
 def cases(session_id):
@@ -771,6 +828,232 @@ def api_attachment_risk_analytics(session_id):
     """Get attachment intelligence data"""
     analytics = advanced_ml_engine.analyze_attachment_risks(session_id)
     return jsonify(analytics)
+
+# Reports Dashboard API Endpoints
+@app.route('/api/cases/<session_id>')
+def api_cases_data(session_id):
+    """Get cases data with analytics for reports dashboard"""
+    try:
+        # Get cases from database
+        cases_query = EmailRecord.query.filter_by(session_id=session_id).filter(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        )
+        
+        cases = cases_query.order_by(EmailRecord.ml_risk_score.desc()).all()
+        
+        # Calculate distributions for charts
+        status_distribution = {'Active': 0, 'Cleared': 0, 'Escalated': 0}
+        risk_distribution = {'High': 0, 'Medium': 0, 'Low': 0}
+        domain_counts = {}
+        timeline_data = {}
+        
+        for case in cases:
+            # Status distribution
+            status = case.case_status or 'Active'
+            if status in status_distribution:
+                status_distribution[status] += 1
+            
+            # Risk distribution
+            risk = case.risk_level or 'Low'
+            if risk in risk_distribution:
+                risk_distribution[risk] += 1
+            
+            # Domain counts
+            domain = case.recipients_email_domain or 'Unknown'
+            domain_counts[domain] = domain_counts.get(domain, 0) + 1
+            
+            # Timeline data (by date)
+            if case.time:
+                date_key = case.time.strftime('%Y-%m-%d')
+                timeline_data[date_key] = timeline_data.get(date_key, 0) + 1
+        
+        # Prepare top domains (top 10)
+        top_domains = sorted(domain_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        # Prepare timeline data (last 30 days)
+        timeline_sorted = sorted(timeline_data.items())
+        timeline_labels = [item[0] for item in timeline_sorted[-30:]]
+        timeline_values = [item[1] for item in timeline_sorted[-30:]]
+        
+        return jsonify({
+            'cases': [
+                {
+                    'record_id': case.record_id,
+                    'sender_email': case.sender,
+                    'subject': case.subject,
+                    'recipient_domain': case.recipients_email_domain,
+                    'risk_level': case.risk_level,
+                    'ml_score': float(case.ml_risk_score or 0),
+                    'status': case.case_status or 'Active',
+                    'time': case.time.isoformat() if case.time else datetime.now().isoformat(),
+                    'attachments': case.attachments
+                } for case in cases[:100]  # Limit for performance
+            ],
+            'status_distribution': status_distribution,
+            'risk_distribution': risk_distribution,
+            'top_domains': {
+                'labels': [item[0] for item in top_domains],
+                'data': [item[1] for item in top_domains]
+            },
+            'timeline_data': {
+                'labels': timeline_labels,
+                'data': timeline_values
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting cases data for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/export-cases/<session_id>', methods=['POST'])
+def api_export_cases(session_id):
+    """Export selected cases to CSV"""
+    try:
+        case_ids = json.loads(request.form.get('case_ids', '[]'))
+        
+        if not case_ids:
+            return jsonify({'error': 'No cases selected'}), 400
+        
+        # Get selected cases
+        cases = EmailRecord.query.filter(
+            EmailRecord.session_id == session_id,
+            EmailRecord.record_id.in_(case_ids)
+        ).all()
+        
+        # Create CSV content
+        from io import StringIO
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'Record ID', 'Sender', 'Subject', 'Recipients', 'Domain',
+            'Risk Level', 'ML Score', 'Status', 'Time', 'Attachments',
+            'Justification', 'Policy Name'
+        ])
+        
+        # Write data
+        for case in cases:
+            writer.writerow([
+                case.record_id,
+                case.sender,
+                case.subject,
+                case.recipients,
+                case.recipients_email_domain,
+                case.risk_level,
+                case.ml_risk_score,
+                case.case_status,
+                case.time.strftime('%Y-%m-%d %H:%M:%S') if case.time else '',
+                case.attachments,
+                case.justification,
+                getattr(case, 'policy_name', 'Standard')
+            ])
+        
+        # Create response
+        output.seek(0)
+        response = send_file(
+            BytesIO(output.getvalue().encode('utf-8')),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f'email_cases_export_{session_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        )
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error exporting cases for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/bulk-update-status/<session_id>', methods=['POST'])
+def api_bulk_update_status(session_id):
+    """Update status for multiple cases"""
+    try:
+        data = request.get_json()
+        case_ids = data.get('case_ids', [])
+        new_status = data.get('new_status', '')
+        
+        if not case_ids or not new_status:
+            return jsonify({'error': 'Missing case IDs or status'}), 400
+        
+        if new_status not in ['Active', 'Cleared', 'Escalated']:
+            return jsonify({'error': 'Invalid status'}), 400
+        
+        # Update cases
+        updated_count = EmailRecord.query.filter(
+            EmailRecord.session_id == session_id,
+            EmailRecord.record_id.in_(case_ids)
+        ).update({'case_status': new_status}, synchronize_session=False)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Updated {updated_count} cases to {new_status}',
+            'updated_count': updated_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error bulk updating cases for session {session_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/generate-report/<session_id>', methods=['POST'])
+def api_generate_report(session_id):
+    """Generate comprehensive PDF report"""
+    try:
+        # For now, return CSV format as PDF generation requires additional libraries
+        cases = EmailRecord.query.filter_by(session_id=session_id).filter(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        ).all()
+        
+        # Create comprehensive report content
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header with comprehensive fields
+        writer.writerow([
+            'Record ID', 'Sender', 'Subject', 'Recipients', 'Domain',
+            'Risk Level', 'ML Score', 'Status', 'Time', 'Attachments',
+            'Justification', 'User Response', 'Department', 'Business Unit',
+            'Policy Name', 'Rule Matches', 'Whitelisted'
+        ])
+        
+        # Write all cases data
+        for case in cases:
+            writer.writerow([
+                case.record_id,
+                case.sender,
+                case.subject,
+                case.recipients,
+                case.recipients_email_domain,
+                case.risk_level,
+                case.ml_risk_score,
+                case.case_status,
+                case.time.strftime('%Y-%m-%d %H:%M:%S') if case.time else '',
+                case.attachments,
+                case.justification,
+                case.user_response,
+                case.department,
+                case.bunit,
+                getattr(case, 'policy_name', 'Standard'),
+                case.rule_matches,
+                case.whitelisted
+            ])
+        
+        # Create response
+        output.seek(0)
+        response = send_file(
+            BytesIO(output.getvalue().encode('utf-8')),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f'email_security_report_{session_id}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        )
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error generating report for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/sender_risk_analytics/<session_id>')
 def api_sender_risk_analytics(session_id):
