@@ -817,32 +817,28 @@ function loadCaseManagementCounts() {
                 return;
             }
 
-            // Update animated numbers with proper formatting
-            const activeCasesElement = document.getElementById('activeCasesCount');
-            const clearedCasesElement = document.getElementById('clearedCasesCount');
-            const escalatedCasesElement = document.getElementById('escalatedCasesCount');
-            const whitelistedEmailsElement = document.getElementById('whitelistedEmailsCount');
+            // Update elements directly with values
+            const updates = {
+                'activeCasesCount': data.active_cases || 0,
+                'clearedCasesCount': data.cleared_cases || 0,
+                'escalatedCasesCount': data.escalated_cases || 0,
+                'whitelistedEmailsCount': data.whitelisted_emails || 0
+            };
 
-            if (activeCasesElement) {
-                const value = data.active_cases || 0;
-                activeCasesElement.dataset.target = value;
-                activeCasesElement.textContent = value.toLocaleString();
-            }
-            if (clearedCasesElement) {
-                const value = data.cleared_cases || 0;
-                clearedCasesElement.dataset.target = value;
-                clearedCasesElement.textContent = value.toLocaleString();
-            }
-            if (escalatedCasesElement) {
-                const value = data.escalated_cases || 0;
-                escalatedCasesElement.dataset.target = value;
-                escalatedCasesElement.textContent = value.toLocaleString();
-            }
-            if (whitelistedEmailsElement) {
-                const value = data.whitelisted_emails || 0;
-                whitelistedEmailsElement.dataset.target = value;
-                whitelistedEmailsElement.textContent = value.toLocaleString();
-            }
+            console.log('Updating elements with values:', updates);
+            
+            Object.keys(updates).forEach(elementId => {
+                const element = document.getElementById(elementId);
+                const value = updates[elementId];
+                
+                if (element) {
+                    element.textContent = value.toLocaleString();
+                    element.setAttribute('data-target', value);
+                    console.log(`Updated ${elementId}: ${value}`);
+                } else {
+                    console.error(`Element not found: ${elementId}`);
+                }
+            });
 
             // Update metrics
             const resolutionRateElement = document.getElementById('resolutionRate');
@@ -944,12 +940,6 @@ function createCaseStatusChart(statusData) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, starting to load case management counts...');
     loadCaseManagementCounts();
-    
-    // Also try after a short delay to ensure all scripts are loaded
-    setTimeout(() => {
-        console.log('Backup load attempt for case management counts...');
-        loadCaseManagementCounts();
-    }, 1000);
 });
 
 // Auto-refresh for processing sessions
