@@ -442,18 +442,18 @@
             <div class="card-body">
                 <div class="row mb-3">
                     <div class="col-md-4 text-center">
-                        <h4 class="text-primary animated-number" id="bauScore" data-target="{{ "%.1f"|format(bau_analysis.bau_statistics.bau_score or 0) }}">0.0</h4>
+                        <h4 class="text-primary animated-number" id="bauScore" data-target="{{ "%.1f"|format(bau_analysis.get('bau_statistics', {}).get('bau_score', 0)) }}">0.0</h4>
                         <p class="text-muted mb-0">BAU Score</p>
                         <div class="animated-progress mt-2">
-                            <div class="progress-bar" style="width: {{ (bau_analysis.bau_statistics.bau_score or 0) }}%"></div>
+                            <div class="progress-bar" style="width: {{ bau_analysis.get('bau_statistics', {}).get('bau_score', 0) }}%"></div>
                         </div>
                     </div>
                     <div class="col-md-4 text-center">
-                        <h4 class="text-success animated-number" id="highVolumeComms" data-target="{{ bau_analysis.high_volume_pairs|length if bau_analysis.high_volume_pairs else 0 }}">0</h4>
+                        <h4 class="text-success animated-number" id="highVolumeComms" data-target="{{ bau_analysis.get('high_volume_pairs', [])|length }}">0</h4>
                         <p class="text-muted mb-0">High Volume Pairs</p>
                     </div>
                     <div class="col-md-4 text-center">
-                        <h4 class="text-info animated-number" id="externalRatio" data-target="{{ "%.1f"|format((bau_analysis.bau_statistics.external_ratio or 0) * 100) }}">0.0</h4>
+                        <h4 class="text-info animated-number" id="externalRatio" data-target="{{ "%.1f"|format((bau_analysis.get('bau_statistics', {}).get('external_ratio', 0)) * 100) }}">0.0</h4>
                         <p class="text-muted mb-0">External Ratio %</p>
                     </div>
                 </div>
@@ -462,11 +462,11 @@
                     <canvas id="bauAnalysisChart"></canvas>
                 </div>
 
-                {% if bau_analysis.whitelist_recommendations %}
+                {% if bau_analysis.get('whitelist_recommendations') %}
                 <div class="mt-3">
                     <h6>Top Whitelist Recommendations:</h6>
                     <div class="row">
-                        {% for rec in bau_analysis.whitelist_recommendations[:3] %}
+                        {% for rec in bau_analysis.get('whitelist_recommendations', [])[:3] %}
                         <div class="col-md-4 fade-in-delay-{{ loop.index }}">
                             <div class="border rounded p-2 mb-2 interactive-card" style="cursor: pointer;">
                                 <strong>{{ rec.domain }}</strong><br>
@@ -496,15 +496,15 @@
                 <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span>Total Attachments:</span>
-                        <span class="fw-bold animated-number" id="totalAttachments" data-target="{{ attachment_analytics.total_attachments or 0 }}">0</span>
+                        <span class="fw-bold animated-number" id="totalAttachments" data-target="{{ attachment_analytics.get('total_attachments', 0) }}">0</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span>High Risk:</span>
-                        <span class="fw-bold text-danger animated-number" id="highRiskAttachments" data-target="{{ attachment_analytics.risk_distribution.high_risk_count or 0 }}">0</span>
+                        <span class="fw-bold text-danger animated-number" id="highRiskAttachments" data-target="{{ attachment_analytics.get('risk_distribution', {}).get('high_risk_count', 0) }}">0</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
                         <span>Avg Risk Score:</span>
-                        <span class="fw-bold animated-number" id="avgAttachmentRisk" data-target="{{ "%.2f"|format(attachment_analytics.risk_distribution.mean_risk or 0) }}">0.00</span>
+                        <span class="fw-bold animated-number" id="avgAttachmentRisk" data-target="{{ "%.2f"|format(attachment_analytics.get('risk_distribution', {}).get('mean_risk', 0)) }}">0.00</span>
                     </div>
                 </div>
 
@@ -512,11 +512,11 @@
                     <canvas id="attachmentRiskChart"></canvas>
                 </div>
 
-                {% if attachment_analytics.malware_indicators %}
+                {% if attachment_analytics.get('malware_indicators') %}
                 <div class="mt-3">
                     <h6>Malware Indicators:</h6>
                     <ul class="list-unstyled">
-                        {% for indicator, count in attachment_analytics.malware_indicators.items() %}
+                        {% for indicator, count in attachment_analytics.get('malware_indicators', {}).items() %}
                         {% if count > 0 %}
                         <li class="d-flex justify-content-between">
                             <span>{{ indicator.replace('_', ' ').title() }}:</span>

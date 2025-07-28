@@ -369,7 +369,11 @@ function initializeFileUpload() {
     const fileUploadArea = document.getElementById('fileUploadArea');
     const fileInput = document.getElementById('fileInput');
 
-    if (!fileUploadArea || !fileInput) return;
+    // Only initialize if both elements exist
+    if (!fileUploadArea || !fileInput) {
+        console.log('File upload elements not found on this page, skipping initialization');
+        return;
+    }
 
     // Click to upload
     fileUploadArea.addEventListener('click', function() {
