@@ -498,17 +498,45 @@ function displayCaseDetailsModal(caseData) {
         </div>
     `;
     
-    // Remove existing modal
+    // Clean up any existing modal and backdrop
     const existingModal = document.getElementById('caseDetailsModal');
     if (existingModal) {
+        const modalInstance = bootstrap.Modal.getInstance(existingModal);
+        if (modalInstance) {
+            modalInstance.dispose();
+        }
         existingModal.remove();
     }
+    
+    // Remove any lingering backdrops
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    
+    // Remove modal-open class from body
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('padding-right');
     
     // Add new modal to body
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
-    // Show modal
-    const modal = new bootstrap.Modal(document.getElementById('caseDetailsModal'));
+    // Get the modal element and show it
+    const modalElement = document.getElementById('caseDetailsModal');
+    const modal = new bootstrap.Modal(modalElement);
+    
+    // Add event listener for when modal is hidden to ensure cleanup
+    modalElement.addEventListener('hidden.bs.modal', function () {
+        // Clean up the modal element
+        modalElement.remove();
+        
+        // Remove any remaining backdrops
+        const remainingBackdrops = document.querySelectorAll('.modal-backdrop');
+        remainingBackdrops.forEach(backdrop => backdrop.remove());
+        
+        // Ensure body classes are cleaned up
+        document.body.classList.remove('modal-open');
+        document.body.style.removeProperty('padding-right');
+    });
+    
     modal.show();
 }
 
