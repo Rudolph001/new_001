@@ -158,6 +158,12 @@ function initializeAnimatedCounters() {
     const animatedNumbers = document.querySelectorAll('.animated-number');
     
     animatedNumbers.forEach((element, index) => {
+        // Skip case management count elements as they are updated via API
+        const skipElements = ['activeCasesCount', 'clearedCasesCount', 'escalatedCasesCount', 'whitelistedEmailsCount'];
+        if (skipElements.includes(element.id)) {
+            return;
+        }
+        
         const target = parseFloat(element.dataset.target) || 0;
         const isDecimal = element.dataset.target && element.dataset.target.includes('.');
         const decimals = isDecimal ? (element.dataset.target.split('.')[1]?.length || 2) : 0;

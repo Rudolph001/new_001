@@ -280,9 +280,10 @@ email-guardian/
 - **Template Error Resolution**: Fixed Jinja2 template errors with proper data structure handling using .get() methods
 - **JavaScript Error Fixes**: Resolved modal freezing issues with proper Bootstrap modal cleanup functions
 - **Dashboard Display Fix**: Fixed case management counts display issue where zeros showed instead of actual values
-  - **Root Cause**: Conflicting JavaScript animation code was resetting display values after API updates
-  - **Solution**: Removed animated-number class conflicts and simplified element update logic
-  - **Result**: Case Management Overview now correctly displays 5166 active cases, 3834 whitelisted emails
+  - **Root Cause**: Global animated counter function in main.js was overriding API-updated values by animating from 0
+  - **Solution**: Excluded case management count elements from global animation system in initializeAnimatedCounters()
+  - **Technical Fix**: Modified main.js to skip animation for activeCasesCount, clearedCasesCount, escalatedCasesCount, whitelistedEmailsCount
+  - **Result**: Case Management Overview now correctly displays and maintains 5166 active cases, 3834 whitelisted emails
 - **API Verification**: Confirmed /api/case-management-counts endpoint working correctly (5166 active cases, 3834 whitelisted emails)
 - **JavaScript Enhancement**: Added debugging code and improved element update mechanism for dashboard statistics
 - **Modal Management Enhancement**: Added comprehensive modal cleanup to prevent page freezing after closing dialogs
