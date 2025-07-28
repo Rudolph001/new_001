@@ -1,0 +1,458 @@
+
+{% extends "base.html" %}
+
+{% block title %}Monthly Report Dashboard - Email Guardian{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Upload</a></li>
+<li class="breadcrumb-item active">Monthly Report</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0 text-gray-800">
+                        <i class="fas fa-chart-line text-primary"></i>
+                        Monthly Email Security Report
+                    </h1>
+                    <p class="text-muted mb-0">Comprehensive analysis across multiple processing sessions</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="btn btn-success" onclick="exportMonthlyReport()">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                    <button class="btn btn-info" onclick="exportExcelReport()">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Selection Panel -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-database"></i> Data Sources Selection
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Available Sessions</label>
+                            <div class="border rounded p-3" style="height: 200px; overflow-y: auto;">
+                                <div id="availableSessions"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Selected Sessions for Report</label>
+                            <div class="border rounded p-3" style="height: 200px; overflow-y: auto; background-color: #f8f9fa;">
+                                <div id="selectedSessions"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button class="btn btn-primary" onclick="generateReport()">
+                                <i class="fas fa-chart-bar"></i> Generate Report
+                            </button>
+                            <button class="btn btn-warning" onclick="clearSelection()">
+                                <i class="fas fa-times"></i> Clear Selection
+                            </button>
+                            <span class="ms-3 text-muted" id="selectionInfo">No sessions selected</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Period Selection -->
+    <div class="row mb-4" id="reportControls" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Report Period</label>
+                            <select class="form-select" id="reportPeriod">
+                                <option value="current_month">Current Month</option>
+                                <option value="last_month">Last Month</option>
+                                <option value="quarter">This Quarter</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3" id="customDateRange" style="display: none;">
+                            <label class="form-label">Date Range</label>
+                            <div class="d-flex gap-2">
+                                <input type="date" class="form-control" id="startDate">
+                                <input type="date" class="form-control" id="endDate">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Report Format</label>
+                            <select class="form-select" id="reportFormat">
+                                <option value="executive">Executive Summary</option>
+                                <option value="detailed">Detailed Analysis</option>
+                                <option value="technical">Technical Deep Dive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-success w-100" onclick="updateReport()">
+                                <i class="fas fa-refresh"></i> Update Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executive Summary Cards -->
+    <div class="row mb-4" id="summaryCards" style="display: none;">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Emails Processed
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalEmailsProcessed">0</div>
+                            <div class="text-xs text-success">
+                                <i class="fas fa-arrow-up"></i> <span id="emailsGrowth">0%</span> vs last period
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-envelope fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                Security Incidents
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="securityIncidents">0</div>
+                            <div class="text-xs text-warning">
+                                <i class="fas fa-exclamation-triangle"></i> <span id="incidentsRate">0%</span> incident rate
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shield-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Cases Resolved
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="casesResolved">0</div>
+                            <div class="text-xs text-success">
+                                <i class="fas fa-check"></i> <span id="resolutionRate">0%</span> resolution rate
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Average Response Time
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="avgResponseTime">0h</div>
+                            <div class="text-xs text-info">
+                                <i class="fas fa-clock"></i> <span id="responseImprovement">0%</span> improvement
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-stopwatch fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Charts Section -->
+    <div class="row mb-4" id="mainCharts" style="display: none;">
+        <!-- Risk Trend Analysis -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Security Risk Trends</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="riskTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Distribution -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Risk Level Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="riskDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4" id="secondaryCharts" style="display: none;">
+        <!-- Volume Analysis -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Email Volume by Department</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="departmentVolumeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Threat Domains -->
+        <div class="col-xl-6 col-lg-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Threat Domains</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="threatDomainsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analytics Section -->
+    <div class="row mb-4" id="detailedAnalytics" style="display: none;">
+        <!-- ML Performance Metrics -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">ML Performance</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="mlPerformanceChart"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <div class="row text-center">
+                            <div class="col">
+                                <div class="h5 mb-0" id="mlAccuracy">95.2%</div>
+                                <small class="text-muted">Accuracy</small>
+                            </div>
+                            <div class="col">
+                                <div class="h5 mb-0" id="mlPrecision">92.8%</div>
+                                <small class="text-muted">Precision</small>
+                            </div>
+                            <div class="col">
+                                <div class="h5 mb-0" id="mlRecall">89.4%</div>
+                                <small class="text-muted">Recall</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Response Time Metrics -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Response Time Analysis</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="responseTimeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Policy Effectiveness -->
+        <div class="col-xl-4 col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Policy Effectiveness</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="policyEffectivenessChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Risks Table -->
+    <div class="row mb-4" id="topRisksSection" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-exclamation-triangle"></i> Top Security Risks This Period
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="topRisksTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Risk Category</th>
+                                    <th>Incident Count</th>
+                                    <th>Avg Risk Score</th>
+                                    <th>Top Sender Domain</th>
+                                    <th>Resolution Rate</th>
+                                    <th>Trend</th>
+                                    <th>Action Required</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topRisksTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Recommendations -->
+    <div class="row mb-4" id="recommendationsSection" style="display: none;">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3 bg-info text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-lightbulb"></i> Key Recommendations for Next Period
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Security Improvements</h6>
+                            <ul id="securityRecommendations" class="list-unstyled">
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success">Process Optimizations</h6>
+                            <ul id="processRecommendations" class="list-unstyled">
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+.session-item {
+    padding: 8px 12px;
+    margin: 4px 0;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.session-item:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+}
+
+.session-item.selected {
+    background: #007bff;
+    color: white;
+    border-color: #0056b3;
+}
+
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.border-left-danger {
+    border-left: 0.25rem solid #e74a3b !important;
+}
+
+.recommendation-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.recommendation-item:last-child {
+    border-bottom: none;
+}
+
+.trend-up {
+    color: #dc3545;
+}
+
+.trend-down {
+    color: #28a745;
+}
+
+.trend-stable {
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/monthly_report.js') }}"></script>
+{% endblock %}

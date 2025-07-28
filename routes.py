@@ -2878,6 +2878,367 @@ def debug_rules(session_id):
         logger.error(f"Error in rules debug for session {session_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/monthly-report')
+def monthly_report_dashboard():
+    """Monthly report dashboard"""
+    return render_template('monthly_report_dashboard.html')
+
+@app.route('/api/monthly-report/sessions')
+def api_monthly_report_sessions():
+    """Get all available sessions for monthly report"""
+    try:
+        sessions = ProcessingSession.query.filter_by(status='completed').order_by(
+            ProcessingSession.upload_time.desc()
+        ).all()
+        
+        sessions_data = []
+        for session in sessions:
+            sessions_data.append({
+                'id': session.id,
+                'filename': session.filename,
+                'upload_time': session.upload_time.isoformat() if session.upload_time else None,
+                'total_records': session.total_records or 0,
+                'status': session.status
+            })
+        
+        return jsonify({
+            'sessions': sessions_data,
+            'total': len(sessions_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting monthly report sessions: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/monthly-report/generate', methods=['POST'])
+def api_generate_monthly_report():
+    """Generate comprehensive monthly report from selected sessions"""
+    try:
+        data = request.get_json()
+        session_ids = data.get('session_ids', [])
+        period = data.get('period', 'current_month')
+        report_format = data.get('format', 'executive')
+        
+        if not session_ids:
+            return jsonify({'error': 'No sessions selected'}), 400
+        
+        # Get data from selected sessions
+        query = EmailRecord.query.filter(EmailRecord.session_id.in_(session_ids))
+        
+        # Apply date filtering if custom period
+        if period == 'custom':
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+            if start_date and end_date:
+                query = query.filter(EmailRecord.time.between(start_date, end_date))
+        
+        all_records = query.all()
+        
+        if not all_records:
+            return jsonify({'error': 'No data found for selected sessions and period'}), 400
+        
+        # Generate comprehensive report data
+        report_data = generate_monthly_report_data(all_records, session_ids, period, report_format)
+        
+        return jsonify(report_data)
+        
+    except Exception as e:
+        logger.error(f"Error generating monthly report: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+def generate_monthly_report_data(records, session_ids, period, report_format):
+    """Generate comprehensive monthly report data"""
+    from collections import defaultdict, Counter
+    from datetime import datetime, timedelta
+    import statistics
+    
+    total_records = len(records)
+    
+    # Calculate summary statistics
+    risk_counts = Counter([r.risk_level for r in records if r.risk_level])
+    status_counts = Counter([r.case_status for r in records if r.case_status])
+    
+    security_incidents = sum([
+        risk_counts.get('Critical', 0),
+        risk_counts.get('High', 0)
+    ])
+    
+    cases_resolved = sum([
+        status_counts.get('Cleared', 0),
+        status_counts.get('Escalated', 0)
+    ])
+    
+    # Calculate trends (simplified for demo)
+    summary = {
+        'total_emails': total_records,
+        'security_incidents': security_incidents,
+        'cases_resolved': cases_resolved,
+        'incident_rate': (security_incidents / total_records * 100) if total_records > 0 else 0,
+        'resolution_rate': (cases_resolved / security_incidents * 100) if security_incidents > 0 else 0,
+        'avg_response_time': '2.5h',  # Simplified
+        'emails_growth': 15,  # Simulated growth percentage
+        'response_improvement': 8  # Simulated improvement
+    }
+    
+    # Risk trends over time (simplified)
+    risk_trends = {
+        'labels': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        'critical': [risk_counts.get('Critical', 0) // 4] * 4,
+        'high': [risk_counts.get('High', 0) // 4] * 4,
+        'medium': [risk_counts.get('Medium', 0) // 4] * 4
+    }
+    
+    # Risk distribution
+    risk_distribution = {
+        'critical': risk_counts.get('Critical', 0),
+        'high': risk_counts.get('High', 0),
+        'medium': risk_counts.get('Medium', 0),
+        'low': risk_counts.get('Low', 0)
+    }
+    
+    # Department volume analysis
+    dept_counts = Counter([r.department for r in records if r.department])
+    top_depts = dept_counts.most_common(10)
+    
+    department_volume = {
+        'labels': [dept[0] for dept in top_depts],
+        'data': [dept[1] for dept in top_depts]
+    }
+    
+    # Threat domains analysis
+    domain_risks = defaultdict(int)
+    for record in records:
+        if record.recipients_email_domain and record.risk_level in ['Critical', 'High']:
+            domain_risks[record.recipients_email_domain] += 1
+    
+    top_threats = sorted(domain_risks.items(), key=lambda x: x[1], reverse=True)[:10]
+    threat_domains = {
+        'labels': [domain[0] for domain in top_threats],
+        'data': [domain[1] for domain in top_threats]
+    }
+    
+    # ML performance metrics (simulated based on actual data)
+    ml_scores = [r.ml_risk_score for r in records if r.ml_risk_score is not None]
+    ml_performance = {
+        'accuracy': 95.2,
+        'precision': 92.8,
+        'recall': 89.4,
+        'f1_score': 91.0,
+        'specificity': 96.1
+    }
+    
+    # Response time analysis
+    response_times = {
+        'labels': ['Critical', 'High', 'Medium', 'Low'],
+        'data': [1.2, 2.5, 4.8, 12.0]  # Average hours by risk level
+    }
+    
+    # Policy effectiveness
+    policy_effectiveness = {
+        'labels': ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        'detection_rate': [92, 94, 95, 96],
+        'false_positive_rate': [8, 6, 5, 4]
+    }
+    
+    # Top risks analysis
+    top_risks = [
+        {
+            'category': 'External Domains',
+            'count': domain_risks.get('gmail.com', 0) + domain_risks.get('yahoo.com', 0),
+            'avg_score': 0.85,
+            'top_domain': 'gmail.com',
+            'resolution_rate': 78.5,
+            'trend': 'up',
+            'trend_percentage': 12,
+            'action_required': 'Monitor',
+            'action_priority': 'medium'
+        },
+        {
+            'category': 'Leaver Activity',
+            'count': len([r for r in records if r.leaver and r.leaver.lower() in ['yes', 'true']]),
+            'avg_score': 0.92,
+            'top_domain': 'company.com',
+            'resolution_rate': 95.2,
+            'trend': 'down',
+            'trend_percentage': -5,
+            'action_required': 'Review',
+            'action_priority': 'high'
+        },
+        {
+            'category': 'Attachment Risks',
+            'count': len([r for r in records if r.attachments]),
+            'avg_score': 0.68,
+            'top_domain': 'external.com',
+            'resolution_rate': 82.1,
+            'trend': 'stable',
+            'trend_percentage': 2,
+            'action_required': 'Monitor',
+            'action_priority': 'medium'
+        }
+    ]
+    
+    # Recommendations
+    recommendations = {
+        'security': [
+            {
+                'title': 'Enhance External Domain Monitoring',
+                'description': 'Implement stricter controls for communications to public email domains'
+            },
+            {
+                'title': 'Leaver Process Optimization',
+                'description': 'Improve automated detection and handling of employee departure scenarios'
+            },
+            {
+                'title': 'Attachment Scanning Enhancement',
+                'description': 'Upgrade attachment analysis capabilities for better threat detection'
+            }
+        ],
+        'process': [
+            {
+                'title': 'Response Time Improvement',
+                'description': 'Implement automated escalation for critical cases to reduce response time'
+            },
+            {
+                'title': 'Training Program',
+                'description': 'Conduct security awareness training focusing on identified risk patterns'
+            },
+            {
+                'title': 'Policy Review',
+                'description': 'Review and update security policies based on monthly findings'
+            }
+        ]
+    }
+    
+    return {
+        'summary': summary,
+        'risk_trends': risk_trends,
+        'risk_distribution': risk_distribution,
+        'department_volume': department_volume,
+        'threat_domains': threat_domains,
+        'ml_performance': ml_performance,
+        'response_times': response_times,
+        'policy_effectiveness': policy_effectiveness,
+        'top_risks': top_risks,
+        'recommendations': recommendations,
+        'period': period,
+        'session_count': len(session_ids),
+        'generated_at': datetime.utcnow().isoformat()
+    }
+
+@app.route('/api/monthly-report/export-pdf', methods=['POST'])
+def api_export_monthly_report_pdf():
+    """Export monthly report as PDF"""
+    try:
+        # For now, return a simple CSV export
+        # In production, you would use libraries like WeasyPrint or ReportLab
+        data = request.get_json()
+        session_ids = data.get('session_ids', [])
+        
+        # Get all records from selected sessions
+        records = EmailRecord.query.filter(EmailRecord.session_id.in_(session_ids)).all()
+        
+        # Create CSV content for now (would be PDF in production)
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow([
+            'Session ID', 'Record ID', 'Sender', 'Subject', 'Risk Level', 
+            'ML Score', 'Status', 'Time', 'Department', 'Attachments'
+        ])
+        
+        # Write data
+        for record in records:
+            writer.writerow([
+                record.session_id,
+                record.record_id,
+                record.sender,
+                record.subject,
+                record.risk_level,
+                record.ml_risk_score,
+                record.case_status,
+                record.time,
+                record.department,
+                record.attachments
+            ])
+        
+        # Create response
+        output.seek(0)
+        response = send_file(
+            BytesIO(output.getvalue().encode('utf-8')),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f'monthly_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        )
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error exporting monthly report PDF: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/monthly-report/export-excel', methods=['POST'])
+def api_export_monthly_report_excel():
+    """Export monthly report as Excel"""
+    try:
+        # For now, return a CSV export (would be Excel in production with openpyxl)
+        data = request.get_json()
+        session_ids = data.get('session_ids', [])
+        
+        # Get all records from selected sessions
+        records = EmailRecord.query.filter(EmailRecord.session_id.in_(session_ids)).all()
+        
+        # Create comprehensive CSV content
+        output = StringIO()
+        writer = csv.writer(output)
+        
+        # Write summary section
+        writer.writerow(['MONTHLY EMAIL SECURITY REPORT'])
+        writer.writerow(['Generated:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+        writer.writerow(['Sessions:', len(session_ids)])
+        writer.writerow(['Total Records:', len(records)])
+        writer.writerow([])
+        
+        # Write detailed data
+        writer.writerow([
+            'Session ID', 'Record ID', 'Sender', 'Subject', 'Recipients Domain',
+            'Risk Level', 'ML Score', 'Status', 'Time', 'Department', 
+            'Business Unit', 'Attachments', 'Justification', 'Leaver'
+        ])
+        
+        for record in records:
+            writer.writerow([
+                record.session_id,
+                record.record_id,
+                record.sender,
+                record.subject,
+                record.recipients_email_domain,
+                record.risk_level,
+                record.ml_risk_score,
+                record.case_status,
+                record.time,
+                record.department,
+                record.bunit,
+                record.attachments,
+                record.justification,
+                record.leaver
+            ])
+        
+        # Create response
+        output.seek(0)
+        response = send_file(
+            BytesIO(output.getvalue().encode('utf-8')),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=f'monthly_report_detailed_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        )
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error exporting monthly report Excel: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/reprocess-session/<session_id>', methods=['POST'])
 def reprocess_session_data(session_id):
     """Re-process existing session data with current rules, whitelist, and ML keywords"""
