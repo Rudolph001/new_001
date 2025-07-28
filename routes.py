@@ -838,6 +838,7 @@ def api_case_details(session_id, record_id):
         'rule_matches': json.loads(case.rule_matches) if case.rule_matches else [],
         'case_status': case.case_status,
         'justification': case.justification,
+        'policy_name': case.policy_name,
         'time': case.time
     }
 

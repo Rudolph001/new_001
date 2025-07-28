@@ -54,6 +54,7 @@ class EmailRecord(db.Model):
     user_response = db.Column(Text)
     final_outcome = db.Column(db.String(255))
     justification = db.Column(Text)
+    policy_name = db.Column(db.String(255))
     
     # Processing results
     excluded_by_rule = db.Column(db.String(500))

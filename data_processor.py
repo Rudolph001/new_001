@@ -31,7 +31,7 @@ class DataProcessor:
             'recipients_email_domain', 'leaver', 'termination_date',
             'wordlist_attachment', 'wordlist_subject', 'bunit',
             'department', 'status', 'user_response', 'final_outcome',
-            'justification'
+            'justification', 'policy_name'
         ]
     
     def process_csv(self, session_id, file_path):
@@ -198,7 +198,8 @@ class DataProcessor:
                         status=record_data.get('status', ''),
                         user_response=record_data.get('user_response', ''),
                         final_outcome=record_data.get('final_outcome', ''),
-                        justification=record_data.get('justification', '')
+                        justification=record_data.get('justification', ''),
+                        policy_name=record_data.get('policy_name', '')
                     )
                     
                     db.session.add(email_record)
