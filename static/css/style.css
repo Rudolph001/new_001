@@ -335,14 +335,38 @@ body {
 }
 
 /* Interactive Elements */
+/* Interactive Cards */
 .interactive-card {
-    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #e0e0e0;
+}
+
+/* Case Management Cards */
+.case-count-card {
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+}
+
+.case-count-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border-color: #007bff !important;
+}
+
+.case-icon {
+    opacity: 0.8;
     transition: all 0.3s ease;
 }
 
-.interactive-card:hover {
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+.case-count-card:hover .case-icon {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.metrics-list {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
 }
 
 /* Progress Bars with Animation */
@@ -791,23 +815,23 @@ body {
         padding-left: 1rem;
         padding-right: 1rem;
     }
-    
+
     .card-body {
         padding: 1rem;
     }
-    
+
     .stats-card h3 {
         font-size: 2rem;
     }
-    
+
     .table-responsive {
         border-radius: var(--border-radius-lg);
     }
-    
+
     .filter-bar {
         padding: 1rem;
     }
-    
+
     .chart-container {
         height: 300px;
     }
@@ -817,15 +841,15 @@ body {
     .file-upload-area {
         padding: 2rem 1rem;
     }
-    
+
     .file-upload-icon {
         font-size: 2rem;
     }
-    
+
     .stats-card h3 {
         font-size: 1.75rem;
     }
-    
+
     .btn {
         padding: 0.5rem 1rem;
         font-size: 0.875rem;

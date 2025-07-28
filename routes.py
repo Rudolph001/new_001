@@ -2764,6 +2764,69 @@ def populate_default_risk_factors():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/case-management-counts/<session_id>')
+def api_case_management_counts(session_id):
+    """Get email counts for case management categories"""
+    try:
+        # Get counts by case status (excluding whitelisted records)
+        active_cases = EmailRecord.query.filter_by(
+            session_id=session_id
+        ).filter(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        ).filter(
+            db.or_(EmailRecord.case_status.is_(None), EmailRecord.case_status == 'Active')
+        ).count()
+
+        cleared_cases = EmailRecord.query.filter_by(
+            session_id=session_id,
+            case_status='Cleared'
+        ).filter(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        ).count()
+
+        escalated_cases = EmailRecord.query.filter_by(
+            session_id=session_id,
+            case_status='Escalated'
+        ).filter(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        ).count()
+
+        # Get whitelisted emails count
+        whitelisted_emails = EmailRecord.query.filter_by(
+            session_id=session_id,
+            whitelisted=True
+        ).count()
+
+        # Calculate metrics
+        total_cases = active_cases + cleared_cases + escalated_cases
+        resolved_cases = cleared_cases + escalated_cases
+        
+        resolution_rate = (resolved_cases / total_cases * 100) if total_cases > 0 else 0
+        escalation_rate = (escalated_cases / total_cases * 100) if total_cases > 0 else 0
+        
+        # Total managed emails (including whitelisted)
+        total_managed = EmailRecord.query.filter_by(session_id=session_id).count()
+
+        return jsonify({
+            'active_cases': active_cases,
+            'cleared_cases': cleared_cases,
+            'escalated_cases': escalated_cases,
+            'whitelisted_emails': whitelisted_emails,
+            'resolution_rate': resolution_rate,
+            'escalation_rate': escalation_rate,
+            'pending_review': active_cases,  # Active cases are pending review
+            'total_managed': total_managed,
+            'case_status_distribution': {
+                'Active': active_cases,
+                'Cleared': cleared_cases,
+                'Escalated': escalated_cases
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting case management counts for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/config-last-modified')
 def config_last_modified():
     """Get the last modification time of configurations"""

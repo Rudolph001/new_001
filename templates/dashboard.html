@@ -532,6 +532,126 @@
     </div>
 </div>
 
+<!-- Case Management Email Counts -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card interactive-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-briefcase text-primary"></i>
+                    Case Management Overview
+                </h5>
+                <p class="text-muted small mb-0">Email counts by case status and management category</p>
+            </div>
+            <div class="card-body">
+                <div class="row" id="caseManagementCounts">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="case-count-card p-3 border rounded h-100">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="case-icon text-primary">
+                                    <i class="fas fa-folder-open fa-2x"></i>
+                                </div>
+                                <div class="text-end">
+                                    <h4 class="mb-0 animated-number" id="activeCasesCount" data-target="0">0</h4>
+                                    <small class="text-muted">Active Cases</small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="{{ url_for('cases', session_id=session.id) }}" class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="fas fa-eye me-1"></i> View Cases
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="case-count-card p-3 border rounded h-100">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="case-icon text-success">
+                                    <i class="fas fa-check-circle fa-2x"></i>
+                                </div>
+                                <div class="text-end">
+                                    <h4 class="mb-0 animated-number" id="clearedCasesCount" data-target="0">0</h4>
+                                    <small class="text-muted">Cleared Cases</small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="{{ url_for('cleared_cases', session_id=session.id) }}" class="btn btn-outline-success btn-sm w-100">
+                                    <i class="fas fa-check me-1"></i> View Cleared
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="case-count-card p-3 border rounded h-100">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="case-icon text-danger">
+                                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                                </div>
+                                <div class="text-end">
+                                    <h4 class="mb-0 animated-number" id="escalatedCasesCount" data-target="0">0</h4>
+                                    <small class="text-muted">Escalated Cases</small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="{{ url_for('escalations', session_id=session.id) }}" class="btn btn-outline-danger btn-sm w-100">
+                                    <i class="fas fa-fire me-1"></i> View Escalations
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="case-count-card p-3 border rounded h-100">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="case-icon text-info">
+                                    <i class="fas fa-shield-check fa-2x"></i>
+                                </div>
+                                <div class="text-end">
+                                    <h4 class="mb-0 animated-number" id="whitelistedEmailsCount" data-target="0">0</h4>
+                                    <small class="text-muted">Whitelisted Emails</small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="badge bg-info w-100">Excluded from Cases</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Case Status Distribution Chart -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">Case Status Distribution</h6>
+                        <div class="chart-container" style="height: 200px;">
+                            <canvas id="caseStatusChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">Case Management Metrics</h6>
+                        <div class="metrics-list">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Resolution Rate:</span>
+                                <span class="fw-bold text-success" id="resolutionRate">0%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Escalation Rate:</span>
+                                <span class="fw-bold text-warning" id="escalationRate">0%</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Pending Review:</span>
+                                <span class="fw-bold text-primary" id="pendingReview">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Total Managed:</span>
+                                <span class="fw-bold text-dark" id="totalManaged">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Quick Actions -->
 <div class="row mb-4">
     <div class="col-12">
@@ -673,6 +793,94 @@ function reprocessSessionData() {
         btn.innerHTML = originalHtml;
     });
 }
+
+// Load case management counts
+function loadCaseManagementCounts() {
+    const sessionId = "{{ session.id if session else '' }}";
+    if (!sessionId) return;
+
+    fetch(`/api/case-management-counts/${sessionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error loading case counts:', data.error);
+                return;
+            }
+
+            // Update animated numbers
+            document.getElementById('activeCasesCount').dataset.target = data.active_cases || 0;
+            document.getElementById('clearedCasesCount').dataset.target = data.cleared_cases || 0;
+            document.getElementById('escalatedCasesCount').dataset.target = data.escalated_cases || 0;
+            document.getElementById('whitelistedEmailsCount').dataset.target = data.whitelisted_emails || 0;
+
+            // Update metrics
+            document.getElementById('resolutionRate').textContent = (data.resolution_rate || 0).toFixed(1) + '%';
+            document.getElementById('escalationRate').textContent = (data.escalation_rate || 0).toFixed(1) + '%';
+            document.getElementById('pendingReview').textContent = data.pending_review || 0;
+            document.getElementById('totalManaged').textContent = data.total_managed || 0;
+
+            // Animate the numbers
+            animateNumbers();
+
+            // Create case status chart
+            createCaseStatusChart(data.case_status_distribution || {});
+        })
+        .catch(error => {
+            console.error('Error loading case management counts:', error);
+        });
+}
+
+// Create case status distribution chart
+function createCaseStatusChart(statusData) {
+    const ctx = document.getElementById('caseStatusChart');
+    if (!ctx) return;
+
+    // Destroy existing chart if it exists
+    if (window.caseStatusChart) {
+        window.caseStatusChart.destroy();
+    }
+
+    const data = {
+        labels: ['Active', 'Cleared', 'Escalated'],
+        datasets: [{
+            data: [
+                statusData.Active || 0,
+                statusData.Cleared || 0,
+                statusData.Escalated || 0
+            ],
+            backgroundColor: [
+                '#007bff',
+                '#28a745',
+                '#dc3545'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    };
+
+    window.caseStatusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Load case management counts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCaseManagementCounts();
+});
 
 // Auto-refresh for processing sessions
 {% if session.status == 'processing' %}
