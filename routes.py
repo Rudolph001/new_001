@@ -2768,34 +2768,63 @@ def populate_default_risk_factors():
 def api_case_management_counts(session_id):
     """Get email counts for case management categories"""
     try:
-        # Get counts by case status (excluding whitelisted records)
-        active_cases = EmailRecord.query.filter_by(
-            session_id=session_id
-        ).filter(
-            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
-        ).filter(
-            db.or_(EmailRecord.case_status.is_(None), EmailRecord.case_status == 'Active')
-        ).count()
+        # First, check if session exists and has data
+        session = ProcessingSession.query.get(session_id)
+        if not session:
+            return jsonify({'error': 'Session not found'}), 404
 
-        cleared_cases = EmailRecord.query.filter_by(
-            session_id=session_id,
-            case_status='Cleared'
-        ).filter(
-            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
-        ).count()
+        # Get total records to verify data exists
+        total_records = EmailRecord.query.filter_by(session_id=session_id).count()
+        
+        if total_records == 0:
+            logger.warning(f"No email records found for session {session_id}")
+            return jsonify({
+                'active_cases': 0,
+                'cleared_cases': 0,
+                'escalated_cases': 0,
+                'whitelisted_emails': 0,
+                'resolution_rate': 0,
+                'escalation_rate': 0,
+                'pending_review': 0,
+                'total_managed': 0,
+                'case_status_distribution': {
+                    'Active': 0,
+                    'Cleared': 0,
+                    'Escalated': 0
+                },
+                'message': 'No email records found for this session'
+            })
 
-        escalated_cases = EmailRecord.query.filter_by(
-            session_id=session_id,
-            case_status='Escalated'
-        ).filter(
-            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
-        ).count()
-
-        # Get whitelisted emails count
+        # Count whitelisted emails first
         whitelisted_emails = EmailRecord.query.filter_by(
             session_id=session_id,
             whitelisted=True
         ).count()
+
+        # Get all non-whitelisted records
+        non_whitelisted_query = EmailRecord.query.filter_by(session_id=session_id).filter(
+            db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+        )
+        
+        total_non_whitelisted = non_whitelisted_query.count()
+
+        # Count by case status - for records without explicit status, consider them Active
+        cleared_cases = non_whitelisted_query.filter(EmailRecord.case_status == 'Cleared').count()
+        escalated_cases = non_whitelisted_query.filter(EmailRecord.case_status == 'Escalated').count()
+        
+        # Active cases are all non-whitelisted records that are not cleared or escalated
+        active_cases = non_whitelisted_query.filter(
+            db.or_(
+                EmailRecord.case_status.is_(None),
+                EmailRecord.case_status == 'Active',
+                EmailRecord.case_status == ''
+            )
+        ).count()
+
+        # Ensure active cases calculation is correct
+        if active_cases == 0 and total_non_whitelisted > (cleared_cases + escalated_cases):
+            # If no explicit active cases but we have unaccounted records, they should be active
+            active_cases = total_non_whitelisted - cleared_cases - escalated_cases
 
         # Calculate metrics
         total_cases = active_cases + cleared_cases + escalated_cases
@@ -2803,9 +2832,8 @@ def api_case_management_counts(session_id):
         
         resolution_rate = (resolved_cases / total_cases * 100) if total_cases > 0 else 0
         escalation_rate = (escalated_cases / total_cases * 100) if total_cases > 0 else 0
-        
-        # Total managed emails (including whitelisted)
-        total_managed = EmailRecord.query.filter_by(session_id=session_id).count()
+
+        logger.info(f"Case counts for session {session_id}: Active={active_cases}, Cleared={cleared_cases}, Escalated={escalated_cases}, Whitelisted={whitelisted_emails}, Total={total_records}")
 
         return jsonify({
             'active_cases': active_cases,
@@ -2815,7 +2843,7 @@ def api_case_management_counts(session_id):
             'resolution_rate': resolution_rate,
             'escalation_rate': escalation_rate,
             'pending_review': active_cases,  # Active cases are pending review
-            'total_managed': total_managed,
+            'total_managed': total_records,
             'case_status_distribution': {
                 'Active': active_cases,
                 'Cleared': cleared_cases,
