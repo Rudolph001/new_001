@@ -53,7 +53,7 @@
             </select>
         </div>
         
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label for="search" class="form-label">Search All Fields</label>
             <input type="text" class="form-control" id="search" name="search" 
                    placeholder="Search sender, subject, domain, attachments, justification..." value="{{ search }}">
@@ -63,14 +63,22 @@
         </div>
         
         <div class="col-md-2">
+            <label for="per_page" class="form-label">Records per Page</label>
+            <select class="form-select" id="per_page" name="per_page" onchange="this.form.submit()">
+                <option value="50" {% if request.args.get('per_page', '200') == '50' %}selected{% endif %}>50</option>
+                <option value="100" {% if request.args.get('per_page', '200') == '100' %}selected{% endif %}>100</option>
+                <option value="200" {% if request.args.get('per_page', '200') == '200' %}selected{% endif %}>200</option>
+                <option value="500" {% if request.args.get('per_page', '200') == '500' %}selected{% endif %}>500</option>
+                <option value="all" {% if request.args.get('per_page') == 'all' %}selected{% endif %}>Show All Records</option>
+            </select>
+        </div>
+        
+        <div class="col-md-1">
             <label class="form-label">&nbsp;</label>
-            <div class="d-grid gap-2">
+            <div class="d-grid">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-search"></i> Filter
                 </button>
-                <a href="{{ url_for('cases', session_id=session.id, per_page='all') }}" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-list"></i> Show All Records
-                </a>
             </div>
         </div>
     </form>
