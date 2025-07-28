@@ -294,9 +294,16 @@ def cases(session_id):
 
     # Get filter parameters
     page = request.args.get('page', 1, type=int)
+    per_page_param = request.args.get('per_page', '200')
     risk_level = request.args.get('risk_level', '')
     case_status = request.args.get('case_status', '')
     search = request.args.get('search', '')
+    
+    # Handle "show all" functionality
+    if per_page_param == 'all':
+        per_page = 10000  # Large number to show all records
+    else:
+        per_page = int(per_page_param) if per_page_param.isdigit() else 200
 
     # Build query with filters - exclude whitelisted records from cases
     query = EmailRecord.query.filter_by(session_id=session_id).filter(
@@ -308,17 +315,25 @@ def cases(session_id):
     if case_status:
         query = query.filter(EmailRecord.case_status == case_status)
     if search:
+        search_term = f"%{search}%"
         query = query.filter(
             db.or_(
-                EmailRecord.sender.contains(search),
-                EmailRecord.subject.contains(search),
-                EmailRecord.recipients_email_domain.contains(search)
+                EmailRecord.sender.ilike(search_term),
+                EmailRecord.subject.ilike(search_term),
+                EmailRecord.recipients_email_domain.ilike(search_term),
+                EmailRecord.recipients.ilike(search_term),
+                EmailRecord.attachments.ilike(search_term),
+                EmailRecord.justification.ilike(search_term),
+                EmailRecord.user_response.ilike(search_term),
+                EmailRecord.record_id.ilike(search_term),
+                EmailRecord.department.ilike(search_term),
+                EmailRecord.bunit.ilike(search_term)
             )
         )
 
-    # Apply sorting and pagination
+    # Apply sorting and pagination with dynamic limit
     cases_pagination = query.order_by(EmailRecord.ml_risk_score.desc()).paginate(
-        page=page, per_page=50, error_out=False
+        page=page, per_page=per_page, error_out=False
     )
 
     # Get whitelist statistics
