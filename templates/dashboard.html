@@ -914,55 +914,274 @@ function loadCaseManagementCounts() {
 
 // Create case status distribution chart
 function createCaseStatusChart(statusData) {
+    console.log('Creating case status chart with data:', statusData);
     const ctx = document.getElementById('caseStatusChart');
-    if (!ctx) return;
+    if (!ctx) {
+        console.error('Case status chart canvas not found');
+        return;
+    }
 
     // Destroy existing chart if it exists
     if (window.caseStatusChart) {
         window.caseStatusChart.destroy();
     }
 
+    const activeCount = statusData.Active || 0;
+    const clearedCount = statusData.Cleared || 0;
+    const escalatedCount = statusData.Escalated || 0;
+    
+    // If no data, show a placeholder message
+    if (activeCount === 0 && clearedCount === 0 && escalatedCount === 0) {
+        ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+        const context = ctx.getContext('2d');
+        context.font = '14px Arial';
+        context.fillStyle = '#666';
+        context.textAlign = 'center';
+        context.fillText('No case data available', ctx.width / 2, ctx.height / 2);
+        return;
+    }
+
     const data = {
         labels: ['Active', 'Cleared', 'Escalated'],
         datasets: [{
-            data: [
-                statusData.Active || 0,
-                statusData.Cleared || 0,
-                statusData.Escalated || 0
-            ],
+            data: [activeCount, clearedCount, escalatedCount],
             backgroundColor: [
                 '#007bff',
                 '#28a745',
                 '#dc3545'
             ],
             borderWidth: 2,
-            borderColor: '#fff'
+            borderColor: '#fff',
+            hoverOffset: 4
         }]
     };
 
-    window.caseStatusChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true
+    try {
+        window.caseStatusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                elements: {
+                    arc: {
+                        borderWidth: 2
                     }
                 }
             }
-        }
-    });
+        });
+        console.log('Case status chart created successfully');
+    } catch (error) {
+        console.error('Error creating case status chart:', error);
+    }
+}
+
+// Initialize other charts
+function initializeCharts() {
+    // Risk Distribution Chart
+    const sessionId = "{{ session.id if session else '' }}";
+    
+    // Initialize ML Insights Chart
+    const mlCtx = document.getElementById('mlInsightsChart');
+    if (mlCtx) {
+        fetch(`/api/ml_insights/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.risk_distribution) {
+                    createRiskDistributionChart(data.risk_distribution);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading ML insights:', error);
+            });
+    }
+
+    // Initialize BAU Analysis Chart
+    const bauCtx = document.getElementById('bauAnalysisChart');
+    if (bauCtx) {
+        fetch(`/api/bau_analysis/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.communication_patterns) {
+                    createBAUChart(data.communication_patterns);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading BAU analysis:', error);
+            });
+    }
+
+    // Initialize Attachment Risk Chart
+    const attachmentCtx = document.getElementById('attachmentRiskChart');
+    if (attachmentCtx) {
+        fetch(`/api/attachment_risk_analytics/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.risk_distribution) {
+                    createAttachmentRiskChart(data.risk_distribution);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading attachment risk analytics:', error);
+            });
+    }
+}
+
+function createRiskDistributionChart(riskData) {
+    const ctx = document.getElementById('mlInsightsChart');
+    if (!ctx) return;
+
+    if (window.mlInsightsChart) {
+        window.mlInsightsChart.destroy();
+    }
+
+    try {
+        window.mlInsightsChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Critical', 'High', 'Medium', 'Low'],
+                datasets: [{
+                    data: [
+                        riskData.Critical || 0,
+                        riskData.High || 0,
+                        riskData.Medium || 0,
+                        riskData.Low || 0
+                    ],
+                    backgroundColor: [
+                        '#dc3545',
+                        '#fd7e14',
+                        '#ffc107',
+                        '#28a745'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creating risk distribution chart:', error);
+    }
+}
+
+function createBAUChart(patterns) {
+    const ctx = document.getElementById('bauAnalysisChart');
+    if (!ctx) return;
+
+    if (window.bauChart) {
+        window.bauChart.destroy();
+    }
+
+    try {
+        window.bauChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Internal', 'External', 'Mixed'],
+                datasets: [{
+                    label: 'Communication Volume',
+                    data: [
+                        patterns.internal_count || 0,
+                        patterns.external_count || 0,
+                        patterns.mixed_count || 0
+                    ],
+                    backgroundColor: ['#007bff', '#ffc107', '#17a2b8']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creating BAU chart:', error);
+    }
+}
+
+function createAttachmentRiskChart(riskData) {
+    const ctx = document.getElementById('attachmentRiskChart');
+    if (!ctx) return;
+
+    if (window.attachmentChart) {
+        window.attachmentChart.destroy();
+    }
+
+    try {
+        window.attachmentChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+                datasets: [{
+                    data: [
+                        riskData.high_risk_count || 0,
+                        riskData.medium_risk_count || 0,
+                        riskData.low_risk_count || 0
+                    ],
+                    backgroundColor: ['#dc3545', '#ffc107', '#28a745']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creating attachment risk chart:', error);
+    }
 }
 
 // Load case management counts on page load
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, starting to load case management counts...');
     loadCaseManagementCounts();
+    
+    // Initialize charts after a short delay to ensure DOM is ready
+    setTimeout(function() {
+        initializeCharts();
+    }, 1000);
 });
 
 // Auto-refresh for processing sessions
