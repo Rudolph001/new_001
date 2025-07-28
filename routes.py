@@ -753,20 +753,24 @@ def create_rule():
 def get_rule(rule_id):
     """Get individual rule details"""
     try:
-        rule = Rule.query.get_or_404(rule_id)
+        rule = Rule.query.get(rule_id)
+        if not rule:
+            return jsonify({'success': False, 'message': 'Rule not found'}), 404
+        
         return jsonify({
+            'success': True,
             'id': rule.id,
             'name': rule.name,
-            'description': rule.description,
-            'rule_type': rule.rule_type,
-            'conditions': rule.conditions,
-            'actions': rule.actions,
-            'priority': rule.priority,
-            'is_active': rule.is_active
+            'description': rule.description or '',
+            'rule_type': rule.rule_type or 'security',
+            'conditions': rule.conditions or [],
+            'actions': rule.actions or {},
+            'priority': rule.priority or 1,
+            'is_active': rule.is_active if rule.is_active is not None else True
         })
     except Exception as e:
         logger.error(f"Error getting rule {rule_id}: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'message': f'Error fetching rule details: {str(e)}'}), 500
 
 @app.route('/api/rules/<int:rule_id>', methods=['PUT'])
 def update_rule(rule_id):

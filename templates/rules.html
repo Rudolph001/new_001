@@ -539,40 +539,59 @@ function editRule(ruleId) {
 
     // Fetch rule details
     fetch(`/api/rules/${ruleId}`)
-    .then(response => response.json())
-    .then(rule => {
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to fetch rule details');
+        }
+        
+        const rule = data;
         document.getElementById('editRuleId').value = rule.id;
-        document.getElementById('editRuleName').value = rule.name;
+        document.getElementById('editRuleName').value = rule.name || '';
         document.getElementById('editRuleDescription').value = rule.description || '';
-        document.getElementById('editRuleType').value = rule.rule_type;
-        document.getElementById('editRulePriority').value = rule.priority;
+        document.getElementById('editRuleType').value = rule.rule_type || 'security';
+        document.getElementById('editRulePriority').value = rule.priority || 1;
 
         // Populate conditions
         const container = document.getElementById('editConditionsContainer');
         container.innerHTML = '';
 
-        if (rule.conditions && rule.conditions.length > 0) {
+        if (rule.conditions && Array.isArray(rule.conditions) && rule.conditions.length > 0) {
             rule.conditions.forEach(condition => {
-                addEditCondition();
-                const lastGroup = container.lastElementChild;
-                lastGroup.querySelector('.condition-field').value = condition.field;
-                lastGroup.querySelector('.condition-operator').value = condition.operator;
-                lastGroup.querySelector('.condition-value').value = condition.value || '';
+                if (condition && typeof condition === 'object') {
+                    addEditCondition();
+                    const lastGroup = container.lastElementChild;
+                    if (lastGroup) {
+                        const fieldSelect = lastGroup.querySelector('.condition-field');
+                        const operatorSelect = lastGroup.querySelector('.condition-operator');
+                        const valueInput = lastGroup.querySelector('.condition-value');
+                        
+                        if (fieldSelect) fieldSelect.value = condition.field || 'sender';
+                        if (operatorSelect) operatorSelect.value = condition.operator || 'equals';
+                        if (valueInput) valueInput.value = condition.value || '';
+                    }
+                }
             });
         } else {
             addEditCondition();
         }
 
         // Populate actions
-        document.getElementById('editActionFlag').checked = rule.actions && rule.actions.flag;
-        document.getElementById('editActionEscalate').checked = rule.actions && rule.actions.escalate;
+        const actions = rule.actions || {};
+        document.getElementById('editActionFlag').checked = !!actions.flag;
+        document.getElementById('editActionEscalate').checked = !!actions.escalate;
 
         // Show modal
         new bootstrap.Modal(document.getElementById('editRuleModal')).show();
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Error fetching rule details');
+        console.error('Error fetching rule:', error);
+        alert(`Error fetching rule details: ${error.message}`);
     });
 }
 
