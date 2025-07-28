@@ -834,6 +834,11 @@ function loadCaseManagementCounts() {
                 if (element) {
                     element.textContent = value.toLocaleString();
                     element.setAttribute('data-target', value);
+                    // Remove animated-number class to prevent conflicts
+                    element.classList.remove('animated-number');
+                    // Make the text bold and visible
+                    element.style.fontWeight = 'bold';
+                    element.style.color = '#333';
                     console.log(`Updated ${elementId}: ${value}`);
                 } else {
                     console.error(`Element not found: ${elementId}`);
@@ -859,18 +864,13 @@ function loadCaseManagementCounts() {
                 totalManagedElement.textContent = data.total_managed || 0;
             }
 
-            // Force immediate display of numbers (skip animation delay)
+            // Log successful update
             console.log('Successfully updated case counts:', {
                 active: data.active_cases,
                 cleared: data.cleared_cases, 
                 escalated: data.escalated_cases,
                 whitelisted: data.whitelisted_emails
             });
-            
-            // Try animating numbers without delay
-            if (typeof animateNumbers === 'function') {
-                animateNumbers();
-            }
 
             // Create case status chart
             createCaseStatusChart(data.case_status_distribution || {});
