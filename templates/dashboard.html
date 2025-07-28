@@ -958,5 +958,41 @@ setInterval(function() {
     location.reload();
 }, 10000); // Refresh every 10 seconds
 {% endif %}
+
+// Force immediate case count update on page load (debugging)
+setTimeout(function() {
+    console.log('Force updating case counts after 2 seconds...');
+    const sessionId = "{{ session.id if session else '' }}";
+    if (sessionId) {
+        fetch(`/api/case-management-counts/${sessionId}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Force update - API returned:', data);
+                
+                // Direct element updates without animation
+                const elements = {
+                    'activeCasesCount': data.active_cases || 0,
+                    'clearedCasesCount': data.cleared_cases || 0,
+                    'escalatedCasesCount': data.escalated_cases || 0,
+                    'whitelistedEmailsCount': data.whitelisted_emails || 0
+                };
+                
+                Object.keys(elements).forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.textContent = elements[id].toLocaleString();
+                        element.style.fontWeight = 'bold';
+                        element.style.color = '#007bff';
+                        console.log(`Updated ${id} to ${elements[id]}`);
+                    } else {
+                        console.error(`Element ${id} not found`);
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Force update failed:', error);
+            });
+    }
+}, 2000);
 </script>
 {% endblock %}
