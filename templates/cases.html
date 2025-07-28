@@ -164,6 +164,9 @@
                 <button class="btn btn-sm btn-outline-danger" onclick="bulkEscalateCases()" disabled id="bulkEscalateBtn">
                     <i class="fas fa-exclamation-triangle"></i> Escalate Selected
                 </button>
+                <a href="{{ url_for('cleared_cases', session_id=session.id) }}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-check-circle"></i> View Cleared Cases
+                </a>
             </div>
         </div>
     </div>
@@ -573,10 +576,17 @@ async function updateCaseStatus(sessionId, recordId, newStatus) {
             return;
         }
         
-        showSuccess(`Case status updated to ${newStatus}`);
+        let message = `Case status updated to ${newStatus}`;
+        if (newStatus === 'Cleared') {
+            message += '. Case moved to Cleared Cases dashboard.';
+        } else if (newStatus === 'Escalated') {
+            message += '. Case moved to Escalations dashboard.';
+        }
+        
+        showSuccess(message);
         setTimeout(() => {
             location.reload();
-        }, 1000);
+        }, 1500);
         
         hideLoading();
     } catch (error) {

@@ -332,9 +332,14 @@ def cases(session_id):
     else:
         per_page = int(per_page_param) if per_page_param.isdigit() else 200
 
-    # Build query with filters - exclude whitelisted records from cases
+    # Build query with filters - exclude whitelisted, cleared, and escalated records from cases
     query = EmailRecord.query.filter_by(session_id=session_id).filter(
         db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+    ).filter(
+        db.or_(
+            EmailRecord.case_status.is_(None),
+            EmailRecord.case_status == 'Active'
+        )
     )
 
     if risk_level:
@@ -379,6 +384,23 @@ def cases(session_id):
                          total_whitelisted=total_whitelisted,
                          active_whitelist_domains=active_whitelist_domains)
 
+@app.route('/cleared_cases/<session_id>')
+def cleared_cases(session_id):
+    """Cleared cases dashboard"""
+    session = ProcessingSession.query.get_or_404(session_id)
+
+    # Get cleared cases - exclude whitelisted records
+    cleared_cases = EmailRecord.query.filter_by(
+        session_id=session_id,
+        case_status='Cleared'
+    ).filter(
+        db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+    ).order_by(EmailRecord.resolved_at.desc()).all()
+
+    return render_template('cleared_cases.html',
+                         session=session,
+                         cleared_cases=cleared_cases)
+
 @app.route('/escalations/<session_id>')
 def escalations(session_id):
     """Escalation dashboard for critical cases"""
@@ -390,6 +412,11 @@ def escalations(session_id):
         risk_level='Critical'
     ).filter(
         db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False)
+    ).filter(
+        db.or_(
+            EmailRecord.case_status.is_(None),
+            EmailRecord.case_status == 'Active'
+        )
     ).order_by(EmailRecord.ml_risk_score.desc()).all()
 
     escalated_cases = EmailRecord.query.filter_by(

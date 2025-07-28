@@ -1,0 +1,174 @@
+
+{% extends "base.html" %}
+
+{% block title %}Cleared Cases - Session {{ session.id[:8] }}{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('index') }}">Upload</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('dashboard', session_id=session.id) }}">Dashboard</a></li>
+<li class="breadcrumb-item active">Cleared Cases</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h2">
+                <i class="fas fa-check-circle text-success"></i>
+                Cleared Cases
+            </h1>
+            <div class="session-info">
+                <span class="badge bg-primary fs-6">{{ session.filename }}</span>
+                <span class="badge bg-success fs-6">{{ cleared_cases|length }} cleared cases</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Alert -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-success border-start border-5 border-success">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-circle fa-2x me-3"></i>
+                <div>
+                    <h5 class="alert-heading mb-1">{{ cleared_cases|length }} Cases Cleared</h5>
+                    <p class="mb-0">These cases have been reviewed and marked as resolved</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions Bar -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h6 class="mb-0">Cleared Case Actions</h6>
+                <small class="text-muted">Manage resolved cases</small>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-sm btn-outline-primary" onclick="exportClearedCases()">
+                    <i class="fas fa-download"></i> Export Report
+                </button>
+                <a href="{{ url_for('cases', session_id=session.id) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Active Cases
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cleared Cases Table -->
+{% if cleared_cases %}
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-list"></i>
+            Cleared Cases ({{ cleared_cases|length }})
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Sender</th>
+                        <th>Subject</th>
+                        <th>Risk Level</th>
+                        <th>Risk Score</th>
+                        <th>Cleared Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in cleared_cases %}
+                    <tr class="table-success-subtle">
+                        <td>
+                            <div>
+                                <strong>{{ case.sender[:30] }}{% if case.sender|length > 30 %}...{% endif %}</strong>
+                                {% if case.leaver and case.leaver.lower() in ['yes', 'true', '1'] %}
+                                    <br><span class="badge bg-warning">Leaver</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div title="{{ case.subject }}">
+                                {{ case.subject[:50] }}{% if case.subject|length > 50 %}...{% endif %}
+                            </div>
+                            {% if case.attachments %}
+                                <br><small class="text-muted">
+                                    <i class="fas fa-paperclip"></i> {{ case.attachments[:30] }}{% if case.attachments|length > 30 %}...{% endif %}
+                                </small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="risk-{{ case.risk_level.lower() if case.risk_level else 'low' }}">
+                                {{ case.risk_level or 'Low' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="fw-bold">{{ "%.3f"|format(case.ml_risk_score or 0) }}</span>
+                        </td>
+                        <td>
+                            <small>{{ case.resolved_at.strftime('%Y-%m-%d %H:%M') if case.resolved_at else 'N/A' }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary view-case-btn" 
+                                        data-record-id="{{ case.record_id }}" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-warning" 
+                                        onclick="reopenCase('{{ case.record_id }}')" title="Reopen Case">
+                                    <i class="fas fa-undo"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">No Cleared Cases</h4>
+        <p class="text-muted">No cases have been cleared yet.</p>
+        <a href="{{ url_for('cases', session_id=session.id) }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left"></i> Back to Active Cases
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Set session ID for JavaScript functions
+window.currentSessionId = '{{ session.id }}';
+
+function reopenCase(recordId) {
+    if (confirm('Are you sure you want to reopen this case?')) {
+        updateCaseStatus(currentSessionId, recordId, 'Active');
+    }
+}
+
+function exportClearedCases() {
+    // Generate CSV export of cleared cases
+    const clearedCount = {{ cleared_cases|length }};
+    
+    if (clearedCount === 0) {
+        alert('No cleared cases to export');
+        return;
+    }
+    
+    // In a real implementation, this would generate and download a CSV file
+    alert(`Exporting ${clearedCount} cleared cases...`);
+}
+</script>
+{% endblock %}
