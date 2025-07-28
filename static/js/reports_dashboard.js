@@ -1,87 +1,100 @@
-// Reports Dashboard JavaScript
-let selectedCases = new Set();
+/**
+ * Professional Reports Dashboard JavaScript
+ * Handles interactive charts, case selection, filtering, and bulk operations
+ */
+
+// Global variables
 let allCases = [];
 let filteredCases = [];
+let selectedCases = new Set();
 let charts = {};
+let sessionId = '';
 
+// Initialize dashboard
 function initializeReportsDashboard() {
-    console.log('Initializing Reports Dashboard...');
+    // Get session ID from URL
+    sessionId = window.location.pathname.split('/')[2];
     
-    // Initialize data
+    // Initialize all components
     loadCasesData();
-    
-    // Initialize charts
-    initializeReportsCharts();
-    
-    // Initialize animated counters
-    initializeAnimatedCounters();
-    
-    // Initialize DataTable if available
-    if (typeof $ !== 'undefined' && $.fn.DataTable) {
-        initializeDataTable();
-    }
-    
-    // Set up event listeners
-    setupReportsEventListeners();
+    initializeEventListeners();
+    updateSelection();
 }
 
+// Load cases data from API
 function loadCasesData() {
-    // Get session ID from URL
-    const sessionId = extractSessionIdFromUrl();
-    if (!sessionId) {
-        console.error('No session ID found');
-        return;
-    }
-    
-    // Load cases data from API
     fetch(`/api/cases/${sessionId}`)
         .then(response => response.json())
         .then(data => {
             allCases = data.cases || [];
             filteredCases = [...allCases];
-            updateChartsWithData(data);
+            
+            // Initialize charts with API data
+            createStatusChart(data.status_distribution);
+            createRiskChart(data.risk_distribution);
+            createTimelineChart(data.timeline_data);
+            createDomainsChart(data.top_domains);
+            
+            // Initialize counters
+            initializeCounters(data);
         })
         .catch(error => {
             console.error('Error loading cases data:', error);
+            showNotification('Error loading dashboard data', 'error');
         });
 }
 
-function initializeReportsCharts() {
-    // Status Distribution Chart
-    createStatusDistributionChart();
+// Initialize event listeners
+function initializeEventListeners() {
+    // Filter inputs
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('riskFilter').addEventListener('change', applyFilters);
+    document.getElementById('dateFilter').addEventListener('change', applyFilters);
+    document.getElementById('searchFilter').addEventListener('keyup', debounce(applyFilters, 300));
     
-    // Risk Level Chart
-    createRiskLevelChart();
+    // Case checkboxes
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('case-checkbox')) {
+            updateCaseSelection(e.target);
+        }
+    });
     
-    // Cases Timeline Chart
-    createCasesTimelineChart();
-    
-    // Top Domains Chart
-    createTopDomainsChart();
+    // Select all checkbox
+    document.getElementById('selectAllCheckbox').addEventListener('change', toggleSelectAll);
 }
 
-function createStatusDistributionChart() {
-    const ctx = document.getElementById('statusDistributionChart');
-    if (!ctx) return;
+// Create status distribution chart
+function createStatusChart(data) {
+    const ctx = document.getElementById('statusChart').getContext('2d');
     
-    charts.statusDistribution = new Chart(ctx, {
+    // Destroy existing chart if it exists
+    if (charts.status) {
+        charts.status.destroy();
+    }
+    
+    charts.status = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Active', 'Cleared', 'Escalated'],
+            labels: Object.keys(data),
             datasets: [{
-                data: [0, 0, 0], // Will be updated with real data
+                data: Object.values(data),
                 backgroundColor: [
-                    '#17a2b8', // info blue
-                    '#28a745', // success green
-                    '#dc3545'  // danger red
+                    '#4e73df', // Active - Blue
+                    '#1cc88a', // Cleared - Green
+                    '#e74a3b'  // Escalated - Red
+                ],
+                hoverBackgroundColor: [
+                    '#2e59d9',
+                    '#17a673',
+                    '#e02d1b'
                 ],
                 borderWidth: 2,
-                borderColor: '#fff'
+                borderColor: '#ffffff'
             }]
         },
         options: {
-            responsive: true,
             maintainAspectRatio: false,
+            responsive: true,
             plugins: {
                 legend: {
                     position: 'bottom',
@@ -89,42 +102,67 @@ function createStatusDistributionChart() {
                         padding: 20,
                         usePointStyle: true
                     }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.raw / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
                 }
+            },
+            animation: {
+                animateRotate: true,
+                duration: 1000
             }
         }
     });
 }
 
-function createRiskLevelChart() {
-    const ctx = document.getElementById('riskLevelChart');
-    if (!ctx) return;
+// Create risk level chart
+function createRiskChart(data) {
+    const ctx = document.getElementById('riskChart').getContext('2d');
     
-    charts.riskLevel = new Chart(ctx, {
+    if (charts.risk) {
+        charts.risk.destroy();
+    }
+    
+    charts.risk = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+            labels: Object.keys(data),
             datasets: [{
-                label: 'Number of Cases',
-                data: [0, 0, 0], // Will be updated with real data
+                label: 'Cases',
+                data: Object.values(data),
                 backgroundColor: [
-                    '#dc3545', // danger
-                    '#ffc107', // warning
-                    '#28a745'  // success
+                    '#e74a3b', // High - Red
+                    '#f6c23e', // Medium - Yellow
+                    '#1cc88a'  // Low - Green
                 ],
                 borderColor: [
-                    '#dc3545',
-                    '#ffc107',
-                    '#28a745'
+                    '#e74a3b',
+                    '#f6c23e',
+                    '#1cc88a'
                 ],
-                borderWidth: 1
+                borderWidth: 1,
+                borderRadius: 4
             }]
         },
         options: {
-            responsive: true,
             maintainAspectRatio: false,
+            responsive: true,
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function(context) {
+                            return `${context[0].label} Risk Level`;
+                        }
+                    }
                 }
             },
             scales: {
@@ -133,35 +171,57 @@ function createRiskLevelChart() {
                     ticks: {
                         stepSize: 1
                     }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
                 }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
             }
         }
     });
 }
 
-function createCasesTimelineChart() {
-    const ctx = document.getElementById('casesTimelineChart');
-    if (!ctx) return;
+// Create timeline chart
+function createTimelineChart(data) {
+    const ctx = document.getElementById('timelineChart').getContext('2d');
+    
+    if (charts.timeline) {
+        charts.timeline.destroy();
+    }
     
     charts.timeline = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [], // Will be populated with dates
+            labels: data.labels,
             datasets: [{
-                label: 'Cases per Day',
-                data: [],
-                borderColor: '#007bff',
-                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                label: 'Cases Over Time',
+                data: data.data,
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.1)',
                 fill: true,
-                tension: 0.4
+                tension: 0.3,
+                pointBackgroundColor: '#4e73df',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
         options: {
-            responsive: true,
             maintainAspectRatio: false,
+            responsive: true,
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
                 }
             },
             scales: {
@@ -170,33 +230,51 @@ function createCasesTimelineChart() {
                     ticks: {
                         stepSize: 1
                     }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
                 }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutCubic'
             }
         }
     });
 }
 
-function createTopDomainsChart() {
-    const ctx = document.getElementById('topDomainsChart');
-    if (!ctx) return;
+// Create domains chart
+function createDomainsChart(data) {
+    const ctx = document.getElementById('domainsChart').getContext('2d');
     
-    charts.topDomains = new Chart(ctx, {
+    if (charts.domains) {
+        charts.domains.destroy();
+    }
+    
+    charts.domains = new Chart(ctx, {
         type: 'horizontalBar',
         data: {
-            labels: [],
+            labels: data.labels,
             datasets: [{
                 label: 'Cases',
-                data: [],
-                backgroundColor: [
-                    '#007bff', '#28a745', '#ffc107', '#dc3545', '#6c757d',
-                    '#17a2b8', '#fd7e14', '#6f42c1', '#e83e8c', '#20c997'
-                ],
-                borderWidth: 1
+                data: data.data,
+                backgroundColor: '#36b9cc',
+                borderColor: '#36b9cc',
+                borderWidth: 1,
+                borderRadius: 4
             }]
         },
         options: {
-            responsive: true,
+            indexAxis: 'y',
             maintainAspectRatio: false,
+            responsive: true,
             plugins: {
                 legend: {
                     display: false
@@ -208,197 +286,384 @@ function createTopDomainsChart() {
                     ticks: {
                         stepSize: 1
                     }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    }
                 }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuart'
             }
         }
     });
 }
 
-function updateChartsWithData(data) {
-    // Update status distribution
-    if (charts.statusDistribution && data.status_distribution) {
-        const statusData = [
-            data.status_distribution.Active || 0,
-            data.status_distribution.Cleared || 0,
-            data.status_distribution.Escalated || 0
-        ];
-        charts.statusDistribution.data.datasets[0].data = statusData;
-        charts.statusDistribution.update();
-    }
+// Initialize animated counters
+function initializeCounters(data) {
+    const counters = [
+        { id: 'totalCasesCounter', value: data.cases.length },
+        { id: 'highRiskCounter', value: data.cases.filter(c => c.risk_level === 'High').length },
+        { id: 'resolvedCounter', value: data.cases.filter(c => ['Cleared', 'Escalated'].includes(c.status)).length },
+        { id: 'pendingCounter', value: data.cases.filter(c => c.status === 'Active').length }
+    ];
     
-    // Update risk level chart
-    if (charts.riskLevel && data.risk_distribution) {
-        const riskData = [
-            data.risk_distribution.High || 0,
-            data.risk_distribution.Medium || 0,
-            data.risk_distribution.Low || 0
-        ];
-        charts.riskLevel.data.datasets[0].data = riskData;
-        charts.riskLevel.update();
-    }
-    
-    // Update timeline chart
-    if (charts.timeline && data.timeline_data) {
-        charts.timeline.data.labels = data.timeline_data.labels || [];
-        charts.timeline.data.datasets[0].data = data.timeline_data.data || [];
-        charts.timeline.update();
-    }
-    
-    // Update top domains chart
-    if (charts.topDomains && data.top_domains) {
-        charts.topDomains.data.labels = data.top_domains.labels || [];
-        charts.topDomains.data.datasets[0].data = data.top_domains.data || [];
-        charts.topDomains.update();
-    }
+    counters.forEach(counter => {
+        animateCounter(counter.id, counter.value);
+    });
 }
 
-function setupReportsEventListeners() {
-    // Case selection event listeners are handled by existing main.js
-    console.log('Reports event listeners set up');
-}
-
-// Case Selection Functions
-function toggleSelectAll() {
-    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const caseCheckboxes = document.querySelectorAll('.case-checkbox');
+// Animate counter with easing
+function animateCounter(elementId, targetValue, duration = 1000) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
     
-    caseCheckboxes.forEach(checkbox => {
-        checkbox.checked = selectAllCheckbox.checked;
-        if (selectAllCheckbox.checked) {
-            selectedCases.add(checkbox.value);
+    let startValue = 0;
+    const startTime = performance.now();
+    
+    function updateCounter(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function (ease-out)
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOut);
+        
+        element.textContent = currentValue.toLocaleString();
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateCounter);
         } else {
-            selectedCases.delete(checkbox.value);
+            element.textContent = targetValue.toLocaleString();
         }
-    });
-    
-    updateSelection();
-}
-
-function selectAllCases() {
-    const caseCheckboxes = document.querySelectorAll('.case-checkbox');
-    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    
-    caseCheckboxes.forEach(checkbox => {
-        checkbox.checked = true;
-        selectedCases.add(checkbox.value);
-    });
-    
-    selectAllCheckbox.checked = true;
-    updateSelection();
-}
-
-function clearSelection() {
-    const caseCheckboxes = document.querySelectorAll('.case-checkbox');
-    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    
-    caseCheckboxes.forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    
-    selectAllCheckbox.checked = false;
-    selectedCases.clear();
-    updateSelection();
-}
-
-function updateSelection() {
-    const selectedCount = selectedCases.size;
-    const selectionSummary = document.getElementById('selectionSummary');
-    const selectedCountSpan = document.getElementById('selectedCount');
-    const selectedSummarySpan = document.getElementById('selectedSummary');
-    const bulkUpdateBtn = document.getElementById('bulkUpdateBtn');
-    
-    selectedCountSpan.textContent = selectedCount;
-    
-    if (selectedCount > 0) {
-        selectionSummary.style.display = 'block';
-        bulkUpdateBtn.style.display = 'inline-block';
-        
-        // Calculate selection summary
-        let highRisk = 0, mediumRisk = 0, lowRisk = 0;
-        let active = 0, cleared = 0, escalated = 0;
-        
-        selectedCases.forEach(caseId => {
-            const row = document.querySelector(`tr[data-case-id="${caseId}"]`);
-            if (row) {
-                const risk = row.dataset.risk;
-                const status = row.dataset.status;
-                
-                if (risk === 'High') highRisk++;
-                else if (risk === 'Medium') mediumRisk++;
-                else lowRisk++;
-                
-                if (status === 'Active') active++;
-                else if (status === 'Cleared') cleared++;
-                else escalated++;
-            }
-        });
-        
-        selectedSummarySpan.innerHTML = `
-            - Risk: ${highRisk} High, ${mediumRisk} Medium, ${lowRisk} Low
-            - Status: ${active} Active, ${cleared} Cleared, ${escalated} Escalated
-        `;
-    } else {
-        selectionSummary.style.display = 'none';
-        bulkUpdateBtn.style.display = 'none';
     }
+    
+    requestAnimationFrame(updateCounter);
 }
 
-// Filter Functions
+// Apply filters to cases
 function applyFilters() {
     const statusFilter = document.getElementById('statusFilter').value;
     const riskFilter = document.getElementById('riskFilter').value;
     const dateFilter = document.getElementById('dateFilter').value;
     const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
-    
-    const rows = document.querySelectorAll('#casesReportTable tbody tr');
-    
-    rows.forEach(row => {
-        let show = true;
-        
+
+    filteredCases = allCases.filter(caseItem => {
         // Status filter
-        if (statusFilter && row.dataset.status !== statusFilter) {
-            show = false;
-        }
+        if (statusFilter && caseItem.status !== statusFilter) return false;
         
         // Risk filter
-        if (riskFilter && row.dataset.risk !== riskFilter) {
-            show = false;
-        }
+        if (riskFilter && caseItem.risk_level !== riskFilter) return false;
         
         // Date filter
         if (dateFilter) {
-            const dateCell = row.querySelector('td:nth-child(8)');
-            if (dateCell) {
-                const rowDate = dateCell.textContent.trim().split(' ')[0];
-                if (rowDate !== dateFilter) {
-                    show = false;
-                }
-            }
+            const caseDate = new Date(caseItem.time).toISOString().split('T')[0];
+            if (caseDate !== dateFilter) return false;
         }
         
         // Search filter
         if (searchFilter) {
-            const text = row.textContent.toLowerCase();
-            if (!text.includes(searchFilter)) {
-                show = false;
-            }
+            const searchableText = [
+                caseItem.sender_email,
+                caseItem.subject,
+                caseItem.recipient_domain
+            ].join(' ').toLowerCase();
+            
+            if (!searchableText.includes(searchFilter)) return false;
         }
         
-        row.style.display = show ? '' : 'none';
+        return true;
+    });
+
+    updateCasesTable();
+    updateFilteredCounters();
+}
+
+// Update cases table based on filtered results
+function updateCasesTable() {
+    const tbody = document.getElementById('casesTableBody');
+    if (!tbody) return;
+    
+    // Clear existing rows
+    tbody.innerHTML = '';
+    
+    // Add filtered cases
+    filteredCases.forEach(caseItem => {
+        const row = createCaseRow(caseItem);
+        tbody.appendChild(row);
+    });
+    
+    // Update selection state
+    updateSelectionCheckboxes();
+}
+
+// Create a table row for a case
+function createCaseRow(caseItem) {
+    const row = document.createElement('tr');
+    row.setAttribute('data-case-id', caseItem.record_id);
+    row.setAttribute('data-risk', caseItem.risk_level);
+    row.setAttribute('data-status', caseItem.status);
+    
+    row.innerHTML = `
+        <td>
+            <input type="checkbox" class="case-checkbox" value="${caseItem.record_id}" onchange="updateSelection()">
+        </td>
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="avatar-sm me-2">
+                    <div class="avatar-title bg-primary rounded-circle">
+                        ${caseItem.sender_email[0].toUpperCase()}
+                    </div>
+                </div>
+                <div>
+                    <div class="fw-bold">${truncateText(caseItem.sender_email, 20)}</div>
+                </div>
+            </div>
+        </td>
+        <td>
+            <span class="fw-bold">${truncateText(caseItem.subject, 30)}</span>
+        </td>
+        <td>
+            <span class="badge bg-light text-dark">${caseItem.recipient_domain}</span>
+        </td>
+        <td>
+            ${createRiskBadge(caseItem.risk_level)}
+        </td>
+        <td>
+            ${createMLScoreProgress(caseItem.ml_score)}
+        </td>
+        <td>
+            ${createStatusBadge(caseItem.status)}
+        </td>
+        <td>
+            <small>${formatDateTime(caseItem.time)}</small>
+        </td>
+        <td>
+            ${caseItem.attachments ? 
+                `<i class="fas fa-paperclip text-warning" title="Has attachments"></i>` : 
+                '<span class="text-muted">None</span>'
+            }
+        </td>
+        <td>
+            <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-primary btn-sm" onclick="viewCaseDetails('${caseItem.record_id}')" title="View Details">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-outline-warning btn-sm" onclick="editCaseStatus('${caseItem.record_id}')" title="Edit Status">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </div>
+        </td>
+    `;
+    
+    return row;
+}
+
+// Helper functions for creating UI elements
+function createRiskBadge(riskLevel) {
+    const badgeClass = {
+        'High': 'bg-danger',
+        'Medium': 'bg-warning',
+        'Low': 'bg-success'
+    }[riskLevel] || 'bg-secondary';
+    
+    return `<span class="badge ${badgeClass}">${riskLevel} Risk</span>`;
+}
+
+function createMLScoreProgress(mlScore) {
+    const percentage = (mlScore * 100).toFixed(1);
+    const progressClass = mlScore >= 0.7 ? 'bg-danger' : mlScore >= 0.4 ? 'bg-warning' : 'bg-success';
+    
+    return `
+        <div class="progress" style="height: 20px;">
+            <div class="progress-bar ${progressClass}" 
+                 role="progressbar" 
+                 style="width: ${percentage}%">
+                ${percentage}%
+            </div>
+        </div>
+    `;
+}
+
+function createStatusBadge(status) {
+    const badgeClass = {
+        'Active': 'bg-primary',
+        'Cleared': 'bg-success',
+        'Escalated': 'bg-danger'
+    }[status] || 'bg-secondary';
+    
+    return `<span class="badge ${badgeClass}">${status}</span>`;
+}
+
+function truncateText(text, maxLength) {
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+}
+
+function formatDateTime(dateTimeString) {
+    const date = new Date(dateTimeString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+// Selection management
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const caseCheckboxes = document.querySelectorAll('.case-checkbox');
+    
+    selectedCases.clear();
+    
+    caseCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+        if (selectAllCheckbox.checked) {
+            selectedCases.add(checkbox.value);
+        }
+    });
+    
+    updateSelection();
+}
+
+function updateCaseSelection(checkbox) {
+    if (checkbox.checked) {
+        selectedCases.add(checkbox.value);
+    } else {
+        selectedCases.delete(checkbox.value);
+    }
+    
+    updateSelection();
+}
+
+function selectAllCases() {
+    document.getElementById('selectAllCheckbox').checked = true;
+    toggleSelectAll();
+}
+
+function clearSelection() {
+    document.getElementById('selectAllCheckbox').checked = false;
+    toggleSelectAll();
+}
+
+function updateSelection() {
+    const count = selectedCases.size;
+    const summaryDiv = document.getElementById('selectionSummary');
+    const selectionText = document.getElementById('selectionText');
+    const exportBtn = document.getElementById('exportBtn');
+    const bulkUpdateBtn = document.getElementById('bulkUpdateBtn');
+    
+    // Update UI based on selection count
+    if (count > 0) {
+        summaryDiv.style.display = 'block';
+        selectionText.textContent = `${count} case${count > 1 ? 's' : ''} selected`;
+        exportBtn.disabled = false;
+        bulkUpdateBtn.disabled = false;
+        
+        // Calculate breakdown
+        updateSelectionBreakdown();
+    } else {
+        summaryDiv.style.display = 'none';
+        exportBtn.disabled = true;
+        bulkUpdateBtn.disabled = true;
+    }
+    
+    // Update select all checkbox state
+    updateSelectAllCheckboxState();
+}
+
+function updateSelectionBreakdown() {
+    let breakdown = { high: 0, medium: 0, low: 0, active: 0, cleared: 0, escalated: 0 };
+    
+    selectedCases.forEach(caseId => {
+        const row = document.querySelector(`tr[data-case-id="${caseId}"]`);
+        if (row) {
+            const risk = row.dataset.risk;
+            const status = row.dataset.status;
+            
+            if (risk) breakdown[risk.toLowerCase()]++;
+            if (status) breakdown[status.toLowerCase()]++;
+        }
+    });
+    
+    const breakdownText = `High Risk: ${breakdown.high}, Medium: ${breakdown.medium}, Low: ${breakdown.low} | ` +
+                         `Active: ${breakdown.active}, Cleared: ${breakdown.cleared}, Escalated: ${breakdown.escalated}`;
+    
+    document.getElementById('selectionBreakdown').textContent = breakdownText;
+}
+
+function updateSelectAllCheckboxState() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const caseCheckboxes = document.querySelectorAll('.case-checkbox');
+    const checkedCount = document.querySelectorAll('.case-checkbox:checked').length;
+    
+    if (checkedCount === 0) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = false;
+    } else if (checkedCount === caseCheckboxes.length) {
+        selectAllCheckbox.indeterminate = false;
+        selectAllCheckbox.checked = true;
+    } else {
+        selectAllCheckbox.indeterminate = true;
+        selectAllCheckbox.checked = false;
+    }
+}
+
+function updateSelectionCheckboxes() {
+    document.querySelectorAll('.case-checkbox').forEach(checkbox => {
+        checkbox.checked = selectedCases.has(checkbox.value);
+    });
+    updateSelectAllCheckboxState();
+}
+
+// Case actions
+function viewCaseDetails(caseId) {
+    const caseData = allCases.find(c => c.record_id === caseId);
+    if (!caseData) return;
+    
+    // Create and show modal with case details
+    showCaseDetailsModal(caseData);
+}
+
+function editCaseStatus(caseId) {
+    // Implementation for editing individual case status
+    const newStatus = prompt('Enter new status (Active, Cleared, Escalated):');
+    if (newStatus && ['Active', 'Cleared', 'Escalated'].includes(newStatus)) {
+        updateCaseStatus(caseId, newStatus);
+    }
+}
+
+function updateCaseStatus(caseId, newStatus) {
+    fetch(`/api/bulk-update-status/${sessionId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            case_ids: [caseId],
+            new_status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Case status updated to ${newStatus}`, 'success');
+            // Reload the page to refresh data
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Error updating case status', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error updating case status', 'error');
     });
 }
 
-// Export and Report Functions
+// Export functions
 function exportSelectedCases() {
     if (selectedCases.size === 0) {
-        alert('Please select cases to export');
+        showNotification('Please select cases to export', 'warning');
         return;
     }
     
-    const sessionId = extractSessionIdFromUrl();
-    const caseIds = Array.from(selectedCases);
-    
-    // Create form and submit
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = `/api/export-cases/${sessionId}`;
@@ -406,111 +671,175 @@ function exportSelectedCases() {
     const input = document.createElement('input');
     input.type = 'hidden';
     input.name = 'case_ids';
-    input.value = JSON.stringify(caseIds);
+    input.value = JSON.stringify([...selectedCases]);
     
     form.appendChild(input);
     document.body.appendChild(form);
     form.submit();
     document.body.removeChild(form);
+    
+    showNotification('Export started', 'info');
 }
 
 function generateFullReport() {
-    const sessionId = extractSessionIdFromUrl();
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/api/generate-report/${sessionId}`;
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
     
-    // Show loading state
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-    btn.disabled = true;
-    
-    fetch(`/api/generate-report/${sessionId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.blob())
-    .then(blob => {
-        // Create download link
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `email-security-report-${sessionId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    })
-    .catch(error => {
-        console.error('Error generating report:', error);
-        alert('Error generating report. Please try again.');
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
+    showNotification('Report generation started', 'info');
 }
 
+// Bulk update functions
 function bulkUpdateStatus() {
     if (selectedCases.size === 0) {
-        alert('Please select cases to update');
+        showNotification('Please select cases to update', 'warning');
         return;
     }
     
-    const newStatus = prompt('Enter new status (Active, Cleared, Escalated):');
-    if (!newStatus || !['Active', 'Cleared', 'Escalated'].includes(newStatus)) {
-        alert('Invalid status');
+    document.getElementById('bulkUpdateCount').textContent = selectedCases.size;
+    const modal = new bootstrap.Modal(document.getElementById('bulkUpdateModal'));
+    modal.show();
+}
+
+function confirmBulkUpdate() {
+    const newStatus = document.getElementById('newStatus').value;
+    if (!newStatus) {
+        showNotification('Please select a status', 'warning');
         return;
     }
-    
-    const sessionId = extractSessionIdFromUrl();
-    const caseIds = Array.from(selectedCases);
     
     fetch(`/api/bulk-update-status/${sessionId}`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            case_ids: caseIds,
+            case_ids: [...selectedCases],
             new_status: newStatus
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload(); // Reload to show updated data
+            showNotification(`Successfully updated ${data.updated_count} cases`, 'success');
+            // Close modal and reload page
+            bootstrap.Modal.getInstance(document.getElementById('bulkUpdateModal')).hide();
+            setTimeout(() => location.reload(), 1000);
         } else {
-            alert('Error updating cases: ' + data.message);
+            showNotification('Error updating cases: ' + data.error, 'error');
         }
     })
     .catch(error => {
-        console.error('Error updating cases:', error);
-        alert('Error updating cases. Please try again.');
+        console.error('Error:', error);
+        showNotification('Error updating cases', 'error');
     });
 }
 
-// Initialize DataTable
-function initializeDataTable() {
-    $('#casesReportTable').DataTable({
-        pageLength: 25,
-        order: [[7, 'desc']], // Sort by date column
-        columnDefs: [
-            { orderable: false, targets: [0, 9] }, // Disable sorting for checkbox and actions
-            { searchable: false, targets: [0, 9] }
-        ],
-        dom: 'rt<"d-flex justify-content-between"lp>',
-        language: {
-            search: "_INPUT_",
-            searchPlaceholder: "Search cases...",
-            lengthMenu: "_MENU_ cases per page"
+// Utility functions
+function refreshDashboard() {
+    location.reload();
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
         }
+    }, 5000);
+}
+
+function showCaseDetailsModal(caseData) {
+    // Create modal content with case details
+    const modalHtml = `
+        <div class="modal fade" id="caseDetailsModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Case Details - ${caseData.record_id}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Sender:</strong> ${caseData.sender_email}<br>
+                                <strong>Subject:</strong> ${caseData.subject}<br>
+                                <strong>Domain:</strong> ${caseData.recipient_domain}<br>
+                                <strong>Risk Level:</strong> ${createRiskBadge(caseData.risk_level)}<br>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>ML Score:</strong> ${(caseData.ml_score * 100).toFixed(1)}%<br>
+                                <strong>Status:</strong> ${createStatusBadge(caseData.status)}<br>
+                                <strong>Time:</strong> ${formatDateTime(caseData.time)}<br>
+                                <strong>Attachments:</strong> ${caseData.attachments || 'None'}<br>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="editCaseStatus('${caseData.record_id}')">Edit Status</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('caseDetailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to page and show
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('caseDetailsModal'));
+    modal.show();
+    
+    // Clean up modal after hiding
+    document.getElementById('caseDetailsModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
     });
 }
 
-// Utility function to extract session ID from URL
-function extractSessionIdFromUrl() {
-    const path = window.location.pathname;
-    const matches = path.match(/\/reports\/([^/]+)/);
-    return matches ? matches[1] : null;
+// Debounce function for search input
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
+
+function updateFilteredCounters() {
+    // Update counters based on filtered results
+    const filteredCounters = {
+        total: filteredCases.length,
+        highRisk: filteredCases.filter(c => c.risk_level === 'High').length,
+        resolved: filteredCases.filter(c => ['Cleared', 'Escalated'].includes(c.status)).length,
+        pending: filteredCases.filter(c => c.status === 'Active').length
+    };
+    
+    // Update counter displays (optional - can show filtered vs total)
+    // For now, we'll keep the original totals displayed
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initializeReportsDashboard);
