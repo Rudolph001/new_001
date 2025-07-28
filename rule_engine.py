@@ -38,14 +38,21 @@ class RuleEngine:
                 return 0
             
             logger.info(f"Found {len(exclusion_rules)} active exclusion rules")
+            for rule in exclusion_rules:
+                logger.info(f"Exclusion rule: {rule.name} - Conditions: {rule.conditions}")
             
             # Get all records for the session
             records = EmailRecord.query.filter_by(session_id=session_id).all()
+            logger.info(f"Processing {len(records)} records for exclusion rules")
             excluded_count = 0
             
             for record in records:
                 if record.excluded_by_rule:  # Already excluded
                     continue
+                
+                # Log sample record data for debugging
+                if excluded_count < 5:  # Only log first few records
+                    logger.info(f"Sample record {record.record_id}: leaver='{record.leaver}', attachments='{record.attachments}', wordlist_attachment='{record.wordlist_attachment}'")
                 
                 for rule in exclusion_rules:
                     try:
@@ -83,6 +90,8 @@ class RuleEngine:
                 return []
             
             logger.info(f"Found {len(security_rules)} active security rules")
+            for rule in security_rules:
+                logger.info(f"Security rule: {rule.name} - Conditions: {rule.conditions}")
             
             # Get non-excluded, non-whitelisted records
             records = EmailRecord.query.filter(
@@ -95,14 +104,19 @@ class RuleEngine:
             logger.info(f"Evaluating {len(records)} records against security rules")
             
             rule_matches = []
+            matches_found = 0
             
             for record in records:
                 matched_rules = []
                 
+                # Log sample record data for debugging
+                if matches_found < 5:  # Only log first few records
+                    logger.info(f"Sample record {record.record_id}: leaver='{record.leaver}', attachments='{record.attachments}', wordlist_attachment='{record.wordlist_attachment}'")
+                
                 for rule in security_rules:
                     try:
                         if self._evaluate_rule_conditions(record, rule):
-                            logger.info(f"Rule '{rule.name}' matched record {record.record_id}")
+                            logger.info(f"SECURITY MATCH: Rule '{rule.name}' matched record {record.record_id}")
                             matched_rules.append({
                                 'rule_id': rule.id,
                                 'rule_name': rule.name,
@@ -113,6 +127,7 @@ class RuleEngine:
                             
                             # Apply rule actions
                             self._apply_rule_actions(record, rule)
+                            matches_found += 1
                     except Exception as e:
                         logger.error(f"Error evaluating rule '{rule.name}': {str(e)}")
                         continue
@@ -256,32 +271,41 @@ class RuleEngine:
         """Apply comparison operator with comprehensive regex support"""
         try:
             # Convert to string for comparison, handle None and empty values
-            record_str = str(record_value).strip().lower() if record_value is not None else ""
-            condition_str = str(condition_value).strip().lower() if condition_value is not None else ""
+            record_str = str(record_value).strip() if record_value is not None else ""
+            condition_str = str(condition_value).strip() if condition_value is not None else ""
             
             # Handle common CSV representations of empty/none values
-            if record_str in ['', 'none', 'null', 'n/a', 'na', 'nil']:
+            empty_values = ['', 'none', 'null', 'n/a', 'na', 'nil']
+            if record_str.lower() in empty_values:
                 record_str = ""
-            if condition_str in ['', 'none', 'null', 'n/a', 'na', 'nil']:
+            if condition_str.lower() in empty_values:
                 condition_str = ""
             
             logger.info(f"OPERATOR DEBUG - Comparing: '{record_str}' {operator} '{condition_str}'")
             
+            # For case-insensitive operators, convert to lowercase
+            if operator in ['equals', 'contains', 'not_equals', 'not_contains', 'starts_with', 'ends_with', 'in_list']:
+                record_str_lower = record_str.lower()
+                condition_str_lower = condition_str.lower()
+            else:
+                record_str_lower = record_str
+                condition_str_lower = condition_str
+            
             if operator == 'equals':
-                result = record_str == condition_str
+                result = record_str_lower == condition_str_lower
             elif operator == 'contains':
-                result = condition_str in record_str
+                result = condition_str_lower in record_str_lower
             elif operator == 'not_equals':
-                result = record_str != condition_str
+                result = record_str_lower != condition_str_lower
             elif operator == 'not_contains':
-                result = condition_str not in record_str
+                result = condition_str_lower not in record_str_lower
             elif operator == 'starts_with':
-                result = record_str.startswith(condition_str)
+                result = record_str_lower.startswith(condition_str_lower)
             elif operator == 'ends_with':
-                result = record_str.endswith(condition_str)
+                result = record_str_lower.endswith(condition_str_lower)
             elif operator == 'regex':
                 try:
-                    # Enhanced regex with flags and escaping
+                    # Use original case for regex
                     pattern = re.compile(str(condition_value), re.IGNORECASE | re.MULTILINE)
                     result = bool(pattern.search(str(record_value)))
                 except re.error as e:
@@ -299,11 +323,11 @@ class RuleEngine:
                     result = False
             elif operator == 'in_list':
                 if isinstance(condition_value, list):
-                    result = record_str in [str(v).lower() for v in condition_value]
+                    result = record_str_lower in [str(v).strip().lower() for v in condition_value]
                 else:
                     # Split comma-separated values
                     values = [v.strip().lower() for v in str(condition_value).split(',')]
-                    result = record_str in values
+                    result = record_str_lower in values
             elif operator == 'is_empty':
                 result = record_str == ""
             elif operator == 'is_not_empty':
@@ -323,44 +347,15 @@ class RuleEngine:
         """Get field value from record with safe attribute access"""
         try:
             if hasattr(record, field):
-                return getattr(record, field)
+                value = getattr(record, field)
+                # Convert None to empty string for consistent processing
+                return value if value is not None else ''
             else:
                 logger.warning(f"Field '{field}' not found in record")
-                return None
+                return ''
         except Exception as e:
             logger.error(f"Error getting field value for '{field}': {str(e)}")
-            return None
-            value = condition.get('value', '')
-            case_sensitive = condition.get('case_sensitive', False)
-            
-            if field not in self.supported_fields:
-                logger.warning(f"Unsupported field: {field}")
-                return False
-            
-            if operator not in self.supported_operators:
-                logger.warning(f"Unsupported operator: {operator}")
-                return False
-            
-            # Get field value from record
-            record_value = getattr(record, field, '')
-            if record_value is None:
-                record_value = ''
-            
-            # Convert to string for comparison
-            record_value = str(record_value)
-            value = str(value)
-            
-            # Apply case sensitivity
-            if not case_sensitive:
-                record_value = record_value.lower()
-                value = value.lower()
-            
-            # Evaluate based on operator
-            return self._apply_operator(record_value, operator, value)
-            
-        except Exception as e:
-            logger.error(f"Error evaluating single condition: {str(e)}")
-            return False
+            return ''
     
     def _apply_operator(self, record_value, operator, value):
         """Apply the specified operator to compare values"""

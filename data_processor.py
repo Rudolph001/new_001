@@ -173,9 +173,9 @@ class DataProcessor:
                     for expected_col, actual_col in column_mapping.items():
                         if actual_col in row:
                             value = row[actual_col]
-                            # Convert to string and normalize
+                            # Convert to string but preserve original case for rule matching
                             if pd.notna(value):
-                                record_data[expected_col] = str(value).lower().strip()
+                                record_data[expected_col] = str(value).strip()
                             else:
                                 record_data[expected_col] = ''
                     
