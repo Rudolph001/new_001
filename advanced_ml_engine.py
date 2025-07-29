@@ -197,10 +197,14 @@ class AdvancedMLEngine:
                             analysis['domain_risk_scores'][domain] = []
                         analysis['domain_risk_scores'][domain].append(record.ml_risk_score)
 
-                    if self._is_external_domain(record.recipients_email_domain):
+                    # Since ALL emails are external, categorize by domain type
+                    domain_lower = record.recipients_email_domain.lower()
+                    if any(sus in domain_lower for sus in ['tempmail', 'guerrillamail', '10minutemail', 'mailinator', 'throwaway', 'temp-mail', 'discard.email']):
+                        analysis['suspicious_domain_emails'] += 1
+                    elif any(pub in domain_lower for pub in ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com']):
                         analysis['public_domain_emails'] += 1
                     else:
-                        analysis['internal_emails'] += 1
+                        analysis['other_external_emails'] += 1
 
                 # Enhanced risk analysis
                 if record.ml_risk_score:
@@ -258,10 +262,13 @@ class AdvancedMLEngine:
             # Post-process analysis with advanced calculations
             for sender, data in sender_analysis.items():
                 if data['total_emails'] > 0:
-                    # Basic ratios
+                    # Basic ratios adjusted for all-external email scenario
                     data['risk_score_avg'] /= data['total_emails']
-                    data['external_ratio'] = data['public_domain_emails'] / data['total_emails']
-                    data['internal_ratio'] = data['internal_emails'] / data['total_emails']
+                    data['public_domain_ratio'] = data['public_domain_emails'] / data['total_emails']
+                    data['suspicious_domain_ratio'] = data['suspicious_domain_emails'] / data['total_emails']
+                    data['business_domain_ratio'] = data['other_external_emails'] / data['total_emails']
+                    # Keep external_ratio for compatibility (all emails are external)
+                    data['external_ratio'] = 1.0  # All emails are external
                     data['attachment_ratio'] = data['attachments_sent'] / data['total_emails']
                     data['high_risk_ratio'] = data['high_risk_emails'] / data['total_emails']
                     data['critical_risk_ratio'] = data['critical_risk_emails'] / data['total_emails']
@@ -296,10 +303,11 @@ class AdvancedMLEngine:
                     risk_factor = (1 - data['risk_score_avg']) * 40
                     behavioral_factors.append(risk_factor)
 
-                    # Communication pattern factor (weight: 30%)
+                    # Communication pattern factor (weight: 30%) - adjusted for all-external
                     pattern_factor = 30
-                    if data['external_ratio'] > 0.8:
-                        pattern_factor -= 15  # High external communication penalty
+                    # Penalize suspicious domains instead of external ratio
+                    if data['suspicious_domain_ratio'] > 0.1:
+                        pattern_factor -= 20  # High suspicious domain penalty
                     if data['after_hours_emails'] / data['total_emails'] > 0.3:
                         pattern_factor -= 10  # After hours penalty
                     if data['weekend_emails'] > 0:
@@ -316,14 +324,14 @@ class AdvancedMLEngine:
 
                     data['behavioral_score'] = sum(behavioral_factors)
 
-                    # Calculate trust score (inverse of risk indicators)
+                    # Calculate trust score (inverse of risk indicators) - optimized for external emails
                     trust_penalties = 0
                     if data['critical_risk_emails'] > 0:
                         trust_penalties += 30
                     if data['high_risk_emails'] > 0:
                         trust_penalties += 20
-                    if data['external_ratio'] > 0.9:
-                        trust_penalties += 15
+                    if data['suspicious_domain_ratio'] > 0.2:
+                        trust_penalties += 25  # High penalty for suspicious domains
                     if data['leaver_emails'] > 0:
                         trust_penalties += 25
                     if data['after_hours_emails'] / data['total_emails'] > 0.5:
@@ -420,9 +428,9 @@ class AdvancedMLEngine:
         """Detect anomalies in sender behavior"""
         anomalies = []
 
-        # High external ratio anomaly
-        if sender_data.get('external_ratio', 0) > 0.9:
-            anomalies.append("🔴 Primarily external communication")
+        # High suspicious domain ratio anomaly (replaces external ratio check)
+        if sender_data.get('suspicious_domain_ratio', 0) > 0.3:
+            anomalies.append("🔴 High suspicious/temporary domain usage")
 
         # High risk variance anomaly
         if sender_data.get('risk_variance', 0) > 0.3:
@@ -453,9 +461,11 @@ class AdvancedMLEngine:
         if sender_data.get('high_risk_emails', 0) > 3:
             flags.append("⚠️ Multiple high-risk emails")
 
-        # Communication pattern flags
-        if sender_data.get('external_ratio', 0) > 0.8:
-            flags.append("📤 External communication heavy")
+        # Communication pattern flags - adjusted for all-external scenario
+        if sender_data.get('suspicious_domain_ratio', 0) > 0.2:
+            flags.append("⚠️ High suspicious domain usage")
+        if sender_data.get('public_domain_ratio', 0) > 0.8:
+            flags.append("📤 High public domain usage")
 
         if sender_data.get('attachment_ratio', 0) > 0.5:
             flags.append("📎 Frequent attachment sender")

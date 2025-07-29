@@ -121,11 +121,14 @@ class MLEngine:
             has_attachments = 1 if row['attachments'] else 0
             has_wordlist_match = 1 if (row['wordlist_attachment'] or row['wordlist_subject']) else 0
 
-            # Domain features - adjusted for all-external email scenario
+            # Domain features - optimized for all-external email scenario
             domain = row['recipients_email_domain'].lower()
-            # Since all emails are external, focus on risk levels of external domains
-            is_high_risk_domain = 1 if any(pub in domain for pub in ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com']) else 0
-            is_suspicious_domain = 1 if any(sus in domain for sus in ['tempmail', 'guerrillamail', '10minutemail', 'mailinator']) else 0
+            # Since ALL emails are external, focus on domain risk categories
+            # High-risk: Temporary/disposable email services
+            is_suspicious_domain = 1 if any(sus in domain for sus in ['tempmail', 'guerrillamail', '10minutemail', 'mailinator', 'throwaway', 'temp-mail', 'discard.email']) else 0
+            # Medium-risk: Free public email providers (less risky since common)
+            is_public_domain = 1 if any(pub in domain for pub in ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com']) else 0
+            # Legitimate business domains get lowest risk (everything else)
 
             # Temporal features (if time parsing is possible)
             is_weekend = 0
@@ -153,8 +156,8 @@ class MLEngine:
                 subject_len,
                 has_attachments,
                 has_wordlist_match,
-                is_high_risk_domain,
                 is_suspicious_domain,
+                is_public_domain,
                 is_weekend,
                 is_after_hours,
                 is_leaver,
@@ -257,14 +260,16 @@ class MLEngine:
             if row['leaver'].lower() in ['yes', 'true', '1']:
                 rule_risk += 0.3
 
-            # Domain risk assessment for external emails
+            # Domain risk assessment optimized for all-external emails
             domain = row['recipients_email_domain'].lower()
-            # High-risk public domains get moderate risk increase
-            if any(pub in domain for pub in ['gmail.com', 'yahoo.com', 'hotmail.com']):
-                rule_risk += 0.15  # Reduced since all emails are external
-            # Suspicious/temporary domains get higher risk
-            elif any(sus in domain for sus in ['tempmail', 'guerrillamail', '10minutemail', 'mailinator']):
-                rule_risk += 0.4
+            # Suspicious/temporary domains are highest risk
+            if any(sus in domain for sus in ['tempmail', 'guerrillamail', '10minutemail', 'mailinator', 'throwaway', 'temp-mail', 'discard.email']):
+                rule_risk += 0.5  # High risk for disposable emails
+            # Public domains get minimal risk since they're common for legitimate external communication
+            elif any(pub in domain for pub in ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com']):
+                rule_risk += 0.1  # Minimal risk for common public domains
+            # Business domains (everything else) get no domain-based risk penalty
+            # Focus shifts to other risk factors like attachments, keywords, leaver status
 
             # Attachment risk
             attachment_risk = self._calculate_attachment_risk(row['attachments'])
@@ -330,10 +335,10 @@ class MLEngine:
             explanations.append("Sender is a leaver - high risk for data exfiltration")
 
         domain = (record.recipients_email_domain or '').lower()
-        if any(pub in domain for pub in ['gmail.com', 'yahoo.com', 'hotmail.com']):
-            explanations.append("Email sent to high-risk public domain")
-        elif any(sus in domain for sus in ['tempmail', 'guerrillamail', '10minutemail', 'mailinator']):
+        if any(sus in domain for sus in ['tempmail', 'guerrillamail', '10minutemail', 'mailinator', 'throwaway', 'temp-mail', 'discard.email']):
             explanations.append("Email sent to suspicious/temporary domain")
+        elif any(pub in domain for pub in ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com']):
+            explanations.append("Email sent to public domain (common for external communication)")
 
         if record.attachments:
             attachment_risk = self._calculate_attachment_risk(record.attachments)
@@ -376,20 +381,23 @@ class MLEngine:
         if high_risk_indices:
             high_risk_df = df.iloc[high_risk_indices]
 
-            # Check common patterns for external email scenario
+            # Check common patterns optimized for all-external email scenario
             leaver_rate = (high_risk_df['leaver'].str.lower().isin(['yes', 'true', '1'])).mean()
-            public_domain_rate = high_risk_df['recipients_email_domain'].str.contains('gmail|yahoo|hotmail', na=False).mean()
-            suspicious_domain_rate = high_risk_df['recipients_email_domain'].str.contains('tempmail|guerrillamail|10minutemail|mailinator', na=False).mean()
+            suspicious_domain_rate = high_risk_df['recipients_email_domain'].str.contains('tempmail|guerrillamail|10minutemail|mailinator|throwaway|temp-mail|discard', na=False).mean()
+            public_domain_rate = high_risk_df['recipients_email_domain'].str.contains('gmail|yahoo|hotmail|outlook', na=False).mean()
             attachment_rate = (high_risk_df['attachments'] != '').mean()
+            wordlist_rate = ((high_risk_df['wordlist_attachment'] != '') | (high_risk_df['wordlist_subject'] != '')).mean()
 
-            if leaver_rate > 0.3:
+            if leaver_rate > 0.2:
                 risk_factors.append(f"Leaver communications ({leaver_rate:.1%} of high-risk cases)")
-            if public_domain_rate > 0.5:
-                risk_factors.append(f"High-risk public domain communications ({public_domain_rate:.1%} of high-risk cases)")
-            if suspicious_domain_rate > 0.1:
+            if suspicious_domain_rate > 0.05:
                 risk_factors.append(f"Suspicious/temporary domain communications ({suspicious_domain_rate:.1%} of high-risk cases)")
-            if attachment_rate > 0.3:
+            if attachment_rate > 0.4:
                 risk_factors.append(f"Communications with attachments ({attachment_rate:.1%} of high-risk cases)")
+            if wordlist_rate > 0.3:
+                risk_factors.append(f"Sensitive keyword matches ({wordlist_rate:.1%} of high-risk cases)")
+            if public_domain_rate > 0.8:
+                risk_factors.append(f"High concentration to public domains ({public_domain_rate:.1%} of high-risk cases)")
 
         return risk_factors
 
@@ -405,15 +413,25 @@ class MLEngine:
         if high_count > 5:
             recommendations.append(f"Schedule review of {high_count} high-risk cases within 24 hours")
 
-        # Domain-specific recommendations for external email scenario
-        suspicious_domains = df[df['recipients_email_domain'].str.contains('tempmail|guerrillamail|10minutemail|mailinator', na=False)]
+        # Domain-specific recommendations optimized for all-external email scenario
+        suspicious_domains = df[df['recipients_email_domain'].str.contains('tempmail|guerrillamail|10minutemail|mailinator|throwaway|temp-mail|discard', na=False)]
         if len(suspicious_domains) > 0:
-            recommendations.append(f"Review {len(suspicious_domains)} communications to suspicious/temporary domains")
+            recommendations.append(f"Immediately review {len(suspicious_domains)} communications to suspicious/temporary domains")
         
-        # Check for domain concentration
+        # Check for unusual domain concentration (might indicate data exfiltration)
         domain_counts = df['recipients_email_domain'].value_counts()
         if len(domain_counts) > 0 and domain_counts.iloc[0] > len(df) * 0.3:
-            recommendations.append(f"High concentration of emails to {domain_counts.index[0]} - consider investigation")
+            recommendations.append(f"Investigate high concentration of emails to {domain_counts.index[0]} ({domain_counts.iloc[0]} emails)")
+        
+        # Leaver-specific recommendations
+        leaver_emails = df[df['leaver'].str.lower().isin(['yes', 'true', '1'])]
+        if len(leaver_emails) > 0:
+            recommendations.append(f"Priority review of {len(leaver_emails)} communications from leavers")
+        
+        # Attachment-based recommendations
+        attachment_emails = df[df['attachments'] != '']
+        if len(attachment_emails) > len(df) * 0.5:
+            recommendations.append(f"High attachment usage detected - review {len(attachment_emails)} emails with attachments")
 
         return recommendations
 
