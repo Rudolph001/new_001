@@ -10,7 +10,7 @@ deploymentTarget = "autoscale"
 run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
 
 [workflows]
-runButton = "Project"
+runButton = "Start Flask"
 
 [[workflows.workflow]]
 name = "Project"
@@ -45,6 +45,15 @@ args = "uv add pandas numpy scikit-learn networkx"
 [[workflows.workflow]]
 name = "Start Flask App"
 author = 45391479
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Start Flask"
+author = 45666293
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
