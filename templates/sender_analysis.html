@@ -634,6 +634,69 @@
 // Set session ID for JavaScript functions
 window.currentSessionId = '{{ session.id }}';
 
+// Function to fetch sender analysis data from API
+function fetchSenderAnalysisData() {
+    console.log('Fetching sender analysis data from API...');
+    fetch(`/api/sender-analysis/${window.currentSessionId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('API response:', data);
+            if (data && !data.error && data.sender_profiles && Object.keys(data.sender_profiles).length > 0) {
+                senderAnalysisData = data;
+                // Update the display with new data
+                updateSenderAnalysisDisplay(data);
+                // Create the chart
+                createSenderChart('riskVsVolume');
+            } else {
+                console.warn('No sender data available from API:', data);
+                showNoDataMessage();
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching sender analysis:', error);
+            showNoDataMessage();
+        });
+}
+
+function updateSenderAnalysisDisplay(data) {
+    // Update statistics
+    document.getElementById('totalSenders').textContent = data.total_senders || 0;
+    
+    if (data.summary_statistics) {
+        const stats = data.summary_statistics;
+        const elements = {
+            'highRiskSenders': stats.high_risk_senders || 0,
+            'criticalRiskSenders': stats.critical_risk_senders || 0,
+            'avgTrustScore': Math.round(stats.avg_trust_score || 0),
+            'totalAnomalies': stats.total_anomalies || 0,
+            'multiDomainSenders': stats.multi_domain_senders || 0
+        };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        });
+        
+        // Update average emails per sender
+        const avgElement = document.querySelector('h3:contains("Avg Emails/Sender")');
+        if (avgElement) {
+            avgElement.textContent = (stats.avg_emails_per_sender || 0).toFixed(1);
+        }
+    }
+}
+
+function showNoDataMessage() {
+    const behaviorCtx = document.getElementById('senderBehaviorChart');
+    if (behaviorCtx) {
+        const ctx = behaviorCtx.getContext('2d');
+        ctx.clearRect(0, 0, behaviorCtx.width, behaviorCtx.height);
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No sender data available for analysis', behaviorCtx.width / 2, behaviorCtx.height / 2);
+    }
+}
+
 // Initialize sender analysis charts
 document.addEventListener('DOMContentLoaded', function() {
     // Create sender risk distribution chart
@@ -671,7 +734,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let senderChart = null;
     let senderAnalysisData = {{ analysis | tojson }};
     
-    if (behaviorCtx && senderAnalysisData && senderAnalysisData.sender_profiles) {
+    console.log('Sender analysis data:', senderAnalysisData);
+    
+    if (behaviorCtx && senderAnalysisData && senderAnalysisData.sender_profiles && Object.keys(senderAnalysisData.sender_profiles).length > 0) {
         createSenderChart('riskVsVolume'); // Default mode
         
         // Add event listeners for chart mode switching
@@ -688,7 +753,10 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.font = '16px Arial';
         ctx.fillStyle = '#666';
         ctx.textAlign = 'center';
-        ctx.fillText('No sender data available', behaviorCtx.width / 2, behaviorCtx.height / 2);
+        ctx.fillText('Error loading chart data', behaviorCtx.width / 2, behaviorCtx.height / 2);
+        
+        // Try to fetch data from API as fallback
+        fetchSenderAnalysisData();
     }
     
     function createSenderChart(mode) {

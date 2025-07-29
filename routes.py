@@ -1876,20 +1876,66 @@ def api_processing_errors(session_id):
 def api_sender_analysis(session_id):
     """Get sender analysis for dashboard"""
     try:
-        analysis = advanced_ml_engine.analyze_sender_behavior(session_id)
-
-        if not analysis:
+        # Check if session exists first
+        session = ProcessingSession.query.get(session_id)
+        if not session:
             return jsonify({
+                'error': 'Session not found',
                 'total_senders': 0,
                 'sender_profiles': {},
                 'summary_statistics': {
                     'high_risk_senders': 0,
                     'external_focused_senders': 0,
                     'attachment_senders': 0,
-                    'avg_emails_per_sender': 0
+                    'avg_emails_per_sender': 0,
+                    'critical_risk_senders': 0,
+                    'avg_trust_score': 0,
+                    'total_anomalies': 0,
+                    'multi_domain_senders': 0
+                }
+            }), 404
+
+        # Check if session has any email records
+        record_count = EmailRecord.query.filter_by(session_id=session_id).count()
+        if record_count == 0:
+            return jsonify({
+                'message': 'No email records found for this session',
+                'total_senders': 0,
+                'sender_profiles': {},
+                'summary_statistics': {
+                    'high_risk_senders': 0,
+                    'external_focused_senders': 0,
+                    'attachment_senders': 0,
+                    'avg_emails_per_sender': 0,
+                    'critical_risk_senders': 0,
+                    'avg_trust_score': 0,
+                    'total_anomalies': 0,
+                    'multi_domain_senders': 0
                 }
             })
 
+        logger.info(f"Analyzing sender behavior for session {session_id} with {record_count} records")
+        analysis = advanced_ml_engine.analyze_sender_behavior(session_id)
+
+        if not analysis or 'error' in analysis:
+            logger.warning(f"Sender analysis returned no data or error for session {session_id}")
+            return jsonify({
+                'message': 'Sender analysis could not be completed',
+                'total_senders': 0,
+                'sender_profiles': {},
+                'summary_statistics': {
+                    'high_risk_senders': 0,
+                    'external_focused_senders': 0,
+                    'attachment_senders': 0,
+                    'avg_emails_per_sender': 0,
+                    'critical_risk_senders': 0,
+                    'avg_trust_score': 0,
+                    'total_anomalies': 0,
+                    'multi_domain_senders': 0
+                }
+            })
+
+        logger.info(f"Sender analysis completed for session {session_id}: {analysis.get('total_senders', 0)} senders analyzed")
         return jsonify(analysis)
 
     except Exception as e:
@@ -1902,7 +1948,11 @@ def api_sender_analysis(session_id):
                 'high_risk_senders': 0,
                 'external_focused_senders': 0,
                 'attachment_senders': 0,
-                'avg_emails_per_sender': 0
+                'avg_emails_per_sender': 0,
+                'critical_risk_senders': 0,
+                'avg_trust_score': 0,
+                'total_anomalies': 0,
+                'multi_domain_senders': 0
             }
         }), 200
 

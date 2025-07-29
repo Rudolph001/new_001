@@ -362,6 +362,290 @@ class AdvancedMLEngine:
                 'summary_statistics': self._calculate_enhanced_sender_summary_stats(sender_analysis),
                 'behavioral_insights': self._generate_behavioral_insights(sender_analysis),
                 'risk_patterns': self._analyze_sender_risk_patterns(sender_analysis),
+                'anomaly_summary': self._generate_anomaly_summary(sender_analysis),
+                'analysis_timestamp': datetime.utcnow().isoformat()
+            }
+        
+        except Exception as e:
+            logger.error(f"Error in sender behavior analysis: {str(e)}")
+            return {
+                'error': str(e),
+                'total_senders': 0,
+                'sender_profiles': {},
+                'summary_statistics': {
+                    'high_risk_senders': 0,
+                    'external_focused_senders': 0,
+                    'attachment_senders': 0,
+                    'avg_emails_per_sender': 0,
+                    'critical_risk_senders': 0,
+                    'avg_trust_score': 0,
+                    'total_anomalies': 0,
+                    'multi_domain_senders': 0
+                },
+                'behavioral_insights': {
+                    'communication_patterns': {
+                        'external_heavy': 0,
+                        'internal_heavy': 0
+                    },
+                    'risk_profiles': {
+                        'consistently_risky': 0,
+                        'low_risk_stable': 0
+                    },
+                    'trust_distribution': {
+                        'high_trust': 0,
+                        'medium_trust': 0,
+                        'low_trust': 0
+                    },
+                    'temporal_patterns': {
+                        'business_hours_only': 0,
+                        'after_hours_active': 0,
+                        'weekend_active': 0
+                    }
+                },
+                'risk_patterns': {
+                    'high_risk_external': 0,
+                    'high_risk_attachments': 0,
+                    'high_risk_volume': 0,
+                    'high_risk_after_hours': 0,
+                    'leaver_risk_correlation': 0
+                },
+                'anomaly_summary': {
+                    'top_anomalies': {}
+                }
+            }
+
+    def _detect_sender_anomalies(self, sender_data):
+        """Detect anomalies in sender behavior"""
+        anomalies = []
+        
+        # High external ratio anomaly
+        if sender_data.get('external_ratio', 0) > 0.9:
+            anomalies.append("🔴 Primarily external communication")
+        
+        # High risk variance anomaly
+        if sender_data.get('risk_variance', 0) > 0.3:
+            anomalies.append("⚠️ Inconsistent risk patterns")
+        
+        # High volume with low trust
+        if sender_data.get('total_emails', 0) > 20 and sender_data.get('trust_score', 100) < 50:
+            anomalies.append("🟡 High volume with low trust")
+        
+        # After hours activity
+        if sender_data.get('after_hours_emails', 0) > 5:
+            anomalies.append("🌙 Significant after-hours activity")
+        
+        # Multiple domain contacts
+        if sender_data.get('recipient_spread', 0) > 15:
+            anomalies.append("🌐 Contacts many external domains")
+        
+        return anomalies
+
+    def _generate_enhanced_behavior_flags(self, sender_data):
+        """Generate enhanced behavior flags for sender"""
+        flags = []
+        
+        # Risk-based flags
+        if sender_data.get('critical_risk_emails', 0) > 0:
+            flags.append("🔴 Critical risk emails")
+        
+        if sender_data.get('high_risk_emails', 0) > 3:
+            flags.append("⚠️ Multiple high-risk emails")
+        
+        # Communication pattern flags
+        if sender_data.get('external_ratio', 0) > 0.8:
+            flags.append("📤 External communication heavy")
+        
+        if sender_data.get('attachment_ratio', 0) > 0.5:
+            flags.append("📎 Frequent attachment sender")
+        
+        # Temporal flags
+        if sender_data.get('weekend_emails', 0) > 2:
+            flags.append("📅 Weekend activity")
+        
+        if sender_data.get('after_hours_emails', 0) > 3:
+            flags.append("🌙 After-hours activity")
+        
+        # Trust and behavioral flags
+        if sender_data.get('trust_score', 100) < 40:
+            flags.append("⚠️ Low trust score")
+        
+        if sender_data.get('behavioral_score', 100) < 50:
+            flags.append("🔍 Concerning behavior pattern")
+        
+        # Leaver flag
+        if sender_data.get('leaver_emails', 0) > 0:
+            flags.append("🚪 Leaver communication detected")
+        
+        return flags
+
+    def _calculate_enhanced_sender_summary_stats(self, sender_analysis):
+        """Calculate enhanced summary statistics for sender analysis"""
+        if not sender_analysis:
+            return {
+                'high_risk_senders': 0,
+                'external_focused_senders': 0,
+                'attachment_senders': 0,
+                'avg_emails_per_sender': 0,
+                'critical_risk_senders': 0,
+                'avg_trust_score': 0,
+                'total_anomalies': 0,
+                'multi_domain_senders': 0
+            }
+        
+        high_risk_senders = sum(1 for data in sender_analysis.values() 
+                               if data.get('risk_score_avg', 0) > 0.7)
+        
+        external_focused = sum(1 for data in sender_analysis.values() 
+                              if data.get('external_ratio', 0) > 0.8)
+        
+        attachment_senders = sum(1 for data in sender_analysis.values() 
+                                if data.get('attachments_sent', 0) > 0)
+        
+        critical_risk_senders = sum(1 for data in sender_analysis.values() 
+                                   if data.get('critical_risk_emails', 0) > 0)
+        
+        multi_domain_senders = sum(1 for data in sender_analysis.values() 
+                                  if data.get('recipient_spread', 0) > 10)
+        
+        total_emails = sum(data.get('total_emails', 0) for data in sender_analysis.values())
+        avg_emails_per_sender = total_emails / len(sender_analysis) if sender_analysis else 0
+        
+        trust_scores = [data.get('trust_score', 0) for data in sender_analysis.values() 
+                       if data.get('trust_score', 0) > 0]
+        avg_trust_score = sum(trust_scores) / len(trust_scores) if trust_scores else 0
+        
+        total_anomalies = sum(len(data.get('anomaly_indicators', [])) 
+                             for data in sender_analysis.values())
+        
+        return {
+            'high_risk_senders': high_risk_senders,
+            'external_focused_senders': external_focused,
+            'attachment_senders': attachment_senders,
+            'avg_emails_per_sender': avg_emails_per_sender,
+            'critical_risk_senders': critical_risk_senders,
+            'avg_trust_score': avg_trust_score,
+            'total_anomalies': total_anomalies,
+            'multi_domain_senders': multi_domain_senders
+        }
+
+    def _generate_behavioral_insights(self, sender_analysis):
+        """Generate behavioral insights from sender analysis"""
+        if not sender_analysis:
+            return {
+                'communication_patterns': {'external_heavy': 0, 'internal_heavy': 0},
+                'risk_profiles': {'consistently_risky': 0, 'low_risk_stable': 0},
+                'trust_distribution': {'high_trust': 0, 'medium_trust': 0, 'low_trust': 0},
+                'temporal_patterns': {'business_hours_only': 0, 'after_hours_active': 0, 'weekend_active': 0}
+            }
+        
+        # Communication patterns
+        external_heavy = sum(1 for data in sender_analysis.values() 
+                            if data.get('external_ratio', 0) > 0.7)
+        internal_heavy = sum(1 for data in sender_analysis.values() 
+                            if data.get('external_ratio', 0) < 0.3)
+        
+        # Risk profiles
+        consistently_risky = sum(1 for data in sender_analysis.values() 
+                                if data.get('risk_score_avg', 0) > 0.6 and 
+                                   data.get('risk_variance', 1) < 0.2)
+        low_risk_stable = sum(1 for data in sender_analysis.values() 
+                             if data.get('risk_score_avg', 0) < 0.3 and 
+                                data.get('risk_variance', 1) < 0.2)
+        
+        # Trust distribution
+        high_trust = sum(1 for data in sender_analysis.values() 
+                        if data.get('trust_score', 0) >= 80)
+        medium_trust = sum(1 for data in sender_analysis.values() 
+                          if 50 <= data.get('trust_score', 0) < 80)
+        low_trust = sum(1 for data in sender_analysis.values() 
+                       if data.get('trust_score', 0) < 50)
+        
+        # Temporal patterns
+        business_hours_only = sum(1 for data in sender_analysis.values() 
+                                 if data.get('after_hours_emails', 0) == 0 and 
+                                    data.get('weekend_emails', 0) == 0)
+        after_hours_active = sum(1 for data in sender_analysis.values() 
+                                if data.get('after_hours_emails', 0) > 0)
+        weekend_active = sum(1 for data in sender_analysis.values() 
+                            if data.get('weekend_emails', 0) > 0)
+        
+        return {
+            'communication_patterns': {
+                'external_heavy': external_heavy,
+                'internal_heavy': internal_heavy
+            },
+            'risk_profiles': {
+                'consistently_risky': consistently_risky,
+                'low_risk_stable': low_risk_stable
+            },
+            'trust_distribution': {
+                'high_trust': high_trust,
+                'medium_trust': medium_trust,
+                'low_trust': low_trust
+            },
+            'temporal_patterns': {
+                'business_hours_only': business_hours_only,
+                'after_hours_active': after_hours_active,
+                'weekend_active': weekend_active
+            }
+        }
+
+    def _analyze_sender_risk_patterns(self, sender_analysis):
+        """Analyze risk patterns across senders"""
+        if not sender_analysis:
+            return {
+                'high_risk_external': 0,
+                'high_risk_attachments': 0,
+                'high_risk_volume': 0,
+                'high_risk_after_hours': 0,
+                'leaver_risk_correlation': 0
+            }
+        
+        high_risk_external = sum(1 for data in sender_analysis.values() 
+                                if data.get('risk_score_avg', 0) > 0.7 and 
+                                   data.get('external_ratio', 0) > 0.7)
+        
+        high_risk_attachments = sum(1 for data in sender_analysis.values() 
+                                   if data.get('risk_score_avg', 0) > 0.7 and 
+                                      data.get('attachments_sent', 0) > 0)
+        
+        high_risk_volume = sum(1 for data in sender_analysis.values() 
+                              if data.get('risk_score_avg', 0) > 0.7 and 
+                                 data.get('total_emails', 0) > 10)
+        
+        high_risk_after_hours = sum(1 for data in sender_analysis.values() 
+                                   if data.get('risk_score_avg', 0) > 0.7 and 
+                                      data.get('after_hours_emails', 0) > 0)
+        
+        leaver_risk_correlation = sum(1 for data in sender_analysis.values() 
+                                     if data.get('leaver_emails', 0) > 0 and 
+                                        data.get('risk_score_avg', 0) > 0.5)
+        
+        return {
+            'high_risk_external': high_risk_external,
+            'high_risk_attachments': high_risk_attachments,
+            'high_risk_volume': high_risk_volume,
+            'high_risk_after_hours': high_risk_after_hours,
+            'leaver_risk_correlation': leaver_risk_correlation
+        }
+
+    def _generate_anomaly_summary(self, sender_analysis):
+        """Generate anomaly summary from sender analysis"""
+        if not sender_analysis:
+            return {'top_anomalies': {}}
+        
+        anomaly_counts = {}
+        for data in sender_analysis.values():
+            for anomaly in data.get('anomaly_indicators', []):
+                anomaly_counts[anomaly] = anomaly_counts.get(anomaly, 0) + 1
+        
+        # Get top 5 anomalies
+        top_anomalies = dict(sorted(anomaly_counts.items(), 
+                                   key=lambda x: x[1], reverse=True)[:5])
+        
+        return {
+            'top_anomalies': top_anomalies
+        }
                 'anomaly_summary': self._summarize_sender_anomalies(sender_analysis)
             }
             
