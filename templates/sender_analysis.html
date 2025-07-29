@@ -669,34 +669,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Enhanced sender behavior scatter plot with multiple modes
     const behaviorCtx = document.getElementById('senderBehaviorChart');
     let senderChart = null;
-    let senderAnalysisData = null;
+    let senderAnalysisData = {{ analysis | tojson }};
     
-    if (behaviorCtx) {
-        // Load enhanced sender analysis data
-        fetch(`/api/sender-analysis/{{ session.id }}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    console.error('Error loading sender analysis:', data.error);
-                    return;
+    if (behaviorCtx && senderAnalysisData && senderAnalysisData.sender_profiles) {
+        createSenderChart('riskVsVolume'); // Default mode
+        
+        // Add event listeners for chart mode switching
+        document.querySelectorAll('input[name="chartMode"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    createSenderChart(this.id);
                 }
-                
-                senderAnalysisData = data;
-                createSenderChart('riskVsVolume'); // Default mode
-                
-                // Add event listeners for chart mode switching
-                document.querySelectorAll('input[name="chartMode"]').forEach(radio => {
-                    radio.addEventListener('change', function() {
-                        if (this.checked) {
-                            createSenderChart(this.id);
-                        }
-                    });
-                });
-            })
-            .catch(error => {
-                console.error('Error loading sender analysis:', error);
-                behaviorCtx.getContext('2d').fillText('Error loading chart data', 10, 50);
             });
+        });
+    } else if (behaviorCtx) {
+        // Show message when no data is available
+        const ctx = behaviorCtx.getContext('2d');
+        ctx.font = '16px Arial';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.fillText('No sender data available', behaviorCtx.width / 2, behaviorCtx.height / 2);
     }
     
     function createSenderChart(mode) {
