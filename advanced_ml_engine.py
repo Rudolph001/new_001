@@ -118,311 +118,147 @@ class AdvancedMLEngine:
             return {'error': str(e)}
 
     def analyze_sender_behavior(self, session_id):
-        """Comprehensive sender behavior analysis with advanced metrics"""
+        """Analyze sender behavior patterns and risk profiles"""
         try:
+            # Get all email records for this session
             records = EmailRecord.query.filter_by(session_id=session_id).all()
 
-            sender_analysis = defaultdict(lambda: {
-                'total_emails': 0,
-                'public_domain_emails': 0,
-                'suspicious_domain_emails': 0,
-                'other_external_emails': 0,
-                'internal_emails': 0,
-                'high_risk_emails': 0,
-                'critical_risk_emails': 0,
-                'medium_risk_emails': 0,
-                'low_risk_emails': 0,
-                'attachments_sent': 0,
-                'attachment_types': {},
-                'risk_score_avg': 0,
-                'risk_score_max': 0,
-                'risk_score_min': 1.0,
-                'risk_scores': [],
-                'domains_contacted': set(),
-                'domain_risk_scores': {},
-                'time_patterns': [],
-                'communication_frequency': defaultdict(int),
-                'behavior_flags': [],
-                'data_volume_score': 0,
-                'leaver_emails': 0,
-                'business_hours_emails': 0,
-                'after_hours_emails': 0,
-                'weekend_emails': 0,
-                'subject_keywords': defaultdict(int),
-                'justification_patterns': defaultdict(int),
-                'recipient_spread': 0,
-                'anomaly_indicators': [],
-                'behavioral_score': 0,
-                'trust_score': 0,
-                'first_seen': None,
-                'last_seen': None,
-                'communication_velocity': 0,
-                'risk_trend': 'stable'
-            })
+            if not records:
+                logger.warning(f"No records found for session {session_id}")
+                return {}
+
+            # Sender analysis
+            sender_profiles = {}
 
             for record in records:
-                if not record.sender:
-                    continue
+                sender = record.sender or 'Unknown'
 
-                sender = record.sender.lower()
-                analysis = sender_analysis[sender]
+                if sender not in sender_profiles:
+                    sender_profiles[sender] = {
+                        'total_emails': 0,
+                        'risk_scores': [],
+                        'external_communications': 0,
+                        'internal_communications': 0,
+                        'attachment_count': 0,
+                        'high_risk_count': 0,
+                        'unique_recipients': set(),
+                        'time_patterns': []
+                    }
 
-                analysis['total_emails'] += 1
+                profile = sender_profiles[sender]
+                profile['total_emails'] += 1
 
-                # Track first and last communication
-                if record.time:
-                    if analysis['first_seen'] is None or record.time < analysis['first_seen']:
-                        analysis['first_seen'] = record.time
-                    if analysis['last_seen'] is None or record.time > analysis['last_seen']:
-                        analysis['last_seen'] = record.time
-                    analysis['time_patterns'].append(record.time)
+                # Risk analysis
+                if record.ml_risk_score is not None:
+                    profile['risk_scores'].append(record.ml_risk_score)
 
-                    # Time-based analysis
-                    time_str = str(record.time).lower()
-                    if any(day in time_str for day in ['saturday', 'sunday', 'sat', 'sun']):
-                        analysis['weekend_emails'] += 1
-                    elif any(hour in time_str for hour in ['22:', '23:', '00:', '01:', '02:', '03:', '04:', '05:', '06:', '07:']):
-                        analysis['after_hours_emails'] += 1
-                    else:
-                        analysis['business_hours_emails'] += 1
+                if record.risk_level in ['High', 'Critical']:
+                    profile['high_risk_count'] += 1
 
-                # Enhanced external communication analysis
+                # Communication patterns
                 if record.recipients_email_domain:
-                    domain = record.recipients_email_domain.lower()
-                    analysis['domains_contacted'].add(domain)
-
-                    # Track risk scores per domain
-                    if record.ml_risk_score:
-                        if domain not in analysis['domain_risk_scores']:
-                            analysis['domain_risk_scores'][domain] = []
-                        analysis['domain_risk_scores'][domain].append(record.ml_risk_score)
-
-                    # Since ALL emails are external, categorize by domain type
-                    domain_lower = record.recipients_email_domain.lower()
-                    if any(sus in domain_lower for sus in ['tempmail', 'guerrillamail', '10minutemail', 'mailinator', 'throwaway', 'temp-mail', 'discard.email']):
-                        analysis['suspicious_domain_emails'] += 1
-                    elif any(pub in domain_lower for pub in ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com']):
-                        analysis['public_domain_emails'] += 1
+                    # Check if external (non-corporate) domain
+                    if any(ext in record.recipients_email_domain.lower() for ext in 
+                          ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com']):
+                        profile['external_communications'] += 1
                     else:
-                        analysis['other_external_emails'] += 1
+                        profile['internal_communications'] += 1
 
-                # Enhanced risk analysis
-                if record.ml_risk_score:
-                    analysis['risk_scores'].append(record.ml_risk_score)
-                    analysis['risk_score_avg'] += record.ml_risk_score
-                    analysis['risk_score_max'] = max(analysis['risk_score_max'], record.ml_risk_score)
-                    analysis['risk_score_min'] = min(analysis['risk_score_min'], record.ml_risk_score)
-
-                    # Risk level categorization
-                    if record.risk_level == 'Critical' or record.ml_risk_score > 0.8:
-                        analysis['critical_risk_emails'] += 1
-                    elif record.risk_level == 'High' or record.ml_risk_score > 0.6:
-                        analysis['high_risk_emails'] += 1
-                    elif record.risk_level == 'Medium' or record.ml_risk_score > 0.4:
-                        analysis['medium_risk_emails'] += 1
-                    else:
-                        analysis['low_risk_emails'] += 1
-
-                # Enhanced attachment analysis
+                # Attachments
                 if record.attachments:
-                    analysis['attachments_sent'] += 1
+                    profile['attachment_count'] += 1
 
-                    # Analyze attachment types
-                    attachments_lower = record.attachments.lower()
-                    for ext in ['.exe', '.zip', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.txt', '.csv']:
-                        if ext in attachments_lower:
-                            analysis['attachment_types'][ext] = analysis['attachment_types'].get(ext, 0) + 1
+                # Recipients
+                if record.recipients:
+                    profile['unique_recipients'].add(record.recipients)
 
-                    # Calculate data volume score based on attachment presence
-                    analysis['data_volume_score'] += 1
-
-                # Leaver analysis
-                if record.leaver and record.leaver.lower() in ['yes', 'true', '1']:
-                    analysis['leaver_emails'] += 1
-
-                # Subject keyword analysis
-                if record.subject:
-                    subject_words = record.subject.lower().split()
-                    for word in subject_words[:5]:  # Top 5 words
-                        if len(word) > 3:  # Skip short words
-                            analysis['subject_keywords'][word] += 1
-
-                # Justification pattern analysis
-                if record.justification:
-                    justification_lower = record.justification.lower()
-                    for pattern in ['urgent', 'mistake', 'personal', 'business', 'legitimate', 'error', 'wrong']:
-                        if pattern in justification_lower:
-                            analysis['justification_patterns'][pattern] += 1
-
-                # Communication frequency (daily)
+                # Time patterns
                 if record.time:
-                    day_key = str(record.time)[:10] if len(str(record.time)) > 10 else str(record.time)
-                    analysis['communication_frequency'][day_key] += 1
-
-            # Post-process analysis with advanced calculations
-            for sender, data in sender_analysis.items():
-                if data['total_emails'] > 0:
-                    # Basic ratios adjusted for all-external email scenario
-                    data['risk_score_avg'] /= data['total_emails']
-                    data['public_domain_ratio'] = data['public_domain_emails'] / data['total_emails']
-                    data['suspicious_domain_ratio'] = data['suspicious_domain_emails'] / data['total_emails']
-                    data['business_domain_ratio'] = data['other_external_emails'] / data['total_emails']
-                    # Keep external_ratio for compatibility (all emails are external)
-                    data['external_ratio'] = 1.0  # All emails are external
-                    data['attachment_ratio'] = data['attachments_sent'] / data['total_emails']
-                    data['high_risk_ratio'] = data['high_risk_emails'] / data['total_emails']
-                    data['critical_risk_ratio'] = data['critical_risk_emails'] / data['total_emails']
-
-                    # Convert sets to lists
-                    data['domains_contacted'] = list(data['domains_contacted'])
-                    data['recipient_spread'] = len(data['domains_contacted'])
-
-                    # Calculate risk variance and consistency
-                    if len(data['risk_scores']) > 1:
-                        data['risk_variance'] = float(np.var(data['risk_scores']))
-                        data['risk_consistency'] = 1 / (1 + data['risk_variance'])  # Higher = more consistent
-                    else:
-                        data['risk_variance'] = 0
-                        data['risk_consistency'] = 1
-
-                    # Calculate communication velocity (emails per day)
-                    if data['first_seen'] and data['last_seen'] and data['first_seen'] != data['last_seen']:
-                        try:
-                            # Simple day calculation
-                            unique_days = len(set(data['communication_frequency'].keys()))
-                            data['communication_velocity'] = data['total_emails'] / max(unique_days, 1)
-                        except:
-                            data['communication_velocity'] = data['total_emails']
-                    else:
-                        data['communication_velocity'] = data['total_emails']
-
-                    # Calculate behavioral score (0-100)
-                    behavioral_factors = []
-
-                    # Risk factor (weight: 40%)
-                    risk_factor = (1 - data['risk_score_avg']) * 40
-                    behavioral_factors.append(risk_factor)
-
-                    # Communication pattern factor (weight: 30%) - adjusted for all-external
-                    pattern_factor = 30
-                    # Penalize suspicious domains instead of external ratio
-                    if data['suspicious_domain_ratio'] > 0.1:
-                        pattern_factor -= 20  # High suspicious domain penalty
-                    if data['after_hours_emails'] / data['total_emails'] > 0.3:
-                        pattern_factor -= 10  # After hours penalty
-                    if data['weekend_emails'] > 0:
-                        pattern_factor -= 5   # Weekend penalty
-                    behavioral_factors.append(max(0, pattern_factor))
-
-                    # Consistency factor (weight: 20%)
-                    consistency_factor = data['risk_consistency'] * 20
-                    behavioral_factors.append(consistency_factor)
-
-                    # Volume factor (weight: 10%)
-                    volume_factor = min(10, data['total_emails'] / 10 * 10)  # Cap at 10
-                    behavioral_factors.append(volume_factor)
-
-                    data['behavioral_score'] = sum(behavioral_factors)
-
-                    # Calculate trust score (inverse of risk indicators) - optimized for external emails
-                    trust_penalties = 0
-                    if data['critical_risk_emails'] > 0:
-                        trust_penalties += 30
-                    if data['high_risk_emails'] > 0:
-                        trust_penalties += 20
-                    if data['suspicious_domain_ratio'] > 0.2:
-                        trust_penalties += 25  # High penalty for suspicious domains
-                    if data['leaver_emails'] > 0:
-                        trust_penalties += 25
-                    if data['after_hours_emails'] / data['total_emails'] > 0.5:
-                        trust_penalties += 10
-
-                    data['trust_score'] = max(0, 100 - trust_penalties)
-
-                    # Calculate risk trend
-                    if len(data['risk_scores']) >= 3:
-                        recent_scores = data['risk_scores'][-3:]
-                        older_scores = data['risk_scores'][:-3] if len(data['risk_scores']) > 3 else data['risk_scores'][:1]
-
-                        recent_avg = np.mean(recent_scores)
-                        older_avg = np.mean(older_scores)
-
-                        if recent_avg > older_avg + 0.1:
-                            data['risk_trend'] = 'increasing'
-                        elif recent_avg < older_avg - 0.1:
-                            data['risk_trend'] = 'decreasing'
+                    try:
+                        if isinstance(record.time, str):
+                            time_obj = datetime.fromisoformat(record.time.replace('Z', '+00:00'))
                         else:
-                            data['risk_trend'] = 'stable'
+                            time_obj = record.time
+                        profile['time_patterns'].append(time_obj)
+                    except:
+                        pass
 
-                    # Generate anomaly indicators
-                    data['anomaly_indicators'] = self._detect_sender_anomalies(data)
+            # Calculate derived metrics for each sender
+            for sender, profile in sender_profiles.items():
+                # Risk metrics
+                if profile['risk_scores']:
+                    profile['risk_score_avg'] = sum(profile['risk_scores']) / len(profile['risk_scores'])
+                    profile['risk_score_max'] = max(profile['risk_scores'])
+                else:
+                    profile['risk_score_avg'] = 0.0
+                    profile['risk_score_max'] = 0.0
 
-                    # Generate enhanced behavior flags
-                    data['behavior_flags'] = self._generate_enhanced_behavior_flags(data)
+                # Communication ratios
+                total_comms = profile['external_communications'] + profile['internal_communications']
+                if total_comms > 0:
+                    profile['external_ratio'] = profile['external_communications'] / total_comms
+                    profile['internal_ratio'] = profile['internal_communications'] / total_comms
+                else:
+                    profile['external_ratio'] = 0.0
+                    profile['internal_ratio'] = 0.0
 
-            # Sort by behavioral score (descending - higher score = better behavior)
-            # But for security dashboard, we want to see risky senders first
-            sorted_senders = sorted(sender_analysis.items(), 
-                                  key=lambda x: (x[1]['risk_score_avg'], -x[1]['behavioral_score']), 
-                                  reverse=True)
+                # Convert set to count
+                profile['unique_recipients'] = len(profile['unique_recipients'])
+
+                # Calculate attachment ratio
+                if profile['total_emails'] > 0:
+                    profile['attachment_ratio'] = profile['attachment_count'] / profile['total_emails']
+                else:
+                    profile['attachment_ratio'] = 0.0
+
+            # Summary statistics
+            total_senders = len(sender_profiles)
+            high_risk_senders = sum(1 for p in sender_profiles.values() if p['high_risk_count'] > 0)
+            external_focused_senders = sum(1 for p in sender_profiles.values() if p['external_ratio'] > 0.5)
+            attachment_senders = sum(1 for p in sender_profiles.values() if p['attachment_count'] > 0)
+
+            avg_emails_per_sender = sum(p['total_emails'] for p in sender_profiles.values()) / total_senders if total_senders > 0 else 0
+
+            # Find top risk senders
+            top_risk_senders = sorted(
+                [(sender, profile) for sender, profile in sender_profiles.items()],
+                key=lambda x: x[1]['risk_score_avg'],
+                reverse=True
+            )[:10]
+
+            # Find communication anomalies
+            top_anomalies = []
+            for sender, profile in sender_profiles.items():
+                if profile['total_emails'] > avg_emails_per_sender * 2:  # High volume
+                    top_anomalies.append({
+                        'sender': sender,
+                        'anomaly_type': 'High Volume',
+                        'details': f"{profile['total_emails']} emails (avg: {avg_emails_per_sender:.1f})"
+                    })
+
+                if profile['external_ratio'] > 0.8 and profile['total_emails'] > 5:  # Mostly external
+                    top_anomalies.append({
+                        'sender': sender,
+                        'anomaly_type': 'External Focus',
+                        'details': f"{profile['external_ratio']:.1%} external communications"
+                    })
 
             return {
-                'total_senders': len(sender_analysis),
-                'sender_profiles': dict(sorted_senders[:100]) if sorted_senders else {},  # Top 100 for detailed analysis
-                'summary_statistics': self._calculate_enhanced_sender_summary_stats(sender_analysis),
-                'behavioral_insights': self._generate_behavioral_insights(sender_analysis),
-                'risk_patterns': self._analyze_sender_risk_patterns(sender_analysis),
-                'anomaly_summary': self._generate_anomaly_summary(sender_analysis),
-                'analysis_timestamp': datetime.utcnow().isoformat()
+                'total_senders': total_senders,
+                'sender_profiles': dict(list(sender_profiles.items())[:50]),  # Limit for performance
+                'summary_statistics': {
+                    'high_risk_senders': high_risk_senders,
+                    'external_focused_senders': external_focused_senders,
+                    'attachment_senders': attachment_senders,
+                    'avg_emails_per_sender': avg_emails_per_sender
+                },
+                'top_risk_senders': top_risk_senders,
+                'top_anomalies': top_anomalies
             }
 
         except Exception as e:
-            logger.error(f"Error in sender behavior analysis: {str(e)}")
-            return {
-                'error': str(e),
-                'total_senders': 0,
-                'sender_profiles': {},
-                'summary_statistics': {
-                    'high_risk_senders': 0,
-                    'external_focused_senders': 0,
-                    'attachment_senders': 0,
-                    'avg_emails_per_sender': 0,
-                    'critical_risk_senders': 0,
-                    'avg_trust_score': 0,
-                    'total_anomalies': 0,
-                    'multi_domain_senders': 0
-                },
-                'behavioral_insights': {
-                    'communication_patterns': {
-                        'external_heavy': 0,
-                        'internal_heavy': 0
-                    },
-                    'risk_profiles': {
-                        'consistently_risky': 0,
-                        'low_risk_stable': 0
-                    },
-                    'trust_distribution': {
-                        'high_trust': 0,
-                        'medium_trust': 0,
-                        'low_trust': 0
-                    },
-                    'temporal_patterns': {
-                        'business_hours_only': 0,
-                        'after_hours_active': 0,
-                        'weekend_active': 0
-                    }
-                },
-                'risk_patterns': {
-                    'high_risk_external': 0,
-                    'high_risk_attachments': 0,
-                    'high_risk_volume': 0,
-                    'high_risk_after_hours': 0,
-                    'leaver_risk_correlation': 0
-                },
-                'anomaly_summary': {
-                    'top_anomalies': {}
-                }
-            }
+            logger.error(f"Error analyzing sender behavior: {str(e)}")
+            return {'error': str(e)}
 
     def _detect_sender_anomalies(self, sender_data):
         """Detect anomalies in sender behavior"""
@@ -531,7 +367,7 @@ class AdvancedMLEngine:
 
         return {
             'high_risk_senders': high_risk_senders,
-            'external_focused_senders': external_focused,
+            'external_focused_senders': external_focused_senders,
             'attachment_senders': attachment_senders,
             'avg_emails_per_sender': avg_emails_per_sender,
             'critical_risk_senders': critical_risk_senders,
@@ -928,6 +764,7 @@ class AdvancedMLEngine:
 
         return categories
 
+```python
     def _detect_malware_indicators(self, records):
         """Detect potential malware indicators"""
         indicators = {

@@ -164,45 +164,6 @@ def processing_status(session_id):
     })
 
 @app.route('/api/dashboard-stats/<session_id>')
-def dashboard_stats(session_id):
-    """Get real-time dashboard statistics for animations"""
-    try:
-        # Get session info
-        session = ProcessingSession.query.get_or_404(session_id)
-        
-        # Get basic stats
-        stats = session_manager.get_processing_stats(session_id)
-        ml_insights = ml_engine.get_insights(session_id)
-
-        # Get real-time counts
-        total_records = EmailRecord.query.filter_by(session_id=session_id).count()
-        critical_cases = EmailRecord.query.filter_by(
-            session_id=session_id, 
-            risk_level='Critical'
-        ).filter(EmailRecord.whitelisted != True).count()
-
-        whitelisted_records = EmailRecord.query.filter_by(
-            session_id=session_id,
-            whitelisted=True
-        ).count()
-
-        return jsonify({
-            'total_records': total_records,
-            'critical_cases': critical_cases,
-            'avg_risk_score': ml_insights.get('average_risk_score', 0),
-            'whitelisted_records': whitelisted_records,
-            'processing_complete': stats.get('session_info', {}).get('status') == 'completed',
-            'current_chunk': session.current_chunk or 0,
-            'total_chunks': session.total_chunks or 0,
-            'chunk_progress': int((session.current_chunk or 0) / max(session.total_chunks or 1, 1) * 100),
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-    except Exception as e:
-        logger.error(f"Error getting dashboard stats: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/dashboard-stats/<session_id>')
 def api_dashboard_stats(session_id):
     """Get real-time dashboard statistics for animations"""
     try:
@@ -1262,6 +1223,12 @@ def api_generate_report(session_id):
         logger.error(f"Error generating report for session {session_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/network_dashboard/<session_id>')
+def network_dashboard(session_id):
+    """Network analysis dashboard"""
+    session = ProcessingSession.query.get_or_404(session_id)
+    return render_template('network_dashboard.html', session=session)
+
 @app.route('/api/sender_risk_analytics/<session_id>')
 def api_sender_risk_analytics(session_id):
     """Get sender risk vs communication volume data for scatter plot"""
@@ -1336,6 +1303,36 @@ def api_sender_risk_analytics(session_id):
             'max_volume': 0,
             'max_risk': 0
         }), 200  # Return 200 to prevent JS errors
+
+@app.route('/api/sender_analysis/<session_id>')
+def api_sender_analysis(session_id):
+    """Get sender analysis data"""
+    try:
+        analysis = advanced_ml_engine.analyze_sender_behavior(session_id)
+        return jsonify(analysis)
+    except Exception as e:
+        logger.error(f"Error getting sender analysis for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/time_analysis/<session_id>')
+def api_time_analysis(session_id):
+    """Get temporal analysis data"""
+    try:
+        analysis = advanced_ml_engine.analyze_temporal_patterns(session_id)
+        return jsonify(analysis)
+    except Exception as e:
+        logger.error(f"Error getting time analysis for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/whitelist_analysis/<session_id>')
+def api_whitelist_analysis(session_id):
+    """Get whitelist analysis data"""
+    try:
+        analysis = domain_manager.analyze_whitelist_recommendations(session_id)
+        return jsonify(analysis)
+    except Exception as e:
+        logger.error(f"Error getting whitelist analysis for session {session_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/case/<session_id>/<record_id>')
 def api_case_details(session_id, record_id):
