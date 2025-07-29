@@ -208,13 +208,13 @@
     </div>
 
     <div class="col-lg-3 col-md-6">
-        <div class="card stats-card bg-gradient-danger text-white interactive-card risk-indicator {% if (stats.risk_distribution.Critical or 0) > 0 %}critical{% endif %}">
+        <div class="card stats-card bg-gradient-danger text-white interactive-card risk-indicator {% if (workflow_stats.critical_cases_count or 0) > 0 %}critical{% endif %}">
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <div>
-                        <h3 class="mb-0 animated-number" id="criticalCases" data-target="{{ stats.risk_distribution.Critical or 0 }}">0</h3>
+                        <h3 class="mb-0 animated-number" id="criticalCases" data-target="{{ workflow_stats.critical_cases_count or 0 }}">0</h3>
                         <p class="mb-0">Critical Cases</p>
-                        {% if (stats.risk_distribution.Critical or 0) > 0 %}
+                        {% if (workflow_stats.critical_cases_count or 0) > 0 %}
                         <small class="d-block mt-1">
                             <i class="fas fa-exclamation-circle"></i> Immediate attention required
                         </small>
@@ -249,17 +249,17 @@
 </div>
 
 <!-- Key Insights Section -->
-{% if (stats.risk_distribution.Critical or 0) > 0 or (ml_insights.average_risk_score or 0) > 0.7 %}
+{% if (workflow_stats.critical_cases_count or 0) > 0 or (ml_insights.average_risk_score or 0) > 0.7 %}
 <div class="row mb-4">
     <div class="col-12">
         <div class="insight-highlight">
             <h6 class="mb-2"><i class="fas fa-lightbulb text-warning"></i> Key Security Insights</h6>
             <div class="row">
-                {% if (stats.risk_distribution.Critical or 0) > 0 %}
+                {% if (workflow_stats.critical_cases_count or 0) > 0 %}
                 <div class="col-md-6">
                     <div class="d-flex align-items-center">
                         <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-                        <span><strong>{{ stats.risk_distribution.Critical }}</strong> critical cases require immediate review</span>
+                        <span><strong>{{ workflow_stats.critical_cases_count or 0 }}</strong> critical cases require immediate review</span>
                     </div>
                 </div>
                 {% endif %}

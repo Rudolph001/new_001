@@ -374,7 +374,12 @@ def dashboard(session_id):
         attachment_analytics = {}
 
     # Get workflow statistics for the dashboard
-    workflow_stats = {}
+    workflow_stats = {
+        'excluded_count': 0,
+        'whitelisted_count': 0,
+        'rules_matched_count': 0,
+        'critical_cases_count': 0
+    }
     try:
         # Count excluded records
         excluded_count = EmailRecord.query.filter(
@@ -400,14 +405,15 @@ def dashboard(session_id):
             risk_level='Critical'
         ).count()
 
-        workflow_stats = {
+        workflow_stats.update({
             'excluded_count': excluded_count,
             'whitelisted_count': whitelisted_count,
             'rules_matched_count': rules_matched_count,
             'critical_cases_count': critical_cases_count
-        }
+        })
     except Exception as e:
         logger.warning(f"Could not get workflow stats for dashboard: {str(e)}")
+        # workflow_stats already has default values, so we don't need to do anything else
 
     return render_template('dashboard.html', 
                          session=session, 
