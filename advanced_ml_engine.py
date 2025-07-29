@@ -647,9 +647,9 @@ class AdvancedMLEngine:
             'top_anomalies': top_anomalies
         }
             
-        except Exception as e:
-            logger.error(f"Error analyzing sender behavior: {str(e)}")
-            return {'error': str(e)}
+    except Exception as e:
+        logger.error(f"Error analyzing sender behavior: {str(e)}")
+        return {'error': str(e)}
     
     def analyze_temporal_patterns(self, session_id):
         """Analyze temporal patterns and detect anomalies"""
