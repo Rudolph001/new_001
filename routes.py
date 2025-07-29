@@ -202,6 +202,45 @@ def dashboard_stats(session_id):
         logger.error(f"Error getting dashboard stats: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/dashboard-stats/<session_id>')
+def api_dashboard_stats(session_id):
+    """Get real-time dashboard statistics for animations"""
+    try:
+        # Get session info
+        session = ProcessingSession.query.get_or_404(session_id)
+        
+        # Get basic stats
+        stats = session_manager.get_processing_stats(session_id)
+        ml_insights = ml_engine.get_insights(session_id)
+
+        # Get real-time counts
+        total_records = EmailRecord.query.filter_by(session_id=session_id).count()
+        critical_cases = EmailRecord.query.filter_by(
+            session_id=session_id, 
+            risk_level='Critical'
+        ).filter(EmailRecord.whitelisted != True).count()
+
+        whitelisted_records = EmailRecord.query.filter_by(
+            session_id=session_id,
+            whitelisted=True
+        ).count()
+
+        return jsonify({
+            'total_records': total_records,
+            'critical_cases': critical_cases,
+            'avg_risk_score': ml_insights.get('average_risk_score', 0),
+            'whitelisted_records': whitelisted_records,
+            'processing_complete': stats.get('session_info', {}).get('status') == 'completed',
+            'current_chunk': session.current_chunk or 0,
+            'total_chunks': session.total_chunks or 0,
+            'chunk_progress': int((session.current_chunk or 0) / max(session.total_chunks or 1, 1) * 100),
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting dashboard stats: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/case_management_counts/<session_id>')
 def api_case_management_counts(session_id):
     """Get case management counts for dashboard"""
@@ -922,11 +961,27 @@ def api_ml_insights(session_id):
     try:
         insights = ml_engine.get_insights(session_id)
         if not insights:
-            return jsonify({'error': 'No insights available'}), 404
+            # Return empty structure instead of error
+            insights = {
+                'total_records': 0,
+                'analyzed_records': 0,
+                'risk_distribution': {'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0},
+                'average_risk_score': 0.0,
+                'processing_complete': False,
+                'error': 'No insights available'
+            }
         return jsonify(insights)
     except Exception as e:
         logger.error(f"Error getting ML insights for session {session_id}: {str(e)}")
-        return jsonify({'error': 'Failed to load ML insights', 'details': str(e)}), 500
+        # Return error structure that frontend can handle
+        return jsonify({
+            'total_records': 0,
+            'analyzed_records': 0,
+            'risk_distribution': {'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0},
+            'average_risk_score': 0.0,
+            'processing_complete': False,
+            'error': f'Failed to load ML insights: {str(e)}'
+        }), 200  # Return 200 to prevent JS errors
 
 @app.route('/api/bau_analysis/<session_id>')
 def api_bau_analysis(session_id):

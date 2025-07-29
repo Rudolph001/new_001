@@ -405,16 +405,18 @@ class MLEngine:
     def get_insights(self, session_id):
         """Get ML insights for dashboard display"""
         try:
+            logger.info(f"Getting ML insights for session {session_id}")
             session_records = EmailRecord.query.filter_by(session_id=session_id).all()
 
             if not session_records:
+                logger.warning(f"No records found for session {session_id}")
                 return {
                     'total_records': 0,
                     'analyzed_records': 0,
                     'risk_distribution': {'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0},
                     'average_risk_score': 0.0,
                     'processing_complete': False,
-                    'error': 'No records found for session'
+                    'message': 'No records found for session'
                 }
 
             # Calculate statistics
@@ -441,6 +443,7 @@ class MLEngine:
                 'processing_complete': analyzed_records > 0
             }
 
+            logger.info(f"ML insights for session {session_id}: {total_records} total, {analyzed_records} analyzed")
             return insights
 
         except Exception as e:

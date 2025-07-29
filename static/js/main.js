@@ -476,39 +476,30 @@ function loadSessionContent() {
 // API Functions
 async function loadMLInsights(sessionId) {
     try {
-        showLoading();
         const response = await fetch(`/api/ml_insights/${sessionId}`);
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        if (!data || typeof data !== 'object') {
-            throw new Error('Invalid data received from server');
-        }
-
-        if (data.error) {
-            console.error('ML insights error:', data.error);
-            showError('Failed to load ML insights: ' + data.error);
+            console.warn(`ML insights endpoint returned ${response.status}, using fallback data`);
             updateMLInsightsDisplay({
                 total_records: 0,
                 analyzed_records: 0,
                 risk_distribution: {'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0},
                 average_risk_score: 0.0,
                 processing_complete: false,
-                error: data.error
+                error: 'ML insights not available'
             });
-            hideLoading();
             return;
         }
 
+        const data = await response.json();
+
+        if (data.error) {
+            console.warn('ML insights warning:', data.error);
+        }
+
         updateMLInsightsDisplay(data);
-        hideLoading();
     } catch (error) {
-        console.error('Error loading ML insights:', error);
-        showError('Failed to load ML insights: ' + error.message);
+        console.warn('Error loading ML insights:', error);
 
         // Provide fallback data
         updateMLInsightsDisplay({
@@ -519,8 +510,6 @@ async function loadMLInsights(sessionId) {
             processing_complete: false,
             error: 'Failed to load data'
         });
-
-        hideLoading();
     }
 }
 
@@ -1469,3 +1458,26 @@ window.generateEscalationEmail = generateEscalationEmail;
 window.openOutlookDraft = openOutlookDraft;
 window.getEmailFormData = getEmailFormData;
 window.sendEmailFromForm = sendEmailFromForm;
+
+async function updateDashboardStats(sessionId) {
+    try {
+        const response = await fetch(`/api/dashboard-stats/${sessionId}`);
+
+        if (!response.ok) {
+            console.warn(`Dashboard stats endpoint returned ${response.status}, skipping update`);
+            return;
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+            console.warn('Dashboard stats warning:', data.error);
+            return;
+        }
+
+        // Update dashboard stats display
+        updateDashboardStatsDisplay(data);
+    } catch (error) {
+        console.warn('Error updating dashboard stats:', error);
+    }
+}
