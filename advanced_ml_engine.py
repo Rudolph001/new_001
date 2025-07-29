@@ -646,8 +646,6 @@ class AdvancedMLEngine:
         return {
             'top_anomalies': top_anomalies
         }
-                'anomaly_summary': self._summarize_sender_anomalies(sender_analysis)
-            }
             
         except Exception as e:
             logger.error(f"Error analyzing sender behavior: {str(e)}")
