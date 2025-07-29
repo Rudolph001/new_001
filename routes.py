@@ -202,6 +202,93 @@ def dashboard_stats(session_id):
         logger.error(f"Error getting dashboard stats: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/case_management_counts/<session_id>')
+def api_case_management_counts(session_id):
+    """Get case management counts for dashboard"""
+    try:
+        # Get active cases (not whitelisted, not excluded, not cleared/escalated)
+        active_cases = EmailRecord.query.filter_by(session_id=session_id).filter(
+            db.and_(
+                db.or_(EmailRecord.whitelisted.is_(None), EmailRecord.whitelisted == False),
+                EmailRecord.excluded_by_rule.is_(None),
+                db.or_(
+                    EmailRecord.case_status.is_(None),
+                    EmailRecord.case_status == 'Active'
+                )
+            )
+        ).count()
+
+        # Get cleared cases
+        cleared_cases = EmailRecord.query.filter_by(
+            session_id=session_id,
+            case_status='Cleared'
+        ).count()
+
+        # Get escalated cases
+        escalated_cases = EmailRecord.query.filter_by(
+            session_id=session_id,
+            case_status='Escalated'
+        ).count()
+
+        # Get whitelisted emails
+        whitelisted_emails = EmailRecord.query.filter_by(
+            session_id=session_id,
+            whitelisted=True
+        ).count()
+
+        # Get excluded emails
+        excluded_emails = EmailRecord.query.filter(
+            EmailRecord.session_id == session_id,
+            EmailRecord.excluded_by_rule.isnot(None)
+        ).count()
+
+        # Total managed emails
+        total_managed = EmailRecord.query.filter_by(session_id=session_id).count()
+
+        # Case status distribution
+        case_status_distribution = {
+            'Active': active_cases,
+            'Cleared': cleared_cases,
+            'Escalated': escalated_cases
+        }
+
+        # Calculate rates
+        escalation_rate = (escalated_cases / max(active_cases + cleared_cases + escalated_cases, 1)) * 100
+        resolution_rate = (cleared_cases / max(active_cases + cleared_cases + escalated_cases, 1)) * 100
+
+        result = {
+            'active_cases': active_cases,
+            'cleared_cases': cleared_cases,
+            'escalated_cases': escalated_cases,
+            'whitelisted_emails': whitelisted_emails,
+            'excluded_emails': excluded_emails,
+            'total_managed': total_managed,
+            'case_status_distribution': case_status_distribution,
+            'pending_review': active_cases,
+            'escalation_rate': round(escalation_rate, 2),
+            'resolution_rate': round(resolution_rate, 2)
+        }
+
+        logger.info(f"Case counts for session {session_id}: Active={active_cases}, Cleared={cleared_cases}, Escalated={escalated_cases}, Whitelisted={whitelisted_emails}, Excluded={excluded_emails}, Total={total_managed}")
+
+        return jsonify(result)
+
+    except Exception as e:
+        logger.error(f"Error getting case management counts for session {session_id}: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'active_cases': 0,
+            'cleared_cases': 0,
+            'escalated_cases': 0,
+            'whitelisted_emails': 0,
+            'excluded_emails': 0,
+            'total_managed': 0,
+            'case_status_distribution': {'Active': 0, 'Cleared': 0, 'Escalated': 0},
+            'pending_review': 0,
+            'escalation_rate': 0,
+            'resolution_rate': 0
+        }), 200  # Return 200 to prevent JS errors
+
 @app.route('/dashboard/<session_id>')
 def dashboard(session_id):
     """Main dashboard with processing statistics and ML insights"""

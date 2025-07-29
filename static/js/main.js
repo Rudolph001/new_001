@@ -36,7 +36,7 @@ function initializeApplication() {
 
     // Set up event listeners
     setupEventListeners();
-    
+
     // Set up escalation-specific handlers
     setupEscalationHandlers();
 
@@ -45,7 +45,7 @@ function initializeApplication() {
     if (sessionId) {
         currentSessionId = sessionId;
         loadSessionContent();
-        
+
         // Start real-time updates for dashboard
         if (window.location.pathname.includes('/dashboard/')) {
             setTimeout(startDashboardUpdates, 5000); // Start after initial load
@@ -66,13 +66,13 @@ function setupEscalationHandlers() {
         document.addEventListener('click', function(e) {
             const target = e.target.closest('.generate-email-btn, .view-case-btn, .update-case-status-btn');
             if (!target) return;
-            
+
             e.preventDefault();
             e.stopPropagation();
-            
+
             const recordId = target.dataset.recordId;
             const newStatus = target.dataset.newStatus;
-            
+
             if (target.classList.contains('view-case-btn')) {
                 showCaseDetails(currentSessionId, recordId);
             } else if (target.classList.contains('update-case-status-btn')) {
@@ -89,11 +89,11 @@ function setupEventListeners() {
     document.addEventListener('click', function(e) {
         // Handle both direct clicks and clicks on child elements (like icons)
         const target = e.target.closest('.view-case-btn, .escalate-case-btn, .update-case-status-btn, .generate-email-btn');
-        
+
         if (!target) return;
-        
+
         const recordId = target.dataset.recordId;
-        
+
         if (target.classList.contains('view-case-btn')) {
             e.preventDefault();
             showCaseDetails(currentSessionId, recordId);
@@ -143,31 +143,31 @@ function setupEventListeners() {
 function initializeDashboardAnimations() {
     // Initialize animated counters
     initializeAnimatedCounters();
-    
+
     // Initialize insight highlighting
     initializeInsightHighlighting();
-    
+
     // Initialize interactive card effects
     initializeInteractiveCards();
-    
+
     // Initialize chart animations
     initializeChartAnimations();
 }
 
 function initializeAnimatedCounters() {
     const animatedNumbers = document.querySelectorAll('.animated-number');
-    
+
     animatedNumbers.forEach((element, index) => {
         // Skip case management count elements as they are updated via API
         const skipElements = ['activeCasesCount', 'clearedCasesCount', 'escalatedCasesCount', 'whitelistedEmailsCount', 'excludedEmailsCount'];
         if (skipElements.includes(element.id)) {
             return;
         }
-        
+
         const target = parseFloat(element.dataset.target) || 0;
         const isDecimal = element.dataset.target && element.dataset.target.includes('.');
         const decimals = isDecimal ? (element.dataset.target.split('.')[1]?.length || 2) : 0;
-        
+
         // Delay animation for staggered effect
         setTimeout(() => {
             animateCounter(element, 0, target, 2000, decimals);
@@ -180,13 +180,13 @@ function animateCounter(element, start, end, duration, decimals = 0) {
     const step = (timestamp) => {
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
         const current = start + (end - start) * easeOutQuart(progress);
-        
+
         if (decimals > 0) {
             element.textContent = current.toFixed(decimals);
         } else {
             element.textContent = Math.floor(current);
         }
-        
+
         if (progress < 1) {
             requestAnimationFrame(step);
         } else {
@@ -207,17 +207,17 @@ function easeOutQuart(t) {
 function initializeInsightHighlighting() {
     // Highlight critical insights with pulsing animation
     const criticalElements = document.querySelectorAll('.risk-indicator.critical');
-    
+
     criticalElements.forEach(element => {
         element.addEventListener('mouseenter', () => {
             element.style.animation = 'pulseGlow 1s infinite';
         });
-        
+
         element.addEventListener('mouseleave', () => {
             element.style.animation = 'pulseGlow 3s infinite';
         });
     });
-    
+
     // Auto-highlight insights based on thresholds
     setTimeout(() => {
         autoHighlightInsights();
@@ -227,7 +227,7 @@ function initializeInsightHighlighting() {
 function autoHighlightInsights() {
     const criticalCases = parseInt(document.getElementById('criticalCases')?.textContent) || 0;
     const avgRiskScore = parseFloat(document.getElementById('avgRiskScore')?.textContent) || 0;
-    
+
     if (criticalCases > 0) {
         showInsightPopup('Critical cases detected! Review immediately.', 'danger');
     } else if (avgRiskScore > 0.7) {
@@ -246,7 +246,7 @@ function showInsightPopup(message, type) {
     popup.style.zIndex = '9999';
     popup.style.minWidth = '300px';
     popup.style.animation = 'slideInRight 0.5s ease-out';
-    
+
     popup.innerHTML = `
         <div class="d-flex align-items-center">
             <i class="fas fa-lightbulb me-2"></i>
@@ -254,9 +254,9 @@ function showInsightPopup(message, type) {
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
     `;
-    
+
     document.body.appendChild(popup);
-    
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
         if (popup.parentNode) {
@@ -270,12 +270,12 @@ function showInsightPopup(message, type) {
 
 function initializeInteractiveCards() {
     const interactiveCards = document.querySelectorAll('.interactive-card');
-    
+
     interactiveCards.forEach(card => {
         card.addEventListener('mouseenter', () => {
             // Add glow effect
             card.style.boxShadow = '0 0 30px rgba(13, 110, 253, 0.3)';
-            
+
             // Animate child elements
             const animatedElements = card.querySelectorAll('.animated-number, .progress-bar');
             animatedElements.forEach(el => {
@@ -283,10 +283,10 @@ function initializeInteractiveCards() {
                 el.style.transition = 'transform 0.3s ease';
             });
         });
-        
+
         card.addEventListener('mouseleave', () => {
             card.style.boxShadow = '';
-            
+
             const animatedElements = card.querySelectorAll('.animated-number, .progress-bar');
             animatedElements.forEach(el => {
                 el.style.transform = '';
@@ -307,7 +307,7 @@ function initializeChartAnimations() {
                     : 0;
             }
         };
-        
+
         Chart.defaults.elements.arc.borderWidth = 2;
         Chart.defaults.elements.arc.hoverBorderWidth = 4;
     }
@@ -331,12 +331,12 @@ function updateDashboardStats() {
                 console.error('Error updating dashboard stats:', data.error);
                 return;
             }
-            
+
             // Update counters with new values
             updateAnimatedCounter('totalRecords', data.total_records);
             updateAnimatedCounter('criticalCases', data.critical_cases);
             updateAnimatedCounter('avgRiskScore', data.avg_risk_score, 3);
-            
+
             // Show notification if critical cases increase
             const currentCritical = parseInt(document.getElementById('criticalCases')?.textContent) || 0;
             if (data.critical_cases > currentCritical) {
@@ -357,10 +357,10 @@ function updateAnimatedCounter(elementId, newValue, decimals = 0) {
             element.style.background = 'rgba(13, 110, 253, 0.2)';
             element.style.borderRadius = '4px';
             element.style.padding = '2px 4px';
-            
+
             // Animate to new value
             animateCounter(element, currentValue, newValue, 1000, decimals);
-            
+
             // Remove highlight after animation
             setTimeout(() => {
                 element.style.background = '';
@@ -476,7 +476,7 @@ function loadSessionContent() {
 // API Functions
 async function loadMLInsights(sessionId) {
     try {
-        showLoading('Loading ML insights...');
+        showLoading();
         const response = await fetch(`/api/ml_insights/${sessionId}`);
 
         if (!response.ok) {
@@ -485,14 +485,26 @@ async function loadMLInsights(sessionId) {
 
         const data = await response.json();
 
-        if (data.error) {
-            console.warn('ML insights error:', data.error);
-            // Still update display with default/available data
-            updateMLInsightsDisplay(data);
-        } else {
-            updateMLInsightsDisplay(data);
+        if (!data || typeof data !== 'object') {
+            throw new Error('Invalid data received from server');
         }
 
+        if (data.error) {
+            console.error('ML insights error:', data.error);
+            showError('Failed to load ML insights: ' + data.error);
+            updateMLInsightsDisplay({
+                total_records: 0,
+                analyzed_records: 0,
+                risk_distribution: {'Critical': 0, 'High': 0, 'Medium': 0, 'Low': 0},
+                average_risk_score: 0.0,
+                processing_complete: false,
+                error: data.error
+            });
+            hideLoading();
+            return;
+        }
+
+        updateMLInsightsDisplay(data);
         hideLoading();
     } catch (error) {
         console.error('Error loading ML insights:', error);
@@ -615,13 +627,13 @@ async function generateEscalationEmail(sessionId, recordId) {
     try {
         console.log('Generating email for session:', sessionId, 'record:', recordId);
         showLoading('Generating email...');
-        
+
         const response = await fetch(`/api/escalation/${sessionId}/${recordId}/generate-email`);
-        
+
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
 
         if (data.error) {
@@ -883,14 +895,14 @@ function displayCaseDetailsModal(caseData) {
 
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('caseDetailsModal'));
-    
+
     // Add cleanup event listeners
     const modalElement = document.getElementById('caseDetailsModal');
     modalElement.addEventListener('hidden.bs.modal', function() {
         // Clean up modal
         cleanupModal('caseDetailsModal');
     });
-    
+
     modal.show();
 }
 
@@ -901,18 +913,18 @@ function cleanupModal(modalId) {
     if (modalElement) {
         modalElement.remove();
     }
-    
+
     // Remove any remaining modal backdrops
     const backdrops = document.querySelectorAll('.modal-backdrop');
     backdrops.forEach(backdrop => backdrop.remove());
-    
+
     // Remove modal-open class from body
     document.body.classList.remove('modal-open');
-    
+
     // Reset body styles that might be set by Bootstrap modal
     document.body.style.overflow = '';
     document.body.style.paddingRight = '';
-    
+
     // Remove any other modal-related classes
     document.documentElement.classList.remove('modal-open');
 }
@@ -981,14 +993,14 @@ function displayEmailDraftModal(emailData) {
 
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('emailDraftModal'));
-    
+
     // Add cleanup event listeners
     const modalElement = document.getElementById('emailDraftModal');
     modalElement.addEventListener('hidden.bs.modal', function() {
         // Clean up modal
         cleanupModal('emailDraftModal');
     });
-    
+
     modal.show();
 }
 
@@ -1001,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Remove any remaining modal backdrops
             const backdrops = document.querySelectorAll('.modal-backdrop');
             backdrops.forEach(backdrop => backdrop.remove());
-            
+
             // Ensure body can scroll
             document.body.classList.remove('modal-open');
             document.body.style.overflow = '';

@@ -616,7 +616,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Second row for Excluded Cases -->
                 <div class="row" id="excludedCasesRow">
                     <div class="col-lg-3 col-md-6 mb-3">
@@ -638,7 +638,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Case Status Distribution Chart -->
                 <div class="row mt-4">
                     <div class="col-md-6">
@@ -833,7 +833,7 @@ function loadCaseManagementCounts() {
         })
         .then(data => {
             console.log('Case management counts data:', data);
-            
+
             if (data.error) {
                 console.error('Error loading case counts:', data.error);
                 return;
@@ -849,11 +849,11 @@ function loadCaseManagementCounts() {
             };
 
             console.log('Updating elements with values:', updates);
-            
+
             Object.keys(updates).forEach(elementId => {
                 const element = document.getElementById(elementId);
                 const value = updates[elementId];
-                
+
                 if (element) {
                     element.textContent = value.toLocaleString();
                     element.setAttribute('data-target', value);
@@ -900,7 +900,7 @@ function loadCaseManagementCounts() {
         })
         .catch(error => {
             console.error('Error loading case management counts:', error);
-            
+
             // Show default values on error
             const elements = ['activeCasesCount', 'clearedCasesCount', 'escalatedCasesCount', 'whitelistedEmailsCount'];
             elements.forEach(id => {
@@ -929,7 +929,7 @@ function createCaseStatusChart(statusData) {
     const activeCount = statusData.Active || 0;
     const clearedCount = statusData.Cleared || 0;
     const escalatedCount = statusData.Escalated || 0;
-    
+
     // If no data, show a placeholder message
     if (activeCount === 0 && clearedCount === 0 && escalatedCount === 0) {
         ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
@@ -1003,7 +1003,7 @@ function createCaseStatusChart(statusData) {
 function initializeCharts() {
     // Risk Distribution Chart
     const sessionId = "{{ session.id if session else '' }}";
-    
+
     // Initialize ML Insights Chart
     const mlCtx = document.getElementById('mlInsightsChart');
     if (mlCtx) {
@@ -1177,7 +1177,7 @@ function createAttachmentRiskChart(riskData) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, starting to load case management counts...');
     loadCaseManagementCounts();
-    
+
     // Initialize charts after a short delay to ensure DOM is ready
     setTimeout(function() {
         initializeCharts();
@@ -1200,7 +1200,7 @@ setTimeout(function() {
             .then(response => response.json())
             .then(data => {
                 console.log('Force update - API returned:', data);
-                
+
                 // Direct element updates without animation
                 const elements = {
                     'activeCasesCount': data.active_cases || 0,
@@ -1208,7 +1208,7 @@ setTimeout(function() {
                     'escalatedCasesCount': data.escalated_cases || 0,
                     'whitelistedEmailsCount': data.whitelisted_emails || 0
                 };
-                
+
                 Object.keys(elements).forEach(id => {
                     const element = document.getElementById(id);
                     if (element) {
