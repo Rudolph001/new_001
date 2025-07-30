@@ -367,7 +367,7 @@ class AdvancedMLEngine:
 
         return {
             'high_risk_senders': high_risk_senders,
-            'external_focused_senders': external_focused_senders,
+            'external_focused_senders': external_focused,
             'attachment_senders': attachment_senders,
             'avg_emails_per_sender': avg_emails_per_sender,
             'critical_risk_senders': critical_risk_senders,
@@ -764,7 +764,6 @@ class AdvancedMLEngine:
 
         return categories
 
-```python
     def _detect_malware_indicators(self, records):
         """Detect potential malware indicators"""
         indicators = {
@@ -1020,215 +1019,74 @@ class AdvancedMLEngine:
 
         return flags
 
-    def _detect_sender_anomalies(self, sender_data):
-        """Detect anomalous patterns in sender behavior"""
-        anomalies = []
-
-        # Risk-based anomalies
-        if sender_data['risk_variance'] > 0.5:
-            anomalies.append('Highly inconsistent risk scores')
-
-        # Volume anomalies
-        if sender_data['total_emails'] > 100:
-            anomalies.append('Unusually high email volume')
-
-        # Temporal anomalies
-        if sender_data['weekend_emails'] / sender_data['total_emails'] > 0.4:
-            anomalies.append('Excessive weekend activity')
-
-        if sender_data['after_hours_emails'] / sender_data['total_emails'] > 0.6:
-            anomalies.append('Primarily after-hours communication')
-
-        # Communication pattern anomalies
-        if sender_data['external_ratio'] > 0.95:
-            anomalies.append('Almost exclusively external communication')
-
-        if sender_data['recipient_spread'] > 50:
-            anomalies.append('Contacts unusually many domains')
-
-        # Attachment anomalies
-        if sender_data['attachment_ratio'] > 0.9:
-            anomalies.append('Almost all emails contain attachments')
-
-        return anomalies
-
-    def _calculate_enhanced_sender_summary_stats(self, sender_analysis):
-        """Calculate enhanced summary statistics for sender analysis"""
-        if not sender_analysis:
-            return {}
-
-        all_senders = list(sender_analysis.values())
-
-        return {
-            'total_senders': len(all_senders),
-            'avg_emails_per_sender': float(np.mean([s['total_emails'] for s in all_senders])),
-            'median_emails_per_sender': float(np.median([s['total_emails'] for s in all_senders])),
-            'high_risk_senders': len([s for s in all_senders if s['risk_score_avg'] > 0.6]),
-            'critical_risk_senders': len([s for s in all_senders if s['critical_risk_emails'] > 0]),
-            'external_focused_senders': len([s for s in all_senders if s['external_ratio'] > 0.7]),
-            'attachment_senders': len([s for s in all_senders if s['attachments_sent'] > 0]),
-            'high_volume_senders': len([s for s in all_senders if s['total_emails'] > 20]),
-            'low_trust_senders': len([s for s in all_senders if s['trust_score'] < 50]),
-            'after_hours_senders': len([s for s in all_senders if s['after_hours_emails'] > 0]),
-            'weekend_senders': len([s for s in all_senders if s['weekend_emails'] > 0]),
-            'multi_domain_senders': len([s for s in all_senders if s['recipient_spread'] > 5]),
-            'leaver_senders': len([s for s in all_senders if s['leaver_emails'] > 0]),
-            'avg_behavioral_score': float(np.mean([s['behavioral_score'] for s in all_senders])),
-            'avg_trust_score': float(np.mean([s['trust_score'] for s in all_senders])),
-            'avg_risk_variance': float(np.mean([s['risk_variance'] for s in all_senders])),
-            'total_anomalies': sum(len(s['anomaly_indicators']) for s in all_senders)
-        }
-
-    def _generate_behavioral_insights(self, sender_analysis):
-        """Generate behavioral insights from sender analysis"""
-        if not sender_analysis:
-            return {}
-
-        all_senders = list(sender_analysis.values())
-
-        insights = {
-            'communication_patterns': {
-                'external_heavy': len([s for s in all_senders if s['external_ratio'] > 0.8]),
-                'internal_heavy': len([s for s in all_senders if s['internal_ratio'] > 0.8]),
-                'balanced': len([s for s in all_senders if 0.3 <= s['external_ratio'] <= 0.7])
-            },
-            'risk_profiles': {
-                'consistently_risky': len([s for s in all_senders if s['risk_score_avg'] > 0.6 and s['risk_variance'] < 0.2]),
-                'inconsistent_risk': len([s for s in all_senders if s['risk_variance'] > 0.4]),
-                'low_risk_stable': len([s for s in all_senders if s['risk_score_avg'] < 0.3 and s['risk_variance'] < 0.1])
-            },
-            'temporal_patterns': {
-                'business_hours_only': len([s for s in all_senders if s['after_hours_emails'] == 0 and s['weekend_emails'] == 0]),
-                'after_hours_active': len([s for s in all_senders if s['after_hours_emails'] > 0]),
-                'weekend_active': len([s for s in all_senders if s['weekend_emails'] > 0])
-            },
-            'trust_distribution': {
-                'high_trust': len([s for s in all_senders if s['trust_score'] >= 80]),
-                'medium_trust': len([s for s in all_senders if 50 <= s['trust_score'] < 80]),
-                'low_trust': len([s for s in all_senders if s['trust_score'] < 50])
-            }
-        }
-
-        return insights
-
-    def _analyze_sender_risk_patterns(self, sender_analysis):
-        """Analyze risk patterns across senders"""
-        if not sender_analysis:
-            return {}
-
-        all_senders = list(sender_analysis.values())
-
-        # Identify common risk patterns
-        patterns = {
-            'high_risk_external': len([s for s in all_senders if s['risk_score_avg'] > 0.6 and s['external_ratio'] > 0.7]),
-            'high_risk_attachments': len([s for s in all_senders if s['risk_score_avg'] > 0.6 and s['attachment_ratio'] > 0.5]),
-            'high_risk_volume': len([s for s in all_senders if s['risk_score_avg'] > 0.6 and s['total_emails'] > 20]),
-            'high_risk_after_hours': len([s for s in all_senders if s['risk_score_avg'] > 0.6 and s['after_hours_emails'] > 0]),
-            'leaver_risk_correlation': len([s for s in all_senders if s['leaver_emails'] > 0 and s['risk_score_avg'] > 0.5])
-        }
-
-        return patterns
-
-    def _summarize_sender_anomalies(self, sender_analysis):
-        """Summarize anomalies found across all senders"""
-        if not sender_analysis:
-            return {}
-
-        all_anomalies = []
-        for sender_data in sender_analysis.values():
-            all_anomalies.extend(sender_data['anomaly_indicators'])
-
-        # Count anomaly types
-        anomaly_counts = defaultdict(int)
-        for anomaly in all_anomalies:
-            anomaly_counts[anomaly] += 1
-
-        return {
-            'total_anomalies': len(all_anomalies),
-            'unique_anomaly_types': len(anomaly_counts),
-            'top_anomalies': dict(sorted(anomaly_counts.items(), key=lambda x: x[1], reverse=True)[:10]),
-            'senders_with_anomalies': len([s for s in sender_analysis.values() if s['anomaly_indicators']])
-        }
-
-    def _calculate_sender_summary_stats(self, sender_analysis):
-        """Calculate summary statistics for sender analysis"""
-        if not sender_analysis:
-            return {}
-
-        all_senders = list(sender_analysis.values())
-
-        return {
-            'total_senders': len(all_senders),
-            'avg_emails_per_sender': np.mean([s['total_emails'] for s in all_senders]),
-            'high_risk_senders': len([s for s in all_senders if s['risk_score_avg'] > 0.6]),
-            'external_focused_senders': len([s for s in all_senders if s['external_ratio'] > 0.5]),
-            'attachment_senders': len([s for s in all_senders if s['attachments_sent'] > 0])
-        }
-
     def _identify_unusual_time_patterns(self, time_analysis):
         """Identify unusual temporal patterns"""
         patterns = []
-
+        
         # High after-hours activity
-        if time_analysis['after_hours_activity'] > 10:
+        if time_analysis.get('after_hours_activity', 0) > 10:
             patterns.append(f"High after-hours activity: {time_analysis['after_hours_activity']} communications")
-
+        
         # Weekend activity
-        if time_analysis['weekend_activity'] > 5:
+        if time_analysis.get('weekend_activity', 0) > 5:
             patterns.append(f"Weekend activity detected: {time_analysis['weekend_activity']} communications")
-
+        
         # Low business hours ratio
-        if time_analysis['business_hours_ratio'] < 0.6:
+        if time_analysis.get('business_hours_ratio', 1) < 0.6:
             patterns.append("Low business hours communication ratio")
-
+        
         return patterns
 
     def _analyze_communication_networks(self, session_id):
         """Analyze communication networks and relationships"""
-        # Simplified network analysis
+        from collections import defaultdict
+        from models import EmailRecord
+        
         records = EmailRecord.query.filter_by(session_id=session_id).all()
-
+        
         sender_network = defaultdict(set)
         for record in records:
             if record.sender and record.recipients_email_domain:
                 sender_network[record.sender].add(record.recipients_email_domain)
-
+        
         network_stats = {
             'total_nodes': len(sender_network),
             'highly_connected_senders': len([s for s, domains in sender_network.items() if len(domains) > 5]),
             'network_density': sum(len(domains) for domains in sender_network.values()) / len(sender_network) if sender_network else 0
         }
-
+        
         return network_stats
 
     def _analyze_justifications(self, session_id):
         """Analyze email justifications for sentiment and patterns"""
+        from models import EmailRecord
+        
         records = EmailRecord.query.filter(
             EmailRecord.session_id == session_id,
             EmailRecord.justification.isnot(None),
             EmailRecord.justification != ''
         ).all()
-
+        
         if not records:
             return {'message': 'No justifications found'}
-
+        
         # Simple sentiment analysis
         positive_terms = ['appropriate', 'legitimate', 'business', 'approved', 'authorized']
         negative_terms = ['mistake', 'error', 'unauthorized', 'personal', 'wrong']
-
+        
         sentiment_scores = []
         for record in records:
             justification_lower = record.justification.lower()
             positive_count = sum(1 for term in positive_terms if term in justification_lower)
             negative_count = sum(1 for term in negative_terms if term in justification_lower)
-
+            
             if positive_count > negative_count:
                 sentiment_scores.append(1)  # Positive
             elif negative_count > positive_count:
                 sentiment_scores.append(-1)  # Negative
             else:
                 sentiment_scores.append(0)  # Neutral
-
+        
         return {
             'total_justifications': len(records),
             'positive_sentiment': sentiment_scores.count(1),
@@ -1238,55 +1096,61 @@ class AdvancedMLEngine:
 
     def _identify_pattern_clusters(self, session_id):
         """Identify clusters of similar communication patterns"""
-        # Simplified clustering based on communication characteristics
+        from models import EmailRecord
+        
         records = EmailRecord.query.filter_by(session_id=session_id).all()
-
+        
         clusters = {
             'high_risk_cluster': len([r for r in records if r.ml_risk_score and r.ml_risk_score > 0.7]),
             'external_communication_cluster': len([r for r in records if self._is_external_domain(r.recipients_email_domain)]),
             'attachment_cluster': len([r for r in records if r.attachments]),
             'leaver_cluster': len([r for r in records if r.leaver and r.leaver.lower() in ['yes', 'true']])
         }
-
+        
         return clusters
 
     def _analyze_risk_correlations(self, session_id):
         """Analyze correlations between different risk factors"""
+        from models import EmailRecord
+        import numpy as np
+        
         records = EmailRecord.query.filter_by(session_id=session_id).all()
-
+        
         correlations = {
             'attachment_risk_correlation': 0,
             'external_domain_risk_correlation': 0,
             'leaver_risk_correlation': 0
         }
-
+        
         # Calculate simple correlations
         records_with_risk = [r for r in records if r.ml_risk_score is not None]
-
+        
         if records_with_risk:
             # Attachment correlation
             attachment_risks = [1 if r.attachments else 0 for r in records_with_risk]
             risk_scores = [r.ml_risk_score for r in records_with_risk]
-
+            
             if len(set(attachment_risks)) > 1:
                 correlations['attachment_risk_correlation'] = np.corrcoef(attachment_risks, risk_scores)[0, 1]
-
+        
         return correlations
 
     def _detect_behavioral_anomalies(self, session_id):
         """Detect behavioral anomalies at the session level"""
+        from models import EmailRecord
+        
         records = EmailRecord.query.filter_by(session_id=session_id).all()
-
+        
         anomalies = []
-
+        
         # Unusual volume of high-risk communications
         high_risk_count = sum(1 for r in records if r.ml_risk_score and r.ml_risk_score > 0.7)
         if high_risk_count > len(records) * 0.2:
             anomalies.append(f"Unusually high proportion of risky communications: {high_risk_count}/{len(records)}")
-
+        
         # Unusual external communication patterns
         external_count = sum(1 for r in records if self._is_external_domain(r.recipients_email_domain))
         if external_count > len(records) * 0.8:
             anomalies.append(f"Unusually high external communication: {external_count}/{len(records)}")
-
+        
         return anomalies

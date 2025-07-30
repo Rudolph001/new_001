@@ -22,7 +22,7 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 database_url = os.environ.get("DATABASE_URL")
 if not database_url:
     # Use SQLite for local development
-    database_url = "sqlite:///email_guardian.db"
+    database_url = "sqlite:///instance/email_guardian.db"
     
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {

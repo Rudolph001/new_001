@@ -1304,15 +1304,7 @@ def api_sender_risk_analytics(session_id):
             'max_risk': 0
         }), 200  # Return 200 to prevent JS errors
 
-@app.route('/api/sender_analysis/<session_id>')
-def api_sender_analysis(session_id):
-    """Get sender analysis data"""
-    try:
-        analysis = advanced_ml_engine.analyze_sender_behavior(session_id)
-        return jsonify(analysis)
-    except Exception as e:
-        logger.error(f"Error getting sender analysis for session {session_id}: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/time_analysis/<session_id>')
 def api_time_analysis(session_id):
@@ -3540,11 +3532,7 @@ def reprocess_session_data(session_id):
             db.session.commit()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/network/<session_id>')
-def network_dashboard(session_id):
-    """Network analysis dashboard for a specific session"""
-    session = ProcessingSession.query.get_or_404(session_id)
-    return render_template('network_dashboard.html', session=session)
+
 
 @app.route('/api/network-data/<session_id>', methods=['POST'])
 def api_network_data(session_id):
